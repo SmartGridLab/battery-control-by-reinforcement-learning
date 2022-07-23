@@ -17,10 +17,6 @@ from scipy.stats import norm
 
 warnings.simplefilter('ignore')
 
-
-
-print("end")
-
 # %%
 #パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
 num_episodes = 48 # 1日のコマ数(固定)
@@ -305,5 +301,3 @@ pp.close()
 print(total_profit)
 print((-1)*imbalance_forecast)
 print(total_profit + imbalance_forecast)
-
-
