@@ -9,6 +9,7 @@ import math as ma
 
 from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
+from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 warnings.simplefilter('ignore')
 
@@ -16,15 +17,15 @@ class ESS_Model(gym.Env):
     def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
         #パラメータの定義
         self.episode = 0
-        self.total_step = action_space # 1日の総コマ数
+        self.total_step = action_space # 1Dayの総コマ数
         self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = ma.exp(1/action_space) # 充電に対する割引率
         self.battery_MAX = 4 # ４kWh
         self.MAX_reward = -10000 
         self.K = 1.46 # インバランス料金算出のパラメータ
         self.L = 0.43 # インバランス料金算出のパラメータ
-        self.Train_Days = train_days # 学習日
-        self.test_days = test_day - 1 # テスト日数
+        self.Train_Days = train_days # 学習Day
+        self.test_days = test_day - 1 # テストDay数
         self.mode = mode
         if mode == "train":
             self.last_day = self.Train_Days
@@ -157,7 +158,7 @@ class ESS_Model(gym.Env):
 
             n_battery = self.battery - ACTION/2 # 評価用の充電残量
 
-            # ---報酬設定---------------
+            # ---Reward設定---------------
             reward += self.reward_set(ACTION ,n_battery)
             # --------------------------
                             
@@ -278,7 +279,7 @@ class ESS_Model(gym.Env):
             self.input_PV_data = (self.PV_out[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/2).T[0]
             self.input_price_data = (self.price[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
 
-    #報酬設定
+    #Reward設定
     def reward_set(self, ACTION, n_battery):
         reward = 0
         # 現在の状態と行動に対するreward
@@ -330,32 +331,32 @@ class ESS_Model(gym.Env):
         ax2.tick_params(axis='x', labelsize=35)
         ax2.tick_params(axis='y', labelsize=35)
         if self.mode == "train":
-            ax1.plot(self.all_time, action, "blue", drawstyle="steps-post",label="充放電")
-            ax1.plot(self.all_time, PV, "Magenta",label="PV出力")
+            ax1.plot(self.all_time, action, "blue", drawstyle="steps-post",label="Charge and discharge")
+            ax1.plot(self.all_time, PV, "Magenta",label="PV generation")
             ax2.plot(self.all_time, soc, "red",label="SoC")
         elif self.mode == "test":
-            ax1.plot(self.all_count, action, "blue", drawstyle="steps-post",label="充放電")
-            ax1.plot(self.all_count, PV, "Magenta",label="PV出力")
+            ax1.plot(self.all_count, action, "blue", drawstyle="steps-post",label="Charge and discharge")
+            ax1.plot(self.all_count, PV, "Magenta",label="PV generation")
             ax2.plot(self.all_count, soc, "red",label="SoC")
         if mode == 0: # 電力価格ありのグラフ
             if self.mode == "train":
-                ax1.plot(self.all_time, self.all_price_true, "green",drawstyle="steps-post",label="電力価格")
+                ax1.plot(self.all_time, self.all_price_true, "green",drawstyle="steps-post",label="Power rates")
             elif self.mode == "test":
-                ax1.plot(self.all_count, self.all_price_true, "green",drawstyle="steps-post",label="電力価格")
-            ax1.set_ylabel("電力[kW] 電力価格[円]", fontname="MS Gothic",fontsize = 35)
+                ax1.plot(self.all_count, self.all_price_true, "green",drawstyle="steps-post",label="Power rates")
+            ax1.set_ylabel("Power [kW] / Power rates [Yen]", fontsize = 35)
         elif mode == 1:
             ax1.set_ylim([-2,2])
-            ax1.set_ylabel("電力[kW]", fontname="MS Gothic",fontsize = 35)    
+            ax1.set_ylabel("Power [kW]", fontsize = 35)    
         h1, l1 = ax1.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
-        ax1.legend(h1+h2, l1+l2, loc='upper left', prop={"family":"MS Gothic", "size": 35}).get_frame().set_alpha(0.0)
+        ax1.legend(h1+h2, l1+l2, loc='upper left', prop={"size": 35}).get_frame().set_alpha(0.0)
         if self.mode == "train":
             ax1.set_xlim([0,23.5])
         elif self.mode == "test":
             ax1.set_xlim([0,23.5*(self.test_days - 1)])
-        ax1.set_xlabel('時間[時]', fontname="MS Gothic",fontsize = 35)
+        ax1.set_xlabel('Time [hour]', fontsize = 35)
         ax1.grid(True)
-        ax2.set_ylabel("SoC[%]", fontname="MS Gothic",fontsize = 35)
+        ax2.set_ylabel("SoC[%]", fontsize = 35)
         plt.tick_params(labelsize=35)
         plt.close()
 
@@ -379,19 +380,19 @@ class ESS_Model(gym.Env):
         #ax2.tick_params(axis='x', labelsize=35)
         #ax2.tick_params(axis='y', labelsize=35)
         #ax1.plot(self.all_count, action, "blue", drawstyle="steps-post",label="充放電")
-        ax1.plot(self.all_count, PV_true, "red",label="PV出力実測値")
-        ax1.plot(self.all_count, PV_pred, "blue",label="PV出力予測値")
+        ax1.plot(self.all_count, PV_true, "red",label="PV generation: Actual")
+        ax1.plot(self.all_count, PV_pred, "blue",label="PV generation: Forecast")
         #ax2.plot(self.all_count, soc, "red",label="SoC")
-        ax1.plot(self.all_count, self.all_price_true, "green",drawstyle="steps-post",label="電力価格実測値")
-        ax1.plot(self.all_count, self.all_price, "Magenta",drawstyle="steps-post",label="電力価格予測値")
-        ax1.set_ylabel("電力[kW] 電力価格[円]", fontname="MS Gothic",fontsize = 35) 
+        ax1.plot(self.all_count, self.all_price_true, "green",drawstyle="steps-post",label="Electricity Price: Actual")
+        ax1.plot(self.all_count, self.all_price, "Magenta",drawstyle="steps-post",label="Electricity Price: Forecast")
+        ax1.set_ylabel("Power [kW] Price [Yen]", fontsize = 35) 
         h1, l1 = ax1.get_legend_handles_labels()
         #h2, l2 = ax2.get_legend_handles_labels()
-        ax1.legend(h1, l1, loc='upper left', prop={"family":"MS Gothic", "size": 35}).get_frame().set_alpha(0.0)
+        ax1.legend(h1, l1, loc='upper left', prop={"size": 35}).get_frame().set_alpha(0.0)
         ax1.set_xlim([0,23.5*(self.test_days - 1)])
-        ax1.set_xlabel('時間[時]', fontname="MS Gothic",fontsize = 35)
+        ax1.set_xlabel('Time [hour]', fontsize = 35)
         ax1.grid(True)
-        #ax2.set_ylabel("SoC[%]", fontname="MS Gothic",fontsize = 35)
+        #ax2.set_ylabel("SoC[%]", fontsize = 35)
         plt.tick_params(labelsize=35)
         plt.close()
 
@@ -399,10 +400,10 @@ class ESS_Model(gym.Env):
     
     def graph(self, y):
         fig = plt.figure(figsize=(24, 14), dpi=80)
-        plt.plot(np.arange(self.episode), y, label = "報酬")
-        plt.legend(prop={"family":"MS Gothic", "size": 35})
-        plt.xlabel("学習回数", fontname="MS Gothic",fontsize = 35)
-        plt.ylabel("報酬", fontname="MS Gothic",fontsize = 35)
+        plt.plot(np.arange(self.episode), y, label = "Reward")
+        plt.legend(prop={"size": 35})
+        plt.xlabel("Episode", fontsize = 35)
+        plt.ylabel("Reward", fontsize = 35)
         plt.tick_params(labelsize=35)
         plt.close()
         
@@ -482,8 +483,8 @@ class ESS_Model(gym.Env):
         imb_PV = np.array(imb_PV)
         plus = sell_all+imb_all
         plus_PV = sell_PV+imb_PV
-        self.imb_Graph = self.graph_imb(sell_all,imb_all,plus,"日", "金額[円]", "売上","インバランス料金","利益")
-        self.imb_Graph_PV = self.graph_imb(sell_PV,imb_PV,plus_PV,"日", "金額[円]", "売上","インバランス料金","利益")
+        self.imb_Graph = self.graph_imb(sell_all,imb_all,plus,"Day", "Yen", "Sales","Imbalance Penalty","Profit")
+        self.imb_Graph_PV = self.graph_imb(sell_PV,imb_PV,plus_PV,"Day", "Yen", "Sales","Imbalance Penalty","Profit")
         print("PV+ESS")
         print(total_profit)
         print((-1)*imbalance)
@@ -494,7 +495,7 @@ class ESS_Model(gym.Env):
         print(PV_profit_true + imbalance_PV)
 
     def graph_imb(self,y1, y2, y3, x_label, y_label, label_name_1, label_name_2, label_name_3):
-        episode = len(self.all_action_true)/48 # テスト日数
+        episode = len(self.all_action_true)/48 # テストDay数
         fig = plt.figure(figsize=(24, 10), dpi=80)
         ax = fig.add_subplot(111)
         ax.set_ylim(-2000, 4000)
@@ -502,9 +503,9 @@ class ESS_Model(gym.Env):
         plt.plot(np.arange(episode), y1, label = label_name_1)
         plt.plot(np.arange(episode), y2, label = label_name_2)
         plt.plot(np.arange(episode), y3, label = label_name_3)
-        plt.legend(prop={"family":"MS Gothic"},fontsize = 35)
-        plt.xlabel(x_label, fontname="MS Gothic",fontsize = 35)
-        plt.ylabel(y_label, fontname="MS Gothic",fontsize = 35)
+        plt.legend(fontsize = 35)
+        plt.xlabel(x_label, fontsize = 35)
+        plt.ylabel(y_label, fontsize = 35)
         plt.close()
             
         return fig
@@ -532,103 +533,59 @@ class ESS_Model(gym.Env):
                 obs = pd.Series(obs)
                 obs = torch.tensor(obs.values.astype(np.float64))
 
-# %%
 action_space = 2 #アクションの数(現状は48の約数のみ)
-num_episodes = int(48/action_space) # 1日のコマ数(固定)
-episode = 10000000  # 学習回数
+num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
+episode = 3 # 10000000  # 学習回数
 
-# %%
-# train
 #パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 59 #確率密度関数作成用の日数
-train_days = 30 # 学習日数 0~59までは電力価格が異常値
-test_day = 30 # テスト日数 + 2 (最大89)
+pdf_day = 59 #確率密度関数作成用のDay数
+train_days = 30 # 学習Day数 0~59までは電力価格が異常値
+test_day = 30 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout_true" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "train" # train or test
 model_name = "ESS_model" # ESS_model
 
-# 環境設定
+# Training環境設定と実行
 env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)
+env.main_root(mode, num_episodes, train_days, episode, model_name) # Trainingを実行
 
-# %%
-# test 2カ月 報酬最大
+# test 2カ月 Reward最大
 #パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 59 #確率密度関数作成用の日数
-train_days = 30 # 学習日数
-test_day = 30 # テスト日数 + 2 (最大89)
+pdf_day = 59 #確率密度関数作成用のDay数
+train_days = 30 # 学習Day数
+test_day = 30 # テストDay数 + 2 (最大89)
 PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
-# 環境設定
+# Test環境設定と実行
 env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
-# %%
-# test １日　報酬最大
-#パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 76 #確率密度関数作成用の日数 75 80
-train_days = 30 # 学習日数 70 ~ 73
-test_day = 3 # テスト日数 + 2 (最大89)
+"""
+# Test環境のパラメータ設定の種類:
+
+# test １Day　Reward最大
+pdf_day = 76 #確率密度関数作成用のDay数 75 80
+train_days = 30 # 学習Day数 70 ~ 73
+test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
-# 環境設定
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)
-
-# %%
 # test 2カ月 学習終了
-#パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 59 #確率密度関数作成用の日数
-train_days = 30 # 学習日数
-test_day = 30 # テスト日数 + 2 (最大89)
+pdf_day = 59 #確率密度関数作成用のDay数
+train_days = 30 # 学習Day数
+test_day = 30 # テストDay数 + 2 (最大89)
 PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "test" # train or test
 model_name = "ESS_model_end" # ESS_model ESS_model_end
 
-# 環境設定
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)
-
-# %%
-# test 1日　学習終了
-#パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 75 #確率密度関数作成用の日数
-train_days = 30 # 学習日数 70 ~ 73
-test_day = 4 # テスト日数 + 2 (最大89)
+# test 1Day 学習終了
+pdf_day = 75 #確率密度関数作成用のDay数
+train_days = 30 # 学習Day数 70 ~ 73
+test_day = 4 # テストDay数 + 2 (最大89)
 PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "test" # train or test
 model_name = "ESS_model_end" # ESS_model ESS_model_end
-
-# 環境設定
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)
-
-# %%
-# tensorBoardを起動して、学習状況を確認する
-from torch.utils.tensorboard import SummaryWriter
-
-# %%
-from sklearn.metrics import mean_squared_error
-import math as ma
-
-pdf_day = 59 #確率密度関数作成用の日数
-Train_Days = 30 # 学習日数
-test_days = 30 # テスト日数 + 2 (最大89)
-PV_data = pd.read_csv("train_and_test_data.csv", encoding="shift-jis") # train_and_test_data
-price_all = PV_data["forecast_price"]
-true_all_price = PV_data["price[yen/kW30m]"]
-PV_out_all = PV_data["Forecast"]
-PV_true_all = PV_data["PVout_true"]
-        # 学習(テスト)用データ作成
-price_data = price_all[48*(Train_Days + pdf_day):48*(Train_Days + pdf_day + test_days + 3)]
-price_true_data = true_all_price[48*(Train_Days + pdf_day):48*(Train_Days + pdf_day + test_days + 3)]
-PV_out_data = PV_out_all[48*(Train_Days + pdf_day):48*(Train_Days + pdf_day + test_days + 3)]
-PV_true_data = PV_true_all[48*(Train_Days + pdf_day):48*(Train_Days + pdf_day + test_days + 3)]
-
-testScore = ma.sqrt(mean_squared_error(PV_true_data, PV_out_data))
-
-
+"""
