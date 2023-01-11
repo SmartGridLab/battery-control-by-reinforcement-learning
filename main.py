@@ -288,8 +288,7 @@ for i in range(p.N_VERIFICATION):
             testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
 
-            
-#test
+
 
 #testcsv_[["alpha", "bata"]] = 0
 
