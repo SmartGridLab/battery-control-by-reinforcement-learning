@@ -278,6 +278,7 @@ for i in range(p.N_VERIFICATION):
         testcsv_ = pd.DataFrame(columns=["year","month","day","upper","PVout_true","lower","dummy1","hour"])
         if i == (p.N_VERIFICATION-1):
             testcsv_[["upper","lower"]] = y_pred
+            testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
             testcsv_[["PVout_true","dummy1"]] = y_test
             testcsv_[["year","month","day"]] = date_output.year,date_output.month,date_output.day
             testcsv_[["hour"]] = time
