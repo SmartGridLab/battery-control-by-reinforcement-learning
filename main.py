@@ -295,7 +295,6 @@ for i in range(p.N_VERIFICATION):
 
 
 
-
 #testcsv_[["alpha", "bata"]] = 0
 
 testcsv.to_csv('test.csv')
