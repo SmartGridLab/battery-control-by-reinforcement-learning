@@ -284,10 +284,17 @@ for i in range(p.N_VERIFICATION):
             testcsv_[["sin"]] = time_sin
             testcsv_[["cos"]] = time_cos
 
+            #modify upper and lower
+            testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
+            testcsv_.loc[testcsv_['hour'] < 4, 'upper'] = 0
+            testcsv_.loc[testcsv_['hour'] > 19.5, 'upper'] = 0
+
+            #delete dummy data
             testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
 
-            
+
+
 
 #testcsv_[["alpha", "bata"]] = 0
 
