@@ -286,8 +286,11 @@ for i in range(p.N_VERIFICATION):
 
             #modify upper and lower
             testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
+            testcsv_.loc[testcsv_['upper'] < 0, 'upper'] = 0
             testcsv_.loc[testcsv_['hour'] < 4, 'upper'] = 0
+            testcsv_.loc[testcsv_['hour'] < 4, 'lower'] = 0
             testcsv_.loc[testcsv_['hour'] > 19.5, 'upper'] = 0
+            testcsv_.loc[testcsv_['hour'] > 19.5, 'lower'] = 0
 
             #delete dummy data
             testcsv_.pop('dummy1')
