@@ -85,10 +85,11 @@ input_dim = factor # 入力データの要素数
 output_dim = 1 # 出力データ数
 len_sequence = 48 # 時系列の長さ
 batch_size = 128 # ミニパッチサイズ
-num_of_training_epochs = 3 # 3000 # 学習エポック数
+num_of_training_epochs = 3000 # 3000 # 学習エポック数
 learning_rate = 0.0001 # 学習率
 
 # モデルの構築
+
 LSTM_hidden_units_1 = 3 # 256 # 隠れ層（第一層）のユニット数
 LSTM_hidden_units_2 = 3 # 128 # 隠れ層（第二層）のユニット数
 LSTM_hidden_units_3 = 3 # 64 # 隠れ層（第三層）のユニット数
@@ -135,3 +136,7 @@ price_result[["predict"]] = Predict_LSTM
 price_result[["target"]] = target
 
 price_result.to_csv('predicd_price.csv')
+
+#日付は下の形の配列を作って変形するのがアリ？
+#1.1.1....1
+#2.2.2....2
