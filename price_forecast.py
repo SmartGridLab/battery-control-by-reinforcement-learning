@@ -85,7 +85,7 @@ input_dim = factor # 入力データの要素数
 output_dim = 1 # 出力データ数
 len_sequence = 48 # 時系列の長さ
 batch_size = 128 # ミニパッチサイズ
-num_of_training_epochs = 3000 # 3000 # 学習エポック数
+num_of_training_epochs = 3 # 3000 # 学習エポック数
 learning_rate = 0.0001 # 学習率
 
 # モデルの構築
