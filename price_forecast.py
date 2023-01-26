@@ -121,3 +121,17 @@ plt.legend(["RMSE"]) # 凡例
 plt.xlabel("day") # 横軸
 plt.ylabel("RMSE[yen]") # 縦軸
 plt.show()
+
+#グラフ出力
+price_result = pd.DataFrame(columns=["predict", "target"])
+
+Predict_LSTM = py.reshape(testPredict_LSTM, (1440, 1))
+Predict_LSTM = pd.DataFrame(Predict_LSTM)
+
+target = py.reshape(test_target_data, (1440, 1))
+target = pd.DataFrame(target)
+
+price_result[["predict"]] = Predict_LSTM
+price_result[["target"]] = target
+
+price_result.to_csv('predicd_price.csv')
