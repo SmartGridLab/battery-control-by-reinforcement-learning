@@ -79,8 +79,6 @@ def qd_test(y_true, y_pred):
     y_true = y_true[:,0]
     y_u = y_pred[:,0]
     y_l = y_pred[:,1]
-
-    #print(y_true)
     
     K_HU = tf.maximum(0.,tf.sign(y_u - y_true))
     K_HL = tf.maximum(0.,tf.sign(y_true - y_l))
@@ -295,7 +293,6 @@ for i in range(p.N_VERIFICATION):
             #delete dummy data
             testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
-
 
 
 #testcsv_[["alpha", "bata"]] = 0
