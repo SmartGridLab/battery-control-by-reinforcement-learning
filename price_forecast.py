@@ -89,6 +89,7 @@ num_of_training_epochs = 3 # 3000 # 学習エポック数
 learning_rate = 0.0001 # 学習率
 
 # モデルの構築
+
 LSTM_hidden_units_1 = 3 # 256 # 隠れ層（第一層）のユニット数
 LSTM_hidden_units_2 = 3 # 128 # 隠れ層（第二層）のユニット数
 LSTM_hidden_units_3 = 3 # 64 # 隠れ層（第三層）のユニット数
@@ -121,3 +122,21 @@ plt.legend(["RMSE"]) # 凡例
 plt.xlabel("day") # 横軸
 plt.ylabel("RMSE[yen]") # 縦軸
 plt.show()
+
+#グラフ出力
+price_result = pd.DataFrame(columns=["predict", "target"])
+
+Predict_LSTM = py.reshape(testPredict_LSTM, (1440, 1))
+Predict_LSTM = pd.DataFrame(Predict_LSTM)
+
+target = py.reshape(test_target_data, (1440, 1))
+target = pd.DataFrame(target)
+
+price_result[["predict"]] = Predict_LSTM
+price_result[["target"]] = target
+
+price_result.to_csv('predicd_price.csv')
+
+#日付は下の形の配列を作って変形するのがアリ？
+#1.1.1....1
+#2.2.2....2
