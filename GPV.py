@@ -2,8 +2,7 @@ import os
 import math
 import subprocess
 
-from datetime import datetime
-from datetime import timedelta
+import datetime
 import pygrib
 import pandas as pd
 import numpy as np
@@ -14,9 +13,14 @@ import numpy as np
 #dataname_base3 = "_grib2.bin"
 
 #UTC時刻で入力
-data_year = "2023"
-data_date = "0129"
-data_time = "120000"
+#today = datetime.date.today()
+#data_year = (today - datetime.timedelta(days=1)).strftime('%Y')
+#data_date = (today - datetime.timedelta(days=1)).strftime('%m%d')
+data_year = 2023    #仮入力
+data_date = "0129"    #仮入力
+
+data_time = "120000"    #固定
+time_diff = datetime.timedelta(hours=9) #時差
 
 
 #ダウンロード用コード
@@ -34,11 +38,6 @@ lon2 = lon + 0.03125
 
 
 
-#ファイルオープン
-#gpv_file = pygrib.open(dataname_base1 + data_year + data_date + data_time + dataname_base2 + data_range + dataname_base3)
-
-time_diff = timedelta(hours=9) #時差
-
 #---------------------------------------------------------------------------------------------------------
 #パラメータ定義
 #prmsl = gpv_file.select(parameterName='Pressure reduced to MSL')            #[0] 海面更正気圧[Pa]
@@ -55,9 +54,10 @@ time_diff = timedelta(hours=9) #時差
 #dswrf = gpv_file.select(parameterName='Downward short-wave radiation flux') #[11] 下向き短波放射フラックス[W/m^2]
 #---------------------------------------------------------------------------------------------------------
 
-
+#最終データの型枠
 df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature","u-component of wind","v-component of wind","Relative humidity","Total cloud cover"])
 
+#関数：データ取得
 def data_acquisition(data_year, data_date, data_time, data_range):
 
     ## GRIB2ファイルを読み込む
@@ -66,7 +66,7 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     dataname_base3 = "_grib2.bin"
 
     #ファイルオープン
-    gpv_file = pygrib.open(dataname_base1 + data_year + data_date + data_time + dataname_base2 + data_range + dataname_base3)
+    gpv_file = pygrib.open(dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3)
 
     #ファイル抽出
     p_messages  = gpv_file.select(parameterName='Pressure')
@@ -120,38 +120,42 @@ def data_acquisition(data_year, data_date, data_time, data_range):
 
     return df_
 
-#16-33時間後(27-33時間後)データ
+##16-33時間後(27-33時間後)データ
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "16-33")
 df_.drop(range(0, 11),inplace=True)  #16-26時間後(対象日前日13:00～23:00)を削除
-df_T = df_.T
-list = (1, 3, 5, 7, 9, 11, 13)
-for i in list:
+df_T = df_.T    #転置
+list = (1, 3, 5, 7, 9, 11, 13)  #空の列挿入(毎時30分用)
+for i in list:  
     df_T.insert(i, i + 0.5, np.nan)
-df_ = df_T.T
+df_ = df_T.T    #転置
 df = pd.concat([df, df_], axis=0)
 
-#34-39時間後データ
+
+##34-39時間後データ
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "34-39")
-df_T = df_.T
-list = (1, 3, 5, 7, 9, 11)
+df_T = df_.T    #転置
+list = (1, 3, 5, 7, 9, 11)  #空の列挿入(毎時30分用)
 for i in list:
     df_T.insert(i, i + 100.5, np.nan)
-df_ = df_T.T
+df_ = df_T.T    #転置
 df = pd.concat([df, df_], axis=0)
 
-#40-51時間後データ
+
+##40-51時間後データ
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "40-51")
 
-df_T = df_.T
-list = (1, 3, 5, 7, 9, 11, 13, 15 ,17, 19, 21)
+df_T = df_.T    #転置
+list = (1, 3, 5, 7, 9, 11, 13, 15 ,17, 19, 21)  #空の列挿入(毎時30分用)
 for i in list:
     df_T.insert(i, i + 200.5, np.nan)
-df_ = df_T.T
+df_ = df_T.T    #転置
 df = pd.concat([df, df_], axis=0)
+
 
 #index整理・線形補間
 df = df.reset_index(drop=True)
 df = df.interpolate()
+
 
 ##最終調整
 #23.5時の値の処理
