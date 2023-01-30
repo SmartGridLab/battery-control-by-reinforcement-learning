@@ -7,11 +7,6 @@ import pygrib
 import pandas as pd
 import numpy as np
 
-## GRIB2ファイルを読み込む
-#dataname_base1 = "Z__C_RJTD_"
-#dataname_base2 = "_MSM_GPV_Rjp_Lsurf_FH"
-#dataname_base3 = "_grib2.bin"
-
 #UTC時刻で入力
 #today = datetime.date.today()
 #data_year = (today - datetime.timedelta(days=1)).strftime('%Y')
