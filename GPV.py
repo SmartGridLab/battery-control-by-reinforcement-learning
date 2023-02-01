@@ -1,6 +1,5 @@
-import os
 import math
-import subprocess
+import urllib.request
 
 import datetime
 import pygrib
@@ -9,11 +8,11 @@ import numpy as np
 
 #UTC時刻で入力
 today = datetime.date.today()
-#data_year = (today - datetime.timedelta(days=1)).strftime("%Y")
-#data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")
+#data_year = (today - datetime.timedelta(days=1)).strftime("%Y")    #ローカル環境時に使用
+#data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")  #ローカル環境時に使用
 data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
-data_year = 2023    #仮入力
-data_date = "0129"    #仮入力
+data_year = 2023    #仮入力開発環境時に使用
+data_date = "0129"    #仮入力開発環境時に使用
 
 data_time = "120000"    #固定
 time_diff = datetime.timedelta(hours=9) #時差
@@ -29,7 +28,7 @@ lon1 = lon - 0.03125
 lon2 = lon + 0.03125
 
 print("今日の日付:" + str(today))
-print(str(data_date1) + " 1200(UTC)公開のデータを取得")
+#print(str(data_date1) + " 1200(UTC)公開のデータを取得")
 print("緯度 : " + str(lat))
 print("経度 : " + str(lon) + "\n")
 
@@ -65,14 +64,12 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     file_name = dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3
 
     #ファイルダウンロード
-    cwd = os.getcwd()
-    #url_surf = "'http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_year) + "/" + str(data_date1) + "/" + file_name
-    #subprocess.run(['curl', '-O', url_surf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=cwd)
+    #url_surf = "http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_date1) + "/" + file_name　#ローカル環境時に使用
+    #urllib.request.urlretrieve(url_surf, file_name)    #ローカル環境時に使用
     #print(data_range +"時間後予測のダウンロード完了")
 
 
     #ファイルオープン
-    #file_surf = os.path.join(cwd, file_name)
     gpv_file = pygrib.open(file_name)
     print(data_range +"時間後予測を取得開始")
 
