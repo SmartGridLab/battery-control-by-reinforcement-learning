@@ -1,4 +1,4 @@
-import math
+#import math
 import urllib.request
 
 import datetime
@@ -6,11 +6,13 @@ import pygrib
 import pandas as pd
 import numpy as np
 
+print("\n\n---GPVデータ取得---\n\n")
+
 #UTC時刻で入力
-today = datetime.date.today()
+today = datetime.date.today().strftime("%Y/%m/%d")
 #data_year = (today - datetime.timedelta(days=1)).strftime("%Y")    #ローカル環境時に使用
 #data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")  #ローカル環境時に使用
-data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
+#data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
 data_year = 2023    #仮入力開発環境時に使用
 data_date = "0129"    #仮入力開発環境時に使用
 
@@ -66,12 +68,13 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     #ファイルダウンロード
     #url_surf = "http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_date1) + "/" + file_name　#ローカル環境時に使用
     #urllib.request.urlretrieve(url_surf, file_name)    #ローカル環境時に使用
-    #print(data_range +"時間後予測のダウンロード完了")
+    #print(data_range +"時間後予測 ダウンロード完了")
 
 
     #ファイルオープン
     gpv_file = pygrib.open(file_name)
-    print(data_range +"時間後予測を取得開始")
+    print(data_range +"時間後予測  取得開始...", end = "")
+    
 
     #ファイル抽出
     p_messages  = gpv_file.select(parameterName='Pressure')
@@ -127,7 +130,7 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     df_ = pd.concat([df_, df2], axis=1)
     df_.fillna(0)
 
-    print("取得完了")
+    print("完了\n")
 
     return df_
 
