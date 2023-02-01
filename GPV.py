@@ -8,18 +8,15 @@ import pandas as pd
 import numpy as np
 
 #UTC時刻で入力
-#today = datetime.date.today()
-#data_year = (today - datetime.timedelta(days=1)).strftime('%Y')
-#data_date = (today - datetime.timedelta(days=1)).strftime('%m%d')
+today = datetime.date.today()
+#data_year = (today - datetime.timedelta(days=1)).strftime("%Y")
+#data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")
+data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
 data_year = 2023    #仮入力
 data_date = "0129"    #仮入力
 
 data_time = "120000"    #固定
 time_diff = datetime.timedelta(hours=9) #時差
-
-
-#ダウンロード用コード
-#その時が来たら考える
 
 #緯度指定
 lat =36.106643
@@ -31,6 +28,10 @@ lat2 = lat + 0.025
 lon1 = lon - 0.03125
 lon2 = lon + 0.03125
 
+print("今日の日付:" + str(today))
+print(str(data_date1) + " 1200(UTC)公開のデータを取得")
+print("緯度 : " + str(lat))
+print("経度 : " + str(lon) + "\n")
 
 
 #---------------------------------------------------------------------------------------------------------
@@ -60,8 +61,20 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     dataname_base2 = "_MSM_GPV_Rjp_Lsurf_FH"
     dataname_base3 = "_grib2.bin"
 
+    #ファイル名
+    file_name = dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3
+
+    #ファイルダウンロード
+    cwd = os.getcwd()
+    #url_surf = "'http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_year) + "/" + str(data_date1) + "/" + file_name
+    #subprocess.run(['curl', '-O', url_surf], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=cwd)
+    #print(data_range +"時間後予測のダウンロード完了")
+
+
     #ファイルオープン
-    gpv_file = pygrib.open(dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3)
+    #file_surf = os.path.join(cwd, file_name)
+    gpv_file = pygrib.open(file_name)
+    print(data_range +"時間後予測を取得開始")
 
     #ファイル抽出
     p_messages  = gpv_file.select(parameterName='Pressure')
@@ -116,6 +129,8 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     df_ = pd.concat([df_validdata, df1], axis=1)
     df_ = pd.concat([df_, df2], axis=1)
     df_.fillna(0)
+
+    print("取得完了")
 
     return df_
 
@@ -174,4 +189,5 @@ df.drop(48,inplace=True)
 
 #出力
 df.to_csv('weather_data.csv')
-print(df)
+print("\n結果出力完了")
+#print(df)
