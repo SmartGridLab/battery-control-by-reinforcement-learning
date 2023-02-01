@@ -187,4 +187,4 @@ df.drop(48,inplace=True)
 #出力
 df.to_csv('weather_data.csv')
 print("\n結果出力完了")
-#print(df)
+print(df)
