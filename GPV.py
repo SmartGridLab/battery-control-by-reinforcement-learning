@@ -50,7 +50,7 @@ lon2 = lon + 0.03125
 #---------------------------------------------------------------------------------------------------------
 
 #最終データの型枠
-df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature","u-component of wind","v-component of wind","Relative humidity","Total cloud cover"])
+df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature","u-component of wind","v-component of wind","Relative humidity", "Total cloud cover", "Total precipitation"])
 
 #関数：データ取得
 def data_acquisition(data_year, data_date, data_time, data_range):
@@ -70,6 +70,7 @@ def data_acquisition(data_year, data_date, data_time, data_range):
     vw_messages = gpv_file.select(parameterName='v-component of wind')
     rh_messages  = gpv_file.select(parameterName='Relative humidity')
     tcc_messages  = gpv_file.select(parameterName='Total cloud cover')
+    tp_messages  = gpv_file.select(parameterName='Total precipitation')
     dswrf_messages  = gpv_file.select(parameterName='Downward short-wave radiation flux')
 
     #時系列取り出し・データ分解
@@ -99,8 +100,11 @@ def data_acquisition(data_year, data_date, data_time, data_range):
         ],
         "Total cloud cover":[
             msg.data(lat1, lat2, lon1, lon2)[0][0][0] for msg in tcc_messages
+        ],
+        "Total precipitation":[
+            msg.data(lat1, lat2, lon1, lon2)[0][0][0] for msg in tp_messages
         ]
-    })
+   })
 
     df2 = pd.DataFrame({
         "radiation flux":[
