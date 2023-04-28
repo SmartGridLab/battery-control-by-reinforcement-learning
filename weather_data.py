@@ -6,6 +6,7 @@ import pygrib
 import pandas as pd
 import numpy as np
 
+
 print("\n\n---気象予報データ抽出プログラム開始---\n\n")
 
 #UTC時刻で入力
