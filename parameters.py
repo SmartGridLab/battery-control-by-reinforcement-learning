@@ -8,7 +8,7 @@ LR = 0.001 # learnning rate of NN
 SEED = 2021 # seed of random numbers
 
 # Simulation conditons
-DAYS = 3 # days to be forecasted
+DAYS = 2 # days to be forecasted
 N_VERIFICATION = 3 # the number of verification; to examine the variability of the modeling error
 
 # For Quantile regression

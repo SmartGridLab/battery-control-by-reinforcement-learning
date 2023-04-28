@@ -6,7 +6,7 @@ import pygrib
 import pandas as pd
 import numpy as np
 
-print("\n\n---GPVデータ取得---\n\n")
+print("\n\n---気象予報データ抽出プログラム開始---\n\n")
 
 #UTC時刻で入力
 today = datetime.date.today()
@@ -191,4 +191,5 @@ df.drop(48,inplace=True)
 #出力
 df.to_csv('weather_data.csv')
 print("\n結果出力完了")
-print(df)
+#print(df)
+print("\n\n---気象予報データ抽出プログラム終了---\n\n")

@@ -18,6 +18,9 @@ import keras
 import tensorflow as tf
 import properscoring as prscore
 
+#スタート
+print("\n\n---PV出力予測プログラム開始---\n\n")
+
 # Locally developed modules
 import parameters as p
 
@@ -307,3 +310,6 @@ result.to_csv('LUBEresult.csv')
 pred,result = quantile_regression_result(p.NUMBER_OF_FEATURES, p.SEED_QR, p.N_VERIFICATION,
                                          p.LOWER_ALPHA, p.UPPER_ALPHA, p.LR, p.M_TR, p.M_LE, p.N_E)
 result.to_csv('QRresult.csv')
+
+#終了
+print("\n\n---PV出力予測プログラム終了---\n\n")
