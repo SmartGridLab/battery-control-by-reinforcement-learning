@@ -205,7 +205,9 @@ def quantile_regression_result(NUMBER_OF_FEATURES, SEED_QR, N_VERIFICATION,
             crps.append(CRPS)
         predictions["crps"] = crps
         predictions["features"] = NUMBER_OF_FEATURES
-        pred = pred.append(predictions)
+        #pred = pred.append(predictions)
+        pred = pd.concat([pred, predictions])
+
 
         CRPS,MPIW,PICP,Day = [],[],[],[]
         for day,group in predictions.groupby("day"):
@@ -220,7 +222,9 @@ def quantile_regression_result(NUMBER_OF_FEATURES, SEED_QR, N_VERIFICATION,
 
         scores = pd.DataFrame(list(zip(Day,MPIW,PICP,CRPS)),columns=["day","MPIW","PICP","CRPS"])
         scores["features"] = NUMBER_OF_FEATURES
-        result = result.append(scores)
+        #result = result.append(scores)
+        result = pd.concat([result, scores])
+        
     return pred,result
 
 # Specify the target
