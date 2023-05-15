@@ -18,6 +18,9 @@ import keras
 import tensorflow as tf
 import properscoring as prscore
 
+#スタート
+print("\n\n---PV出力予測プログラム開始---\n\n")
+
 # Locally developed modules
 import parameters as p
 
@@ -202,7 +205,9 @@ def quantile_regression_result(NUMBER_OF_FEATURES, SEED_QR, N_VERIFICATION,
             crps.append(CRPS)
         predictions["crps"] = crps
         predictions["features"] = NUMBER_OF_FEATURES
-        pred = pred.append(predictions)
+        #pred = pred.append(predictions)
+        pred = pd.concat([pred, predictions])
+
 
         CRPS,MPIW,PICP,Day = [],[],[],[]
         for day,group in predictions.groupby("day"):
@@ -217,7 +222,9 @@ def quantile_regression_result(NUMBER_OF_FEATURES, SEED_QR, N_VERIFICATION,
 
         scores = pd.DataFrame(list(zip(Day,MPIW,PICP,CRPS)),columns=["day","MPIW","PICP","CRPS"])
         scores["features"] = NUMBER_OF_FEATURES
-        result = result.append(scores)
+        #result = result.append(scores)
+        result = pd.concat([result, scores])
+        
     return pred,result
 
 # Specify the target
@@ -307,3 +314,6 @@ result.to_csv('LUBEresult.csv')
 pred,result = quantile_regression_result(p.NUMBER_OF_FEATURES, p.SEED_QR, p.N_VERIFICATION,
                                          p.LOWER_ALPHA, p.UPPER_ALPHA, p.LR, p.M_TR, p.M_LE, p.N_E)
 result.to_csv('QRresult.csv')
+
+#終了
+print("\n\n---PV出力予測プログラム終了---\n\n")
