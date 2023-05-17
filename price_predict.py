@@ -59,7 +59,7 @@ model.fit(X, y, epochs=epochs, verbose=0)
 predictions = model.predict(pv_predict[parameters].values)
 
 # 予測結果の保存
-pred_df = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","price","imbalance"])
+pred_df = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","price","imbalance"])
 pred_df[["price","imbalance"]] = predictions
 
 pred_df[["year","month","hour","day","hourSin","hourCos"]] = weather_data[["year","month","hour","day","hourSin","hourCos"]]
