@@ -1,6 +1,6 @@
 # README  
 プログラム構成
-![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/6b1406c4-b291-4c5e-8de0-7dd5a3887946)
+![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/4200cdc1-e784-4773-bab7-e0e38e0bf191)
 
 ファイル名表
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/973445c6-0a90-44ee-b8ce-6ee51c32daae)
