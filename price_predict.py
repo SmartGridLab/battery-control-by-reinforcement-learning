@@ -1,139 +1,80 @@
-import tensorflow as tf
-from tensorflow import keras
-import numpy as py
 import pandas as pd
+import numpy as np
 import math as ma
 import matplotlib.pyplot as plt
-
-from matplotlib.backends.backend_pdf import PdfPages
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from keras.optimizers import Adam
-from sklearn.metrics import mean_squared_error
-from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from tensorflow import keras
 
-##グラフ作成
-def graph(time_stamp, pred, target, name):
-    Figure = plt.figure()
-    graph_legend  = "Predict(" + name + ")"
-    plt.plot(time_stamp, pred, "blue")
-    plt.plot(time_stamp, target, "red")
-    plt.legend([graph_legend, "target"]) # 凡例
-    plt.xlabel("time [hour]") # 横軸
-    plt.ylabel("price [yen]") # 縦軸
-    plt.close()
-    
-    return Figure
-        
-## RMSE
-def RMSE(pred, Predict, name):
-    new_name = "Score(" + name + "): %.2f RMSE"
-    testScore = ma.sqrt(mean_squared_error(pred[:,0], Predict[:,0]))
-    return testScore
+#スタート
+print("\n\n---電力価格予測プログラム開始---\n\n")
 
-##データのロード
-train_data = pd.read_csv("input_data2022.csv")
-test_data = pd.read_csv("pv_predict.csv")
+# データの読み込み
+input_data = pd.read_csv("input_data2022.csv")
+weather_data = pd.read_csv("weather_data.csv")
+pv_predict = pd.read_csv("pv_predict.csv")
 
+#時系列のsin, cosを追加
+hourSin = np.sin(weather_data["hour"]/12*(ma.pi))
+hourCos = np.cos(weather_data["hour"]/12*(ma.pi))
+time_data = pd.concat([hourSin, hourCos], axis=1)
+name = ['hourSin', 'hourCos'] # 列名
+time_data.columns = name # 列名付与
+#元のデータに統合
+weather_data = pd.concat([weather_data, time_data], axis=1)
 
-##データの整理
-factor = 3 # 入力データの要素数
-train_days = 365 # 学習データの日数
-test_days = 1 # テストデータの日数
-pred_days = 1 # 予測データの日数
-time_stamps = train_data["hour"]
-time_stamp = time_stamps[:48]
-row = len(train_data) #　PV_dataの行数
-col = len(train_data.columns)#　PV_dataの列数
+# 使用するパラメータ
+#parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
+              #'radiation flux', 'pressure', 'relative humidity', 'yearSin', 'yearCos', 'monthSin',
+              #'monthCos', 'hourSin', 'hourCos', 'PVout']
+parameters = ['radiation flux', 'PVout', 'temperature', 'hourCos']           
+predict_parameters = ['price', 'imbalance']
 
+# データの前処理
+scaler = MinMaxScaler()
+input_data[parameters] = scaler.fit_transform(input_data[parameters])
+pv_predict[parameters] = scaler.transform(pv_predict[parameters])
 
+# 学習データとターゲットデータの作成
+X = input_data[parameters].values
+y = input_data[predict_parameters].values
 
-train_data = df[0:48*train_days] # テストデータ
-long_test_data = df[48*train_days:48*(train_days + test_days)] # 学習データ
-test_target_data = long_test_data["price"]
-test_PV_data = (long_test_data["PVout"].reset_index(drop=True))/2 # テスト時の目標のデータ
-test_weather_data = preprocessing.minmax_scale(long_test_data["weather"])
-test_weather_data = pd.DataFrame(test_weather_data)
-test_input_data = pd.concat([long_test_data["sin"].reset_index(drop=True),test_weather_data,test_PV_data],axis=1) # テスト時の入力データ
+# モデルの定義
+hidden_units = [64, 64, 64]  # 隠れ層のユニット数
+epochs = 100  # エポック数
 
-train_target_data = train_data["price[yen/kW30m]"]
-train_PV_data = (train_data["PVout[kW]"].reset_index(drop=True))/2 # 学習時の目標のデータ
-train_weather_data = preprocessing.minmax_scale(train_data["weather"])
-train_weather_data = pd.DataFrame(train_weather_data)
-train_input_data = pd.concat([train_data["sin"].reset_index(drop=True),train_weather_data,train_PV_data],axis=1) # 学習時の入力データ
+model = keras.Sequential()
+model.add(keras.layers.Dense(hidden_units[0], activation='relu', input_shape=(len(parameters),)))
+for units in hidden_units[1:]:
+    model.add(keras.layers.Dense(units, activation='relu'))
+model.add(keras.layers.Dense(len(predict_parameters)))
 
-test_input_data = (test_input_data.values) # 型変換
-test_target_data = (test_target_data.values) # 型変換
-train_input_data = (train_input_data.values)# 型変換
-train_target_data = (train_target_data.values)# 型変換
+# モデルのコンパイル
+model.compile(optimizer='adam', loss='mse')
 
-test_input_data = test_input_data.reshape((1, 48, factor)) # 3次元に変換
-test_target_data = test_target_data.reshape((1, 48, 1)) # 3次元に変換
-train_input_data = train_input_data.reshape((365, 48, factor)) # 3次元に変換
-train_target_data = train_target_data.reshape((365, 48, 1)) # 3次元に変換
+# モデルの学習
+model.fit(X, y, epochs=epochs, verbose=0)
 
+# 予測の実行
+predictions = model.predict(pv_predict[parameters].values)
 
-## LSTM
-#ハイパーパラメータ
-input_dim = factor # 入力データの要素数
-output_dim = 1 # 出力データ数
-len_sequence = 48 # 時系列の長さ
-batch_size = 128 # ミニパッチサイズ
-num_of_training_epochs = 3 # 3000 # 学習エポック数
-learning_rate = 0.0001 # 学習率
+# 予測結果の保存
+pred_df = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","price","imbalance"])
+pred_df[["price","imbalance"]] = predictions
 
-# モデルの構築
+pred_df[["year","month","hour","day","hourSin","hourCos"]] = weather_data[["year","month","hour","day","hourSin","hourCos"]]
+pred_df[["upper","lower","PVout"]] = pv_predict[["upper","lower","PVout"]]
+pred_df.to_csv("price_predict.csv", index=False)
 
-LSTM_hidden_units_1 = 3 # 256 # 隠れ層（第一層）のユニット数
-LSTM_hidden_units_2 = 3 # 128 # 隠れ層（第二層）のユニット数
-LSTM_hidden_units_3 = 3 # 64 # 隠れ層（第三層）のユニット数
-LSTM_model = Sequential()
-LSTM_model.add(LSTM(LSTM_hidden_units_1, input_shape=(len_sequence, input_dim), activation = "relu", return_sequences=True)) # 1層目
-LSTM_model.add(LSTM(LSTM_hidden_units_2, input_shape=(len_sequence, input_dim), activation = "relu", return_sequences=True)) # 2層目
-LSTM_model.add(LSTM(LSTM_hidden_units_3, input_shape=(len_sequence, input_dim), activation = "relu", return_sequences=True)) # 3層目
-LSTM_model.add(Dense(output_dim))
-LSTM_model.compile(loss="mean_squared_error", optimizer=Adam(lr=learning_rate))
-
-# 学習
-LSTM_model.fit(train_input_data, train_target_data, batch_size=batch_size, epochs=num_of_training_epochs, validation_split=0.001, verbose=0)
-LSTM_model.save("LSTM_model_price")
-
-# 試験
-score = [] # errorを格納する配列
-target=test_target_data
-load_model_name = "LSTM_model_price" # LSTM_model or NN_model # cloudy_data sunny_data dataset_2019-2021
-LSTM_model = keras.models.load_model(load_model_name)
-testPredict_LSTM = LSTM_model.predict(test_input_data)
-
-# 予測のRMSEを一日ごとに計算
-#for x in range(0, 30):
-    #testRMSE = ma.sqrt(mean_squared_error(target[:,x], testPredict_LSTM[:,x]))
-    #score.append(testRMSE)
-
-# Graph描写
-#plt.plot(score, "red", drawstyle="steps-post")
-#plt.legend(["RMSE"]) # 凡例
-#plt.xlabel("day") # 横軸
-#plt.ylabel("RMSE[yen]") # 縦軸
+# グラフの描画
+#plt.figure(figsize=(10, 5))
+#plt.plot(pv_predict['hour'], predictions[:, 0], label='price')
+#plt.plot(pv_predict['hour'], predictions[:, 1], label='imbalance')
+#plt.xlabel('hour')
+#plt.ylabel('value')
+#plt.title('Price and Imbalance Prediction')#
+#plt.legend()
 #plt.show()
 
-#グラフ出力
-price_result = pd.DataFrame(columns=["predict", "target"])
-
-Predict_LSTM = py.reshape(testPredict_LSTM, (48, 1))
-Predict_LSTM = pd.DataFrame(Predict_LSTM)
-
-target = py.reshape(test_target_data, (48, 1))
-target = pd.DataFrame(target)
-
-price_result[["predict"]] = Predict_LSTM
-price_result[["target"]] = target
-
-print(price_result)
-price_result.to_csv('predicd_price.csv')
-
-#日付は下の形の配列を作って変形するのがアリ？
-#1.1.1....1
-#2.2.2....2
+#終了
+print("\n\n---電力価格予測プログラム終了---\n\n")
