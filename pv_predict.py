@@ -150,10 +150,10 @@ feature_gain = get_feature_gain()
 # Prepare spaces to be stored the results
 result = pd.DataFrame(columns=["number_of_features","day","Loss","PICP","MPIW"])
 pred = pd.DataFrame(columns=["number_of_features","day","upper","lower"])
-testcsv = pd.DataFrame(columns=["year","month","day","hour","temperature","total precipitation","price","sin","cos","Forecast","lower","upper","middle","forecast_price","alpha","bata"])
+testcsv = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature"])
 
 
-# Prepare time-series data
+# Prepare time-series dat
 date_base = datetime.date(2023, 1, 30)
 #実行環境
 #date_base = datetime.date.today()
@@ -199,39 +199,27 @@ for i in range(p.N_VERIFICATION):
         #result = pd.concat([result,scores],axis=0)
         
         #print(day, i)
-        testcsv_ = pd.DataFrame(columns=["year","month","day","upper","lower","middle","hour","dummy1"])
+        testcsv_ = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature"])
         if i == (p.N_VERIFICATION-1):
             testcsv_[["upper","lower"]] = y_pred
-            #y_middle = np.mean(y_pred, axis=1, keepdims=True)
-            #testcsv_[["middle",]] = y_middle
-            #testcsv_[["PVout_true","dummy1"]] = y_test
             testcsv_[["year","month","day"]] = date_output.year,date_output.month,date_output.day
             testcsv_[["hour"]] = time
-            testcsv_[["sin"]] = time_sin
-            testcsv_[["cos"]] = time_cos
-            testcsv_[["dummy1"]] = df_w[["radiation flux"]]
+            testcsv_[["hourSin"]] = time_sin
+            testcsv_[["hourCos"]] = time_cos
+            testcsv_[["radiation flux"]] = df_w[["radiation flux"]]
+
 
             #modify upper and lower
-            #testcsv_.loc[testcsv_['hour'] > 19.5, 'upper'] = 0
-            #testcsv_.loc[testcsv_['hour'] > 19.5, 'lower'] = 0
-            #testcsv_.loc[testcsv_['hour'] < 4, 'upper'] = 0
-            #testcsv_.loc[testcsv_['hour'] < 4, 'lower'] = 0
-
-            testcsv_.loc[testcsv_['dummy1'] <= 0, 'lower'] = 0
-            testcsv_.loc[testcsv_['dummy1'] <= 0, 'upper'] = 0
-
             testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
             testcsv_.loc[testcsv_['upper'] < 0, 'upper'] = 0
-            testcsv_.loc[testcsv_['middle'] < 0, 'middle'] = 0
-            #testcsv_.loc[testcsv_['lower'] > testcsv_['upper'], 'lower'] = testcsv_['upper']
-            #testcsv_.loc[testcsv_['upper'] > 2, 'upper'] = 2
 
-            testcsv_["middle"] = (testcsv_["upper"] + testcsv_["lower"]) / 2
+            #lower, upper中央値算出
+            testcsv_["PVout"] = (testcsv_["upper"] + testcsv_["lower"]) / 2
 
             
 
             #delete dummy data
-            testcsv_.pop('dummy1')
+            #testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
 
 
