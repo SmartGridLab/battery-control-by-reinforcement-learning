@@ -102,8 +102,6 @@ def train_test(day,use_col):
     return train_x,test_x,train_y,test_y
 
 
-
-#精度評価部分
 # get the loss function of neural network in LUBE
 def qd_objective(y_true, y_pred):
     y_true = y_true[:,0]
@@ -181,24 +179,13 @@ for i in range(p.N_VERIFICATION):
         model = get_LUBE(p.NUMBER_OF_FEATURES,p.LR,p.BETA)
         history = model.fit(X_train, y_train, epochs=p.EPOCHS, batch_size=n_, verbose=0,  validation_split=0.)
         y_pred = model.predict(X_test, verbose=0)
-
-
-        #精度評価部分
-        #Loss_S_,PICP_S_,MPIW_c_ = qd_test(y_test,y_pred)
         
         # organize forecast results
         pred_[["upper","lower"]] = y_pred
         pred_[["number_of_features","day"]] = p.NUMBER_OF_FEATURES,day
         pred_["verification"] = i
         pred = pd.concat([pred,pred_],axis=0)
-
-        #精度評価部分
-        #scores = pd.DataFrame([Loss_S_,PICP_S_,MPIW_c_],index=["Loss","PICP","MPIW"]).T
-        #scores[["number_of_features","day"]] = p.NUMBER_OF_FEATURES,day
-        #scores["verification"] = i
-        #result = pd.concat([result,scores],axis=0)
-        
-        #print(day, i)
+    
         testcsv_ = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature"])
         if i == (p.N_VERIFICATION-1):
             testcsv_[["upper","lower"]] = y_pred
@@ -207,7 +194,6 @@ for i in range(p.N_VERIFICATION):
             testcsv_[["hourSin"]] = time_sin
             testcsv_[["hourCos"]] = time_cos
             testcsv_[["radiation flux"]] = df_w[["radiation flux"]]
-
 
             #modify upper and lower
             testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
@@ -222,17 +208,7 @@ for i in range(p.N_VERIFICATION):
             #testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
 
-
-#testcsv_[["alpha", "bata"]] = 0
-
 testcsv.to_csv('pv_predict.csv')
-
-#精度評価部分
-#result.to_csv('LUBEresult.csv')
-
-#pred,result = quantile_regression_result(p.NUMBER_OF_FEATURES, p.SEED_QR, p.N_VERIFICATION,
-                                         #p.LOWER_ALPHA, p.UPPER_ALPHA, p.LR, p.M_TR, p.M_LE, p.N_E)
-#result.to_csv('QRresult.csv')
 
 #終了
 print("\n\n---PV出力予測プログラム終了---\n\n")
