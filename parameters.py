@@ -3,7 +3,7 @@ ALPHA_ = 0.05 #　measure of the confidence level of the prediction intervals
 SOFTEN_ = 160 # parameter of Loss to smooth the NN learning curve
 N_LAMBDA = 5 # parameter of Loss that ratios MPIW to PICP
 BETA = 0.01 # the exponential decay rate for the 1st moment estimates in Adam optimization
-EPOCHS = 300 # number of NN learning times
+EPOCHS = 100 # number of NN learning times
 LR = 0.001 # learnning rate of NN
 SEED = 2021 # seed of random numbers
 
