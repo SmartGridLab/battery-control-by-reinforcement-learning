@@ -470,7 +470,7 @@ class ESS_Model(gym.Env):
             elif PVout == PVtrue:
                 imbalance_PV -= 0
 
-            if x == 48:
+            if x == 48: #24:00の処理
                 imb_all.append(imbalance)
                 sell_all.append(total_profit[0])
                 sell_PV.append(PV_profit_true[0])

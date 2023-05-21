@@ -11,17 +11,7 @@ print("\n\n---電力価格予測プログラム開始---\n\n")
 
 # データの読み込み
 input_data = pd.read_csv("input_data2022.csv")
-weather_data = pd.read_csv("weather_data.csv")
 pv_predict = pd.read_csv("pv_predict.csv")
-
-#時系列のsin, cosを追加
-hourSin = np.sin(weather_data["hour"]/12*(ma.pi))
-hourCos = np.cos(weather_data["hour"]/12*(ma.pi))
-time_data = pd.concat([hourSin, hourCos], axis=1)
-name = ['hourSin', 'hourCos'] # 列名
-time_data.columns = name # 列名付与
-#元のデータに統合
-weather_data = pd.concat([weather_data, time_data], axis=1)
 
 # 使用するパラメータ
 #parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
@@ -62,7 +52,7 @@ predictions = model.predict(pv_predict[parameters].values)
 pred_df = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","price","imbalance"])
 pred_df[["price","imbalance"]] = predictions
 
-pred_df[["year","month","hour","day","hourSin","hourCos"]] = weather_data[["year","month","hour","day","hourSin","hourCos"]]
+pred_df[["year","month","hour","day","hourSin","hourCos"]] = pv_predict[["year","month","hour","day","hourSin","hourCos"]]
 pred_df[["upper","lower","PVout"]] = pv_predict[["upper","lower","PVout"]]
 pred_df.to_csv("price_predict.csv", index=False)
 
@@ -72,7 +62,7 @@ pred_df.to_csv("price_predict.csv", index=False)
 #plt.plot(pv_predict['hour'], predictions[:, 1], label='imbalance')
 #plt.xlabel('hour')
 #plt.ylabel('value')
-#plt.title('Price and Imbalance Prediction')#
+#plt.title('Price and Imbalance Prediction')
 #plt.legend()
 #plt.show()
 

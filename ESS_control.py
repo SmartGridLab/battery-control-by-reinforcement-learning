@@ -43,6 +43,7 @@ class ESS_Model(gym.Env):
         PV_out_all = PV_data[self.PV]
         PV_true_all = PV_data["PVout_true"]
         # 学習(テスト)用データ作成
+        #+2, +3はエラー回避用の定数、今後修正
         if self.mode == "train":
             price_data = price_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
             price_true_data = true_all_price[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
@@ -470,7 +471,7 @@ class ESS_Model(gym.Env):
             elif PVout == PVtrue:
                 imbalance_PV -= 0
 
-            if x == 48:
+            if x == 48:#24:00の処理
                 imb_all.append(imbalance)
                 sell_all.append(total_profit[0])
                 sell_PV.append(PV_profit_true[0])
@@ -533,7 +534,7 @@ class ESS_Model(gym.Env):
                 obs = pd.Series(obs)
                 obs = torch.tensor(obs.values.astype(np.float64))
 
-action_space = 2 #アクションの数(現状は48の約数のみ)
+action_space = 2 #アクションの数(現状は48の約数のみ)　#後で調整
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 episode = 3 # 10000000  # 学習回数
 
