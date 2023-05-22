@@ -11,7 +11,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
 from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
-print("\n\n---充放電計画策定プログラム開始---\n\n")
+print("\n---充放電計画策定プログラム開始---\n")
 
 warnings.simplefilter('ignore')
 
@@ -33,6 +33,7 @@ class ESS_Model(gym.Env):
             self.last_day = self.test_days
         self.all_rewards = []
         #データのロード
+        print("-データロード-")
         input_data = pd.read_csv("input_data2022.csv")
         predict_data = pd.read_csv("price_predict.csv")
 
@@ -42,15 +43,35 @@ class ESS_Model(gym.Env):
         true_all_price = input_data["price"]
         imbalance_all = predict_data["imbalance"]
         true_imbalance_all = input_data["imbalance"]
-        PV_out_all = predict_data["PVout"]
+        self.PV = PV_parameter #Upper, lower, PVoutの選択用
+        PV_out_all = predict_data[self.PV]
         PV_true_all = input_data["PVout"]
 
         #データの作成
+        print("-データ作成-")
+        if self.mode == "train":
+            price_data = price_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+            price_true_data = true_all_price[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+            PV_out_data = PV_out_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+            PV_true_data = PV_true_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+            imbalance_all = imbalance_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+            true_imbalance_all = true_imbalance_all[48*pdf_day:48*(self.Train_Days + pdf_day + 2)]
+
+        elif self.mode == "test":
+            price_data = price_all[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+            price_true_data = true_all_price[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+            PV_out_data = PV_out_all[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+            PV_true_data = PV_true_all[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+            imbalance_all = imbalance_all[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+            true_imbalance_all = true_imbalance_all[48*(self.Train_Days + pdf_day):48*(self.Train_Days + pdf_day + self.test_days + 3)]
+           
+
         #numpy変換,型変換
-        self.price_all = price_all.values
+        print("-データ変換-")
+        self.price_all = price_data.values
         self.price = self.price_all.reshape((len(self.price_all), 1)) 
 
-        self.true_all_price = true_all_price.values
+        self.true_all_price = price_true_data.values
         self.true_price = self.true_all_price.reshape((len(self.true_all_price), 1)) 
 
         self.imbalance_all = imbalance_all.values
@@ -59,13 +80,12 @@ class ESS_Model(gym.Env):
         self.true_imbalance_all = true_imbalance_all.values
         self.true_imbalance = self.true_imbalance_all.reshape((len(self.true_imbalance_all), 1))
 
-        self.PV_out_all = PV_out_all.values
+        self.PV_out_all = PV_out_data.values
         self.PV_out = self.PV_out_all.reshape((len(self.PV_out_all), 1)) 
 
-        self.PV_true_all = PV_true_all.values
+        self.PV_true_all = PV_true_data.values
         self.PV_true = self.PV_true_all.reshape((len(self.PV_true_all), 1)) 
         
-        self.PV = PV_parameter
 
         #アクション
         self.ACTION_NUM = action_space #アクションの数(現状は48の約数のみ)
@@ -104,14 +124,16 @@ class ESS_Model(gym.Env):
             self.all_action.append(ACTION)
             self.all_PV_out_time.append(self.PV_out_time[0])
             self.all_PV_true_time.append(self.PV_true_time[0])
-            self.all_alpha.append(self.alpha)
-            self.all_beta.append(self.beta)
+            self.all_imbalance.append(self.imbalance)
+            self.all_imbalance_true.append(self.true_imbalance)
+
+            print(self.PV_out_time)
 
             if self.PV_out_time < 0:
                 self.PV_out_time = [0]
                     
             if self.PV_out_time < -ACTION and action < 0:
-                action_real = -self.PV_out_time[0]
+                action_real = -self.PV_out_time
             elif action > 0 and 0 < self.battery < ACTION:
                 action_real = self.battery
             elif self.battery == self.battery_MAX and action < 0:
@@ -231,8 +253,8 @@ class ESS_Model(gym.Env):
         self.all_action = []
         self.all_action_fil = []
         self.all_action_true = []
-        self.all_alpha = []
-        self.all_beta = []
+        self.all_imbalance = []
+        self.all_imbalance_true = []
         self.sell_PVout = []
         self.sell_PVtrue = []
 
@@ -256,12 +278,14 @@ class ESS_Model(gym.Env):
 
     # 入力データの設定
     def data_set(self):
+        ########################################
         self.PV_out_time = self.PV_out[48*(self.days - 1) + self.time]
         self.PV_true_time = self.PV_true[48*(self.days - 1) + self.time]
         self.price_time = self.price[48*(self.days - 1) + self.time]
         self.true_price_time = self.true_price[48*(self.days - 1) + self.time]
         self.imbalance_time = self.imbalance[48*(self.days - 1) + self.time]
         self.true_imbalance_time = self.true_imbalance[48*(self.days - 1) + self.time]
+        #########################################
         if self.mode == "train":
             if self.days != self.last_day:
                 self.MAX_price = max(self.true_price[48*(self.days - 1):48*self.days])
@@ -279,7 +303,8 @@ class ESS_Model(gym.Env):
             self.input_price_data = (self.price[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
             self.input_imbalance_data = (self.imbalance[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
 
-#ここまで直した######################################################################################
+#5/21
+# ここまで直した######################################################################################
 
     #Reward設定
     def reward_set(self, ACTION, n_battery):
@@ -416,10 +441,11 @@ class ESS_Model(gym.Env):
         self.all_action_fil = pd.DataFrame(np.ravel(self.all_action_fil))
         self.sell_PVout = pd.DataFrame(np.ravel(self.sell_PVout))
         self.sell_PVtrue = pd.DataFrame(np.ravel(self.sell_PVtrue))
-        self.all_alpha = pd.DataFrame(np.ravel(self.all_alpha))
-        self.all_beta = pd.DataFrame(np.ravel(self.all_beta))
+        self.imbalance = pd.DataFrame(np.ravel(self.all_imbalance))
+        #self.imbalance_true = pd.DataFrame(np.ravel(self.all_imbalance_true))
 
         # インバランス料金、利益等の算出(評価値の算出)
+        print("-評価値算出-")
         imbalance = 0
         total_profit = 0
         profit = 0
@@ -436,8 +462,8 @@ class ESS_Model(gym.Env):
             true_ESS_forecast_time = self.all_action_true[0][i]
             Forecast_ESS_time = self.all_action_fil[0][i]
             Forecast_PV_time = self.sell_PVout[0][i]
-            alpha = self.all_alpha[0][i]
-            beta = self.all_beta[0][i]
+            imbalance_price = self.all_imbalance[0][i]
+            #beta = self.all_beta[0][i]
             price = self.true_price[i]
             PVtrue = self.all_PV_true_time[i]
             PVout = self.all_PV_out_time[i]
@@ -457,22 +483,22 @@ class ESS_Model(gym.Env):
             # 不足
             if true_total_forecast_time < total_forecast_time_real:     
                 ###############インバランス料金変更#################       
-                imbalance -= (alpha + beta + self.K)*(abs(true_total_forecast_time - total_forecast_time_real))
+                imbalance -= imbalance_price*(abs(true_total_forecast_time - total_forecast_time_real))
             # 余剰
             elif true_total_forecast_time > total_forecast_time_real:
                 ###############インバランス料金変更#################
-                imbalance -= (alpha + beta - self.L)*(abs(true_total_forecast_time - total_forecast_time_real))
+                imbalance -= imbalance_price*(abs(true_total_forecast_time - total_forecast_time_real))
             elif true_total_forecast_time == total_forecast_time_real:
                 imbalance -= 0
                 
             # 不足
             if PVout < PVtrue:
                 ###############インバランス料金変更#################                
-                imbalance_PV -= (alpha + beta + self.K)*(abs(PVtrue - PVout))
+                imbalance_PV -= imbalance_price*(abs(PVtrue - PVout))
             # 余剰
             elif PVout > PVtrue:
                 ###############インバランス料金変更#################
-                imbalance_PV -= (alpha + beta - self.L)*(abs(PVtrue - PVout))
+                imbalance_PV -= imbalance_price*(abs(PVtrue - PVout))
             elif PVout == PVtrue:
                 imbalance_PV -= 0
 
@@ -519,6 +545,7 @@ class ESS_Model(gym.Env):
     #メインルーチン    
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
         if mode == "train":
+            print("-train-")
             #self.model = PPO("MlpPolicy", env, gamma = 0.9, verbose=0, ent_coef = 0.01, learning_rate = 0.0001, n_steps = 48, tensorboard_log="./PPO_tensorboard/") 
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
@@ -528,6 +555,7 @@ class ESS_Model(gym.Env):
         
         if mode == "test":
             #モデルのロード
+            print("-モデルロード-")
             self.model = PPO.load(model_name)
             #モデルのテスト
             obs = env.reset() # 最初のstate
@@ -543,13 +571,13 @@ action_space = 2 #アクションの数(現状は48の約数のみ)　#後で調
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 episode = 3 # 10000000  # 学習回数
 
-print("\n\n---モデル学習開始---\n\n")
+print("--モデル学習開始--")
 
 # test 1Day　Reward最大
-pdf_day = 76 #確率密度関数作成用のDay数 75 80
+pdf_day = 0 #確率密度関数作成用のDay数 75 80
 train_days = 365 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
-PV_parameter = "PVout_true" # Forecast or PVout_true (学習に使用するPV出力値の種類)
+PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類)　#今後はUpper, lower, PVout
 mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
@@ -557,17 +585,17 @@ model_name = "ESS_model" # ESS_model ESS_model_end
 env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
-print("\n\n---モデル学習終了---\n\n")
+print("--モデル学習終了--")
 
 
 
-print("\n\n---充放電計画策定開始---\n\n")
+print("--充放電計画策定開始--")
 
 # test 1Day　Reward最大
-pdf_day = 76 #確率密度関数作成用のDay数 75 80
+pdf_day = 0 #確率密度関数作成用のDay数 75 80
 train_days = 365 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
-PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
+PV_parameter = "" # Forecast or PVout_true (学習に使用するPV出力値の種類) #今後はUpper, lower, PVout
 mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
@@ -575,10 +603,10 @@ model_name = "ESS_model" # ESS_model ESS_model_end
 env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
-print("\n\n---充放電計画策定終了---\n\n")
+print("--充放電計画策定終了--")
 
 
-print("\n\n---充放電計画策定プログラム終了---\n\n")
+print("\n---充放電計画策定プログラム終了---\n")
 
 """
 # Test環境のパラメータ設定の種類:
