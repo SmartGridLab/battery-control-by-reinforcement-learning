@@ -12,6 +12,7 @@ print("\n\n---電力価格予測プログラム開始---\n\n")
 # データの読み込み
 input_data = pd.read_csv("input_data2022.csv")
 pv_predict = pd.read_csv("pv_predict.csv")
+pv_predict_ = pd.read_csv("pv_predict.csv")
 
 # 使用するパラメータ
 #parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
@@ -53,7 +54,7 @@ pred_df = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos",
 pred_df[["price","imbalance"]] = predictions
 
 pred_df[["year","month","hour","day","hourSin","hourCos"]] = pv_predict[["year","month","hour","day","hourSin","hourCos"]]
-pred_df[["upper","lower","PVout"]] = pv_predict[["upper","lower","PVout"]]
+pred_df[["upper","lower","PVout"]] = pv_predict_[["upper","lower","PVout"]]
 pred_df.to_csv("price_predict.csv", index=False)
 
 # グラフの描画
