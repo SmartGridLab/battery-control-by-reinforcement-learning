@@ -88,8 +88,7 @@ class ESS_Model(gym.Env):
         #action > 0 →放電  action < 0 →充電
         for self.time_stamp in range(0, self.ACTION_NUM):
             #開発用
-            print(self.days, self.time)
-            print(f"インデックスの範囲: 0 から {len(self.PV_out) - 1}")
+            #print(self.days, self.time)
 
             action = float(all_action[self.time_stamp])
             ACTION = action*1.5
@@ -113,7 +112,7 @@ class ESS_Model(gym.Env):
             self.all_alpha.append(self.alpha)
             self.all_beta.append(self.beta)
 
-            print(self.PV_out_time)
+            #print(self.PV_out_time)
 
             if self.PV_out_time < 0:
                 self.PV_out_time = [0]
@@ -177,6 +176,7 @@ class ESS_Model(gym.Env):
             soc_true = (self.battery_true / self.battery_MAX) # %
 
             if self.time == 48:
+                print(self.days)
                 self.days += 1
                 self.time = 0
 
@@ -311,10 +311,10 @@ class ESS_Model(gym.Env):
         if self.mode == "train":
             graph_1 = self.graph(self.all_rewards)
             pp.savefig(graph_1)
-        graph_2 = self.schedule(self.all_action,self.all_PV_true_time,self.all_soc, mode = 0)
-        graph_3 = self.schedule(self.all_action,self.all_PV_true_time,self.all_soc, mode = 1)
-        graph_4 = self.schedule(self.all_action_true,self.all_PV_true_time,self.all_soc_true, mode = 0)
-        graph_5 = self.schedule(self.all_action_true,self.all_PV_true_time,self.all_soc_true, mode = 1)
+        graph_2 = self.schedule(self.all_action,self.all_PV_true_time,self.all_soc,self.all_battery, mode = 0)
+        graph_3 = self.schedule(self.all_action,self.all_PV_true_time,self.all_soc,self.all_battery, mode = 1)
+        graph_4 = self.schedule(self.all_action_true,self.all_PV_true_time,self.all_soc_true,self.all_battery, mode = 0)
+        graph_5 = self.schedule(self.all_action_true,self.all_PV_true_time,self.all_soc_true,self.all_battery, mode = 1)
         pp.savefig(graph_2)
         pp.savefig(graph_3)
         pp.savefig(graph_4)
@@ -327,7 +327,7 @@ class ESS_Model(gym.Env):
             pp.savefig(self.imb_Graph_PV)
         pp.close()
 
-    def schedule(self, action, PV, soc, mode):
+    def schedule(self, action, PV, soc, battery, mode):
         fig = plt.figure(figsize=(22, 12), dpi=80)
         ax1 = fig.add_subplot(111)
         ax2 = ax1.twinx()
@@ -369,14 +369,16 @@ class ESS_Model(gym.Env):
         if self.mode == "test":
             self.all_count = pd.DataFrame(self.all_count)
             action = pd.DataFrame(action)
+            battery = pd.DataFrame(battery)
             soc = pd.DataFrame(soc)
             PV = pd.DataFrame(PV)
             price = pd.DataFrame(self.all_price_true)
             result_data = pd.concat([self.all_count,action],axis=1)
+            result_data = pd.concat([result_data,battery],axis=1)
             result_data = pd.concat([result_data,PV],axis=1)
             result_data = pd.concat([result_data,soc],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
-            label_name = ["hour","charge/discharge","PVout","soc","price"] # 列名
+            label_name = ["hour","charge/discharge","battery","PVout","soc","price"] # 列名
             result_data.columns = label_name # 列名付与
             result_data.to_csv("result_data.csv")
 
