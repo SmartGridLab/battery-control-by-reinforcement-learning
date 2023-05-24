@@ -87,6 +87,10 @@ class ESS_Model(gym.Env):
         all_action = action
         #action > 0 →放電  action < 0 →充電
         for self.time_stamp in range(0, self.ACTION_NUM):
+            #開発用
+            print(self.days, self.time)
+            print(f"インデックスの範囲: 0 から {len(self.PV_out) - 1}")
+
             action = float(all_action[self.time_stamp])
             ACTION = action*1.5
             ACTION = round(ACTION, 1)
@@ -108,6 +112,8 @@ class ESS_Model(gym.Env):
             self.all_PV_true_time.append(self.PV_true_time[0])
             self.all_alpha.append(self.alpha)
             self.all_beta.append(self.beta)
+
+            print(self.PV_out_time)
 
             if self.PV_out_time < 0:
                 self.PV_out_time = [0]
@@ -363,8 +369,14 @@ class ESS_Model(gym.Env):
         if self.mode == "test":
             self.all_count = pd.DataFrame(self.all_count)
             action = pd.DataFrame(action)
+            soc = pd.DataFrame(soc)
+            PV = pd.DataFrame(PV)
+            price = pd.DataFrame(self.all_price_true)
             result_data = pd.concat([self.all_count,action],axis=1)
-            label_name = ["hour","charge/discharge"] # 列名
+            result_data = pd.concat([result_data,PV],axis=1)
+            result_data = pd.concat([result_data,soc],axis=1)
+            result_data = pd.concat([result_data,price],axis=1)
+            label_name = ["hour","charge/discharge","PVout","soc","price"] # 列名
             result_data.columns = label_name # 列名付与
             result_data.to_csv("result_data.csv")
 
@@ -551,9 +563,11 @@ env.main_root(mode, num_episodes, train_days, episode, model_name) # Trainingを
 
 # test 2カ月 Reward最大
 #パラメータ(学習条件などは以下のパラメータを変更するだけで良い)
-pdf_day = 59 #確率密度関数作成用のDay数
+#pdf_day = 59 #確率密度関数作成用のDay数
+pdf_day = 76
 train_days = 30 # 学習Day数
-test_day = 30 # テストDay数 + 2 (最大89)
+#test_day = 30 # テストDay数 + 2 (最大89)
+test_day = 3
 PV_parameter = "Forecast" # Forecast or PVout_true (学習に使用するPV出力値の種類)
 mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
