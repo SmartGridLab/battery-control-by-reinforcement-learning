@@ -162,7 +162,7 @@ time_cos = np.cos(time*2*np.pi/24)
 # 
 for i in range(p.N_VERIFICATION):
     for day in range(1,p.DAYS):
-        print(day, i)
+        #print(day, i)
         date_output = date_base + datetime.timedelta(days=day)
 
         # Prepare the space to store the predicted value
@@ -212,8 +212,10 @@ for i in range(p.N_VERIFICATION):
             #delete dummy data
             #testcsv_.pop('dummy1')
             testcsv = pd.concat([testcsv,testcsv_],axis=0)
+    
+    print(str(i+1)+"/"+str(p.N_VERIFICATION))
 
 testcsv.to_csv('pv_predict.csv')
 
 #終了
-print("\n\n---PV出力予測プログラム終了---\n\n")
+print("\n\n---PV出力予測プログラム終了---")

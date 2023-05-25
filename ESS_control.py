@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 import math as ma
+import tkinter as tk
 #import tensorflow as tf
 
 from matplotlib.backends.backend_pdf import PdfPages
@@ -36,6 +37,14 @@ class ESS_Model(gym.Env):
         print("-データロード-")
         input_data = pd.read_csv("input_data2022.csv")
         predict_data = pd.read_csv("price_predict.csv")
+
+        #空データドッキング
+        data = [[0] * 20] * 48
+        columns = ["year","month","day","hour","temperature","total precipitation","u-component of wind","v-component of wind","radiation flux","pressure","relative humidity","PVout","price","imbalance",
+                   "yearSin","yearCos","monthSin","monthCos","hourSin","hourCos"]
+        new_rows_df = pd.DataFrame(data, columns=columns)
+        input_data = input_data.append(new_rows_df, ignore_index=True)
+
 
         self.time_stamp = input_data["hour"]
 
@@ -196,7 +205,7 @@ class ESS_Model(gym.Env):
             soc_true = (self.battery_true / self.battery_MAX) # %
 
             if self.time == 48:
-                print(self.days)
+                #print(self.days)
                 self.days += 1
                 self.time = 0
 
@@ -210,6 +219,9 @@ class ESS_Model(gym.Env):
             if self.episode == 0:
                 self.MAX_reward = np.sum(self.rewards)
             self.episode += 1
+
+            print("episode:"+str(self.episode) + "/"+str(episode))
+
             self.all_rewards.append(np.sum(self.rewards))
 
             if np.sum(self.rewards) >= self.MAX_reward:
@@ -551,8 +563,15 @@ class ESS_Model(gym.Env):
             
         return fig
 
-    #メインルーチン    
+    #メインルーチン   
+    #root = tk.Tk()
+    #root.mainloop()
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
+        
+        #Tkinter処理 epsode途中に終了を防ぐ
+        root = tk.Tk()
+        root.withdraw()
+        
         if mode == "train":
             print("-モデル学習開始-")
             #self.model = PPO("MlpPolicy", env, gamma = 0.9, verbose=0, ent_coef = 0.01, learning_rate = 0.0001, n_steps = 48, tensorboard_log="./PPO_tensorboard/") 
@@ -586,7 +605,7 @@ print("--Trainモード開始--")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
-train_days = 365 # 学習Day数 70 ~ 73
+train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類)　#今後はUpper, lower, PVout
 mode = "train" # train or test
@@ -604,7 +623,7 @@ print("--充放電計画策定開始--")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
-train_days = 365 # 学習Day数 70 ~ 73
+train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類) #今後はUpper, lower, PVout
 mode = "test" # train or test

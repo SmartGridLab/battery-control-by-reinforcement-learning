@@ -68,4 +68,4 @@ pred_df.to_csv("price_predict.csv", index=False)
 #plt.show()
 
 #終了
-print("\n\n---電力価格予測プログラム終了---\n\n")
+print("\n\n---電力価格予測プログラム終了---")
