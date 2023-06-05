@@ -85,7 +85,7 @@ class ESS_Model(gym.Env):
             true_all_price = predict_data["price_true"]/2
             imbalance_all = predict_data["imbalance"]/2
             true_imbalance_all = predict_data["imbalance_true"]/2
-            #self.PV = PV_parameter #Upper, lower, PVoutの選択用
+            #self.PV = PV_parameter #upper, lower, PVoutの選択用
             PV_out_all = predict_data["PVout"]
             PV_true_all = predict_data["PVout_true"]
 
