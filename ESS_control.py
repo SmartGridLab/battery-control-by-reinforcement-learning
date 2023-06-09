@@ -615,7 +615,7 @@ class ESS_Model(gym.Env):
 
 action_space = 12 #アクションの数(現状は48の約数のみ)　#後で調整
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
-episode = 3 # 10000000  # 学習回数
+episode = 100 # 10000000  # 学習回数
 
 print("--Trainモード開始--")
 
