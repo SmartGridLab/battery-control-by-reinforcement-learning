@@ -36,6 +36,7 @@ class ESS_Model(gym.Env):
         #データのロード
         print("-データロード-")
         input_data = pd.read_csv("input_data2022.csv")
+        #テストデータ
         predict_data = pd.read_csv("price_predict_test.csv")
 
         #空データドッキング
