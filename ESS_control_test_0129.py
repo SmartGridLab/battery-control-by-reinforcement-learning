@@ -591,9 +591,9 @@ class ESS_Model(gym.Env):
     #root.mainloop()
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
         
-        #Tkinter処理 epsode途中に終了を防ぐ
-        root = tk.Tk()
-        root.withdraw()
+        # #Tkinter処理 epsode途中に終了を防ぐ
+        # root = tk.Tk()
+        # root.withdraw()
         
         if mode == "train":
             print("-モデル学習開始-")
@@ -622,7 +622,7 @@ class ESS_Model(gym.Env):
 
 action_space = 12 #アクションの数(現状は48の約数のみ)　#後で調整
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
-episode = 40000 # 10000000  # 学習回数
+episode = 10 #40000 # 10000000  # 学習回数
 
 print("--Trainモード開始--")
 

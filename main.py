@@ -14,7 +14,7 @@ subprocess.run(['python', 'pv_predict.py'])
 subprocess.run(['python', 'price_predict.py'])
 
 # ESS_control.pyを実行する
-subprocess.run(['python', 'ESS_control.py'])
+subprocess.run(['python', 'ESS_control_test_0129.py'])
 
 #終了
 print("\n\n---統合プログラム終了---\n\n")

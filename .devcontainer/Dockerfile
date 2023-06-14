@@ -8,6 +8,15 @@ FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
 ARG NODE_VERSION="none"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
 
+# Install dependencies required for Telepresence
+RUN apt-get update && apt-get install -y \
+    curl \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Telepresence
+RUN curl -fL https://app.getambassador.io/download/tel2/linux/amd64/latest/install | bash
+
 # [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
  COPY requirements.txt /tmp/pip-tmp/
  RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \

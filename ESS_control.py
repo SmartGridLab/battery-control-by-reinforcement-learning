@@ -82,12 +82,12 @@ class ESS_Model(gym.Env):
             self.time_stamp = predict_data["hour"]
 
             price_all = predict_data["price"]/2
-            true_all_price = predict_data["price_true"]/2
+            true_all_price = predict_data["price"]/2
             imbalance_all = predict_data["imbalance"]/2
-            true_imbalance_all = predict_data["imbalance_true"]/2
+            true_imbalance_all = predict_data["imbalance"]/2
             #self.PV = PV_parameter #upper, lower, PVoutの選択用
             PV_out_all = predict_data["PVout"]
-            PV_true_all = predict_data["PVout_true"]
+            PV_true_all = predict_data["PVout"]
         
             price_data = price_all
             price_true_data = price_all
@@ -584,9 +584,9 @@ class ESS_Model(gym.Env):
     #root.mainloop()
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
         
-        #Tkinter処理 epsode途中に終了を防ぐ
-        root = tk.Tk()
-        root.withdraw()
+        # #Tkinter処理 epsode途中に終了を防ぐ
+        # root = tk.Tk()
+        # root.withdraw()
         
         if mode == "train":
             print("-モデル学習開始-")
