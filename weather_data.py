@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 
-print("\n\n---気象予報データ抽出プログラム開始---\n\n")
+print("\---気象予報データ抽出プログラム開始---\n")
 
 #UTC時刻で入力
 today = datetime.date.today()
@@ -21,8 +21,9 @@ data_time = "120000"    #固定
 time_diff = datetime.timedelta(hours=9) #時差
 
 #緯度指定
-lat =36.106643
-lon = 140.103164
+lat =36.06489716079195
+lon = 140.1349848817127
+
 #緯度 0.05度刻み
 lat1 = lat - 0.025
 lat2 = lat + 0.025
@@ -191,6 +192,6 @@ df.drop(48,inplace=True)
 
 #出力
 df.to_csv('weather_data.csv')
-print("\n結果出力完了")
+print("--結果出力完了--")
 #print(df)
-print("\n\n---気象予報データ抽出プログラム終了---\n\n")
+print("\n\n---気象予報データ抽出プログラム終了---")
