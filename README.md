@@ -1,17 +1,17 @@
-# Battery-Control-By-Reinforcement-Learning
+## Battery-Control-By-Reinforcement-Learning
 強化学習による蓄電池の最適な充放電を実現するためのコードです。  
 
-# Gettering Started
-## Installation / 導入
+## Gettering Started
+### Installation / 導入
 VSCodeのremote connectionを使ってdocker fileを読み込んでください。  
 
-## Usage / 実行
-[label](src/Battery-Control-By-Reinforcement-Learning)内にあるmain.pyを実行してください。  
+### Usage / 実行
+[main.py](/Battery-Control-By-Reinforcement-Learning/main.py)を実行してください。  
 
 
 
-# Others / その他
-## Directroy / ディレクトリ構成
+## Others / その他
+### Directroy / ディレクトリ構成
 ディレクトリ構成は以下の２つを参考にしています：
 1. The Hitchhiker's Guide to Python    
 https://python-guideja.readthedocs.io/ja/latest/writing/structure.html    
@@ -38,20 +38,16 @@ Project Organization / プロジェクトの構成
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
     │
     │
-    ├── Battery-Control-By-Reinforcement-Learning   <- Source code for use in this project.
+    └── Battery-Control-By-Reinforcement-Learning   <- Source code for use in this project.
         ├── __init__.py    <- Makes src a Python module
         │
         │── main.py
         └── paramaters.py
 
-## Information for the code / コードの情報
+### Information for the code / コードの図解
 
 プログラム構成
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/d9158e4d-da82-469f-afc9-2c56ad89a311)
 
 ファイル名対応表
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/973445c6-0a90-44ee-b8ce-6ee51c32daae)
-
-12月時点での状況
-![Capture](https://user-images.githubusercontent.com/43132698/208243823-c725566d-f9c0-408a-80e6-7c9ee51d3f74.JPG)
-
