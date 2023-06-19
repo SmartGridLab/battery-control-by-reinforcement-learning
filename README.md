@@ -1,4 +1,4 @@
-## Battery-Control-By-Reinforcement-Learning
+## これはなに？
 強化学習による蓄電池の最適な充放電を実現するためのコードです。  
 
 ## Gettering Started
@@ -21,16 +21,21 @@ https://cookiecutter.readthedocs.io/en/latest/index.html
 
 Project Organization / プロジェクトの構成  
 ------------  
-
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
+    ├── .devcontainer      <- docker関連ファイル
+    │
+    ├── .gihub             <- gothub関連ファイル
+    │      └── workflows   <- pullreqされると走るもの
+    │
+    ├── Battery-Control-By-Reinforcement-Learning   <- Source code for use in this project.
+    │       ├── __init__.py    <- Makes source codes a Python module
+    │       │── main.py
+    │       └── paramaters.py   <- 機械学習の調整パラメータを記述
     │
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
+    ├── tests              <- テストコード
+    │
+    ├── README.md          <- The top-level README for developers using this project.
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
@@ -38,11 +43,7 @@ Project Organization / プロジェクトの構成
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
     │
     │
-    └── Battery-Control-By-Reinforcement-Learning   <- Source code for use in this project.
-        ├── __init__.py    <- Makes src a Python module
-        │
-        │── main.py
-        └── paramaters.py
+    
 
 ### Information for the code / コードの図解
 
