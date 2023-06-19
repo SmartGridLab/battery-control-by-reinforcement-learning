@@ -40,9 +40,7 @@ Project Organization / プロジェクトの構成
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
     │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    │
-    │
+    └── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
     
 
 ### Information for the code / コードの図解
