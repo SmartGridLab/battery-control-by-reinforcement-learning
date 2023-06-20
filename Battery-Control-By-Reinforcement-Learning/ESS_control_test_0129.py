@@ -35,9 +35,9 @@ class ESS_Model(gym.Env):
         self.all_rewards = []
         #データのロード
         print("-データロード-")
-        input_data = pd.read_csv("input_data2022.csv")
+        input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
         #テストデータ
-        predict_data = pd.read_csv("price_predict_test.csv")
+        predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict_test.csv")
 
         #空データドッキング
         data = [[0] * 20] * 48
@@ -249,7 +249,7 @@ class ESS_Model(gym.Env):
 
             if np.sum(self.rewards) >= self.MAX_reward:
                 self.MAX_reward = np.sum(self.rewards) # rewardの最高値
-                self.evalution("result-" + self.mode + ".pdf")
+                self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
                 self.model.save("ESS_model")
                 self.end_count = 0
             elif np.sum(self.rewards) < self.MAX_reward:
@@ -257,13 +257,13 @@ class ESS_Model(gym.Env):
 
             if self.end_count >= 20000:
                 if self.episode == 100000 or self.episode > 20000:
-                    self.evalution("result-" + self.mode + "-end.pdf")
+                    self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
                     self.model.save("ESS_model_end")
                     #done = True # 学習終了
                     self.end_count = 0
 
         if time == 48 and self.days == self.last_day and self.mode == "test":
-            self.evalution("result-" + self.mode + ".pdf")
+            self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
 
         if time == 48 and self.days == self.last_day:
             state = self.reset()
@@ -437,7 +437,7 @@ class ESS_Model(gym.Env):
             result_data = pd.concat([result_data,price],axis=1)
             label_name = ["hour","charge/discharge","PVout","soc","price"] # 列名
             result_data.columns = label_name # 列名付与
-            result_data.to_csv("result_data.csv")
+            result_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
         return fig
 

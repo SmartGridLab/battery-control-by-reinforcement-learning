@@ -43,18 +43,18 @@ def get_feature_gain():
     target = ["PVout"]
     features = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind', 'radiation flux', 'pressure', 'relative humidity', 
                 'yearSin', 'yearCos','monthSin', 'monthCos', 'hourSin', 'hourCos']
-    df = pd.read_csv("input_data2022.csv")
+    df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
     train = df
     train_x,train_y = train[features],train[target]
     model = RandomForestRegressor(n_estimators=10, random_state=71) # these numbers are not optimized
     model.fit(train_x, train_y) # learning regression model
     feature_gain = model.feature_importances_ # get the gain for each predictors
     feature_gain = pd.DataFrame(feature_gain,index=features,columns=["gain"]).sort_values(ascending=False,by="gain") # sort the features in an ascending order
-    feature_gain.to_csv('featureGainResult.csv')
+    feature_gain.to_csv('Battery-Control-By-Reinforcement-Learning/featureGainResult.csv')
     return feature_gain
 
 
-df_w = pd.read_csv("weather_data.csv")
+df_w = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data.csv")
 #時系列のsin, cosを追加
 yearSin = np.sin(df_w["year"]/8760*(ma.pi))
 yearCos = np.cos(df_w["year"]/8760*(ma.pi))
@@ -77,7 +77,7 @@ df_w = pd.concat([df_w, time_data], axis=1)
 # Split into training and test data
 def train_test(day,use_col):
     # Load data from given csv file
-    df = pd.read_csv("input_data2022.csv")
+    df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
     
     # Split the data into Traing and Test
 
@@ -215,7 +215,7 @@ for i in range(p.N_VERIFICATION):
     
     print(str(i+1)+"/"+str(p.N_VERIFICATION))
 
-testcsv.to_csv('pv_predict.csv')
+testcsv.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
 
 #終了
 print("\n\n---PV出力予測プログラム終了---")

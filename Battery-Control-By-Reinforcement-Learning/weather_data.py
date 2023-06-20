@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 
-print("\---気象予報データ抽出プログラム開始---\n")
+print("---気象予報データ抽出プログラム開始---\n")
 
 #UTC時刻で入力
 today = datetime.date.today()
@@ -60,17 +60,20 @@ df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature",
 def data_acquisition(data_year, data_date, data_time, data_range):
 
     ## GRIB2ファイルを読み込む
+    dataname_base = "Battery-Control-By-Reinforcement-Learning/"
     dataname_base1 = "Z__C_RJTD_"
     dataname_base2 = "_MSM_GPV_Rjp_Lsurf_FH"
     dataname_base3 = "_grib2.bin"
 
     #ファイル名
-    file_name = dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3
+    DL_file_name = dataname_base1 + str(data_year) + str(data_date) + data_time + dataname_base2 + data_range + dataname_base3
+    file_name = dataname_base + DL_file_name
+
 
     #ファイルダウンロード
     #print(data_range +"時間後予測  ダウンロード開始...")    #ローカル環境時に使用
-    #url_surf = "http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_date1) + "/" + file_name     ##ローカル環境時に使用
-    #urllib.request.urlretrieve(url_surf, file_name)    #ローカル環境時に使用
+    #url_surf = "http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/" + str(data_date1) + "/" + DL_file_name     ##ローカル環境時に使用
+    #urllib.request.urlretrieve(url_surf, DL_file_name)    #ローカル環境時に使用
     #print(data_range +"時間後予測  ダウンロード完了")
 
 
@@ -191,7 +194,7 @@ df = df.reset_index(drop=True)
 df.drop(48,inplace=True)   
 
 #出力
-df.to_csv('weather_data.csv')
+df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
 print("--結果出力完了--")
 #print(df)
 print("\n\n---気象予報データ抽出プログラム終了---")
