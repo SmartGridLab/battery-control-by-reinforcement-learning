@@ -524,6 +524,7 @@ class ESS_Model(gym.Env):
 
             PV_profit_true += PVtrue*price # PV実測のみによる売上
 
+            #系統への供給量のインバランス評価
             # 不足
             if true_total_forecast_time < total_forecast_time_real:     
                 ###############インバランス料金変更#################       
@@ -534,7 +535,9 @@ class ESS_Model(gym.Env):
                 imbalance -= imbalance_price*(abs(true_total_forecast_time - total_forecast_time_real))
             elif true_total_forecast_time == total_forecast_time_real:
                 imbalance -= 0
-                
+            
+            #PV発電量のインバランス評価
+            #PV単体で動作させた場合の評価部分なので不要
             # 不足
             if PVout < PVtrue:
                 ###############インバランス料金変更#################                
@@ -565,6 +568,9 @@ class ESS_Model(gym.Env):
         print(total_profit)
         print((-1)*imbalance)
         print(total_profit + imbalance)
+
+
+        #PV単体で動作させた場合の評価部分なので不要
         print("PV")
         print(PV_profit_true)
         print((-1)*imbalance_PV)
@@ -622,7 +628,7 @@ class ESS_Model(gym.Env):
 
 action_space = 12 #アクションの数(現状は48の約数のみ)　#後で調整
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
-episode = 10 #40000 # 10000000  # 学習回数
+episode = 10000000 #40000 # 10000000  # 学習回数
 
 print("--Trainモード開始--")
 
