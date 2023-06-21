@@ -22,6 +22,8 @@ https://cookiecutter.readthedocs.io/en/latest/index.html
 Project Organization / プロジェクトの構成  
 ------------  
     ├── .devcontainer      <- docker関連ファイル
+    │       └── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+    │                         generated with `pip freeze > requirements.txt`
     │
     ├── .gihub             <- gothub関連ファイル
     │      └── workflows   <- pullreqされると走るもの
@@ -37,8 +39,6 @@ Project Organization / プロジェクトの構成
     │
     ├── README.md          <- The top-level README for developers using this project.
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
     │
     └── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
     
