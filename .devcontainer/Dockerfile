@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fL https://app.getambassador.io/download/tel2/linux/amd64/latest/install | bash
 
 # [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
- COPY ./Battery-Control-by-Reinforcement-Learning/requirements.txt /tmp/pip-tmp/
- RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
+WORKDIR ./Battery-Control-by-Reinforcement-Learning
+COPY requirements.txt /tmp/pip-tmp/
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
      && rm -rf /tmp/pip-tmp
 
 # [Optional] Uncomment this section to install additional OS packages.
