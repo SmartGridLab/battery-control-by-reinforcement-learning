@@ -1,11 +1,11 @@
-name: Run Unit Tests
+name: Run Unit test
 on:
   push:
     branches:
       - master
 
 jobs:
-  test:
+  unit-test:
     runs-on: ubuntu-latest
 
     steps:
