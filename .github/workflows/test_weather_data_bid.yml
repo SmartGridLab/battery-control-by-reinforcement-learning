@@ -2,11 +2,7 @@ name: Unit Test weather data bid
 
 on:
   push:
-    paths:
-      - 'Battery-Control-By-Reinforcement-Learning/**'
-  pull_request:
-    paths:
-      - 'Battery-Control-By-Reinforcement-Learning/**'
+    branches: ['master']
 
 jobs:
   test:
