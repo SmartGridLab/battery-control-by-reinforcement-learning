@@ -1,0 +1,23 @@
+name: Run Unit Tests
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1.7.0
+
+    - name: Build Docker image
+      run: docker buildx build --file .devcontainer/Dockerfile --output type=image,tags=mytestimage .
+
+    - name: Run unit tests
+      run: |
+        docker run --rm -v $PWD:/app mytestimage python test_csv_dates_are_day_after_tomorrow.py

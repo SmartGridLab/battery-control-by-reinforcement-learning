@@ -8,16 +8,15 @@ import numpy as np
 
 print("---リアルタイム制御用気象予報データ抽出プログラム開始---\n")
 
-#UTCとJSTの時差
-time_diff = datetime.timedelta(hours=9) 
+# dateutilでタイムゾーンを設定
+jst = tz.gettz('Asia/Tokyo')
 
-#UTC時刻で入力
-today = datetime.date.today() + time_diff
-now = datetime.datetime.now() + time_diff
-current_time = now.strftime("%H")
-current_time = int(current_time)
+#現地の日付と時刻を取得
+now = datetime.datetime.now(jst)
+today = now.date()
+current_time = now.hour
 
-current_time = 18   #仮入力開発環境時に使用
+# current_time = 18   #仮入力開発環境時に使用
 
 #データパス設定
 #JSTとUTCの日付が異なるとき(データ利用時間を考慮して0000-1130)
