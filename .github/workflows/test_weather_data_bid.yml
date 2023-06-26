@@ -1,26 +1,25 @@
-name: Unit Test weather data bid
+name: Test Weather Data Bid
 
-on:
-  push:
-    branches: ['master']
+on: [push]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    # Use the Dockerfile from the repository
-    container:
-      image: docker://docker.pkg.github.com/daisukekodaira/battery-control-by-reinforcement-learning/devcontainer:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: pip install -r ./.devcontainer/requirements.txt
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-      - name: Run tests
-        run: pytest tests/test_datetime_dayAfterTomorrow.py
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Pull Docker image
+      run: docker pull daisukekodaira/battery-control-by-reinforcement-learning:latest
+
+    - name: Run tests
+      run: docker run -v $PWD:/app -w /app daisukekodaira/battery-control-by-reinforcement-learning:latest pytest tests/test_datetime_dayAfterTomorrow.py
