@@ -19,7 +19,7 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
     - name: Pull Docker image
-      run: docker pull daisukekodaira/battery-control-by-reinforcement-learning:latest
+      run: docker pull daisukekodaira/battery-control-by-reinforcement-learning:master
 
     - name: Run tests
-      run: docker run -v $PWD:/app -w /app daisukekodaira/battery-control-by-reinforcement-learning:latest pytest tests/test_datetime_dayAfterTomorrow.py
+      run: docker run -v $PWD:/app -w /app daisukekodaira/battery-control-by-reinforcement-learning:master pytest tests/test_datetime_dayAfterTomorrow.py
