@@ -22,6 +22,7 @@ https://cookiecutter.readthedocs.io/en/latest/index.html
 Project Organization / プロジェクトの構成  
 ------------  
     ├── .devcontainer      <- docker関連ファイル
+    │       ├── Dockerfile
     │       └── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
     │
