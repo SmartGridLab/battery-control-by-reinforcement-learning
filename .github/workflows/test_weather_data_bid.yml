@@ -16,7 +16,7 @@ jobs:
       uses: docker/setup-buildx-action@v1.7.0
 
     - name: Build Docker image
-      run: docker buildx build --file .devcontainer/Dockerfile --output type=image,tags=mytestimage .
+      run: docker buildx build --file Dockerfile --output type=image,tags=mytestimage .
 
     - name: Run unit tests
       run: |
