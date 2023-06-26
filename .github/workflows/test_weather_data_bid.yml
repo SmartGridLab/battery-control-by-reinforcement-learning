@@ -1,23 +1,30 @@
-name: Run Unit test
+name: Unit Test weather data bid
+
 on:
   push:
-    branches:
-      - master
+    paths:
+      - 'Battery-Control-By-Reinforcement-Learning/**'
+  pull_request:
+    paths:
+      - 'Battery-Control-By-Reinforcement-Learning/**'
 
 jobs:
-  unit-test:
+  test:
     runs-on: ubuntu-latest
 
+    # Use the Dockerfile from the repository
+    container:
+      image: docker://docker.pkg.github.com/daisukekodaira/Battery-Control-by-Reinforcement-Learning/devcontainer:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1.7.0
+      - name: Install dependencies
+        run: pip install -r .devcontainer/requirements.txt
 
-    - name: Build Docker image
-      run: docker buildx build --file ./.devcontainer/Dockerfile --output type=image,tags=mytestimage .
-
-    - name: Run unit tests
-      run: |
-        docker run --rm -v ./.devcontainer/ mytestimage python test_csv_dates_are_day_after_tomorrow.py
+      - name: Run tests
+        run: pytest tests/test_datetime_dayAfterTomorrow.py
