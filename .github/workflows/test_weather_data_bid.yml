@@ -10,7 +10,7 @@ jobs:
 
     # Use the Dockerfile from the repository
     container:
-      image: docker://docker.pkg.github.com/daisukekodaira/Battery-Control-by-Reinforcement-Learning/devcontainer:latest
+      image: docker://docker.pkg.github.com/daisukekodaira/battery-control-by-reinforcement-learning/devcontainer:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
