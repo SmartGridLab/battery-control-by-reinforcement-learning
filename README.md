@@ -40,7 +40,7 @@ Project Organization / プロジェクトの構成
     ├── README.md          <- The top-level README for developers using this project.
     │
     │
-    └── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
+    └── setup.py           <- makes project pip installable (pip install -e .) so the main code can be imported
     
 
 ### Information for the code / コードの図解
