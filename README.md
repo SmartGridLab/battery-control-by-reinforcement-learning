@@ -8,8 +8,6 @@ VSCodeのremote connectionを使ってdocker fileを読み込んでください�
 ### Usage / 実行
 [main.py](/Battery-Control-By-Reinforcement-Learning/main.py)を実行してください。  
 
-
-
 ## Others / その他
 ### Directroy / ディレクトリ構成
 ディレクトリ構成は以下の２つを参考にしています：
