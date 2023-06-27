@@ -1,7 +1,7 @@
-# このコードは、CSVファイル(weather_data_bid.csv)の日付が翌々日であり、CSVファイル内の時間が30分ごとに増加していることを検証します。
+# このコードは、CSVファイル(weather_data_bid.csv)の日付が翌日であり、CSVファイル内の時間が30分ごとに増加していることを検証します。
 # This is the unit test code for `weather_data_bid.py`
-# - This test check if the datetime in the obtained csv file starts from 12AM day after tomorrow. 
-# - Reason: `weather_data_bid.py` should generates the weather data for bidding for the day after tomorrow.
+# - This test check if the datetime in the obtained csv file starts from 12AM tomorrow. 
+# - Reason: `weather_data_bid.py` should generates the weather data for bidding for tomorrow.
 
 import pandas as pd
 import datetime
@@ -12,18 +12,18 @@ weather_data = pd.read_csv('/Battery-Control-By-Reinforcement-Learning/weather_d
 # Get today's date
 today = datetime.date.today()
 
-# Calculate the day after tomorrow's date
-day_after_tomorrow = today + datetime.timedelta(days=2)
+# Calculate tomorrow's date
+tomorrow = today + datetime.timedelta(days=1)
 
-# Convert day_after_tomorrow to string in the format yyyy-mm-dd
-day_after_tomorrow_str = day_after_tomorrow.strftime("%Y-%m-%d")
+# Convert tomorrow to string in the format yyyy-mm-dd
+tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
 # Extract the date portion from the CSV's datetime
 weather_data['date'] = weather_data[['year', 'month', 'day']].apply(lambda row: '-'.join(row.values.astype(str)), axis=1)
 
-# Assert that all dates in the CSV are the day after tomorrow
-assert weather_data['date'].nunique() == 1, f"Multiple dates found in CSV, expected only one date: {day_after_tomorrow_str}"
-assert weather_data['date'].unique()[0] == day_after_tomorrow_str, f"Date {weather_data['date'].unique()[0]} in CSV is not the day after tomorrow: {day_after_tomorrow_str}"
+# Assert that all dates in the CSV are tomorrow
+assert weather_data['date'].nunique() == 1, f"Multiple dates found in CSV, expected only one date: {tomorrow_str}"
+assert weather_data['date'].unique()[0] == tomorrow_str, f"Date {weather_data['date'].unique()[0]} in CSV is not tomorrow: {tomorrow_str}"
 
 # Convert the fractional hours to datetime.time format
 def convert_to_time(fractional_hour):
@@ -41,5 +41,6 @@ missing_times = [time for time in expected_times if time not in weather_data['ti
 
 # If any expected time is missing in the data, raise an AssertionError
 assert not missing_times, f"The following times are missing in the data: {missing_times}"
+
 
 
