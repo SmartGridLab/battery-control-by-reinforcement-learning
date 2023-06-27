@@ -7,7 +7,7 @@ import pandas as pd
 import datetime
 
 # Read the CSV file
-weather_data = pd.read_csv('/Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
+weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
 
 # Get today's date
 today = datetime.date.today()
