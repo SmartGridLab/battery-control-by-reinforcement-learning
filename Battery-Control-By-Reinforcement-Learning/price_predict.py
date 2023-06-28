@@ -19,8 +19,7 @@ pv_predict_ = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.
 
 # 使用するパラメータ
 #parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
-              #'radiation flux', 'pressure', 'relative humidity', 'yearSin', 'yearCos', 'monthSin',
-              #'monthCos', 'hourSin', 'hourCos', 'PVout']
+              #'radiation flux', 'pressure', 'relative humidity', 'hourSin', 'hourCos', 'PVout']
 parameters = ['radiation flux', 'PVout', 'temperature', 'hourCos']           
 predict_parameters = ['price', 'imbalance']
 
