@@ -5,7 +5,7 @@ import main_parameters as m
 
 #スタート
 print("\n\n---統合プログラム開始---\n\n")
-#天気予報データ取得:OK
+#天気予報データ取得
 if m.mode == "bid":
     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
 elif m.mode == "realtime":
