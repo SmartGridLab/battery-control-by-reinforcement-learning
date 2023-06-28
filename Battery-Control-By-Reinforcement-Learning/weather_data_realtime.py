@@ -30,7 +30,7 @@ time_diff = datetime.timedelta(hours=9) #pygribに使用
 
 
 #時間を現在時刻に関係なく指定する場合
-#current_time = 17.5   #テスト用・数値は時間(0.5刻み)を入力
+#current_time = 11.5   #テスト用・数値は時間(0.5刻み)を入力
 
 ########################################################################
 
@@ -40,23 +40,26 @@ time_diff = datetime.timedelta(hours=9) #pygribに使用
 #公開先URL:h ttp://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/2023/01/29/
 
 # この部分でJST->UTCへの変換
-#午前中：現在時刻(JST)と取得するデータ公開時刻(UTC)の日付が異なるとき(データ利用時間を考慮して0000-1130(JST))
-if current_time >= 0 and current_time <12:  
+#現在時刻(JST)と取得するデータ公開時刻(UTC)の日付が異なるとき(予測から公開まで4時間と考慮・0000-1230))
+if current_time >= 0 and current_time <13:  
     data_year = (today - datetime.timedelta(days=1)).strftime("%Y")
     data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")
     data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
 
-    #0000-0230(JST)
-    if current_time < 3:    #JST
-        data_time = 120000    #UTC
-    #0300-0530(JST)
-    elif current_time < 6:    #JST
+    #0000-0030(JST)
+    if current_time < 1:    #JST
+        data_time = "090000"    #UTC
+    #0100-0330(JST)
+    elif current_time < 4:    #JST
+        data_time = "120000"    #UTC
+    #0400-0630(JST)
+    elif current_time < 7:    #JST
         data_time = "150000"    #UTC
-    #0600-0830(JST)
-    elif current_time < 9:    #JST
+    #0700-0930(JST)
+    elif current_time < 10:    #JST
         data_time = "180000"    #UTC
-    #0900-1130(JST)
-    elif current_time < 12:    #JST
+    #1000-1230(JST)
+    elif current_time < 13:    #JST
         data_time = "210000"    #UTC
 
 #現在時刻(JST)と取得するデータ公開時刻(UTC)が同じ日付になるとき
@@ -65,16 +68,16 @@ else:
     data_date = today.strftime("%m%d")
     data_date1 = today.strftime("%Y/%m/%d")
 
-    #1200-1430(JST)
-    if current_time < 15:    #JST
+    #1300-1530(JST)
+    if current_time < 16:    #JST
         data_time = "000000"    #UTC
-    #1500-1730(JST)
-    elif current_time < 18:    #JST
+    #1600-1830(JST)
+    elif current_time < 19:    #JST
         data_time = "030000"    #UTC
-    #1800-2030(JST)
-    elif current_time < 21:    #JST
+    #1900-2130(JST)
+    elif current_time < 22:    #JST
         data_time = "060000"    #UTC
-    #2100-2330(JST)
+    #2200-2330(JST)
     elif current_time < 24:    #JST
         data_time = "090000"    #UTC
     
@@ -276,12 +279,11 @@ df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 
 
-##16-33時間後(16-30時間後)データ
+##16-33時間後予測のファイルを処理#############################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "16-33")
 
-df_.drop(range(15, 18),inplace=True)  #24時間分の出力には不要となる28-33時間後を削除
 df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
-list = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27)  #空の列挿入(毎時30分用)
+list = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35)  #空の列挿入(毎時30分用)
 for i in list:
     df_T.insert(i, i + 0.5, np.nan)   #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
