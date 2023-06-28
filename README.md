@@ -49,3 +49,13 @@ Project Organization / プロジェクトの構成
 
 ファイル名対応表
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/973445c6-0a90-44ee-b8ce-6ee51c32daae)
+
+スポット市場締切までの時系列
+![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/9c10e329-46ea-4e74-b875-e27ef819efff)
+
+リアルタイム制御時の時間帯ごとに使用するGPVファイル対応表
+![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/19ef0bce-2628-477c-8490-72c2d2f1248d)
+
+
+
+
