@@ -18,20 +18,28 @@ tz = pytz.timezone('Asia/Tokyo')
 now = datetime.datetime.now(tz)
 today = now.date()
 
-#ファイル名設定用に変換
+#時差
+time_diff = datetime.timedelta(hours=9) #pygribに使用
+
+
+#ファイル名設定###################################################################################
+#例
+#ファイル名：Z__C_RJTD_20230129120000_MSM_GPV_Rjp_Lsurf_FH16-33_grib2.bin
+#公開先URL:h ttp://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/2023/01/29/
+
+#DLするGPVファイルの日付設定
 data_year = (today - datetime.timedelta(days=1)).strftime("%Y")
 data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")
+#公開先URLの設定
 data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
+#DLするGPVファイルの時刻(予測)設定
+data_time = "120000"    #スポット市場用は常に固定(21時(JST)公開の78時間予測を使用するため)
 
-time_diff = datetime.timedelta(hours=9) #時差
-
-#スポット市場用は常に固定(21時(JST)公開の78時間予測を使用するため)
-data_time = "120000" 
-
-#時間を現在時刻に関係なく指定する場合
-#data_year = 2023
-#data_date = "0129"    #取得するデータの日付(公開時)を4桁で指定
-#data_date1 = ""    #YYYY/MM/DD
+#時間を現在時刻に関係なく指定する場合・意味はL25-36参照
+#取得するデータの日付を入力(充放電計画の実行日の2日前)
+#data_year = 2023   #YYYY
+#data_date = "0129"    #MMDD
+#data_date1 = "2023/01/29"    #YYYY/MM/DD
 
 
 # Grid Point指定#########################
@@ -39,16 +47,17 @@ data_time = "120000"
 lat =36.06489716079195
 lon = 140.1349848817127
 
-#最寄りのGrid Point探索の範囲指定
-#緯度 0.05度刻み
+#最寄りのGrid Point探索用の範囲指定
+#緯度の最小格子：0.05度刻み
 lat1 = lat - 0.025
 lat2 = lat + 0.025
-#経度 0.0625度刻み
+#経度の最小格子：0.0625度刻み
 lon1 = lon - 0.03125
 lon2 = lon + 0.03125
 
 
 # 表示部分################################################################
+#最初に表示(確認用)
 print("緯度 : " + str(lat))
 print("経度 : " + str(lon) + "\n")
 
@@ -58,6 +67,10 @@ print(str(data_date1) + " 21:00(JST)/12:00(UTC)公開のデータを取得\n")
 
 #---------------------------------------------------------------------------------------------------------
 #GPVデータパラメータ定義
+#参考サイト
+#https://predora005.hatenablog.com/entry/2020/10/31/000000
+#https://qiita.com/kurukuruz/items/6fc0be9efa34a2fd6741
+
 #prmsl = gpv_file.select(parameterName='Pressure reduced to MSL')            #[0] 海面更正気圧[Pa]
 #sp    = gpv_file.select(parameterName='Pressure')                           #[1] 気圧[Pa]
 #uwind = gpv_file.select(parameterName='u-component of wind')                #[2] 風速(東西)[m/s]
@@ -78,9 +91,9 @@ df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature",
 ##関数：データ取得
 def data_acquisition(data_year, data_date, data_time, data_range):
 
-    # GRIB2ファイルを読み込む#########################################
+    # GPVファイル(.grib2)を読み込む#########################################
 
-    #ファイル名の文字列指定
+    #GPVファイルのファイル名指定
     #このプログラムのフォルダ名
     dataname_base = "Battery-Control-By-Reinforcement-Learning/"
 
@@ -202,14 +215,16 @@ def data_acquisition(data_year, data_date, data_time, data_range):
 
     return df_
 
+
+# 公開されているファイルごとに処理を実行##################################################################
 # 16-33時間後(27-33時間後)予測のファイルを処理#############################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "16-33")   #データ抽出
 
-df_.drop(range(0, 11),inplace=True)  #不要な16-26時間後(対象日前日13:00～23:00)を削除
-df_T = df_.T    #空の列を挿入するために転置
+df_.drop(range(0, 11),inplace=True)  #出力範囲に含まない16-26時間後(対象日前日13:00～23:00)を削除
+df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
 list = (1, 3, 5, 7, 9, 11, 13)  #空の列挿入(毎時30分用)
 for i in list:  
-    df_T.insert(i, i + 0.5, np.nan)   #列の名前を混同しないように　i + 0.5 とする
+    df_T.insert(i, i + 0.5, np.nan)    #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 
@@ -217,10 +232,10 @@ df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 # 34-39時間後データ予測のファイルを処理####################################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "34-39")   #データ抽出
 
-df_T = df_.T    #空の列を挿入するために転置
+df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
 list = (1, 3, 5, 7, 9, 11)  #空の列挿入(毎時30分用)
 for i in list:
-    df_T.insert(i, i + 0.5, np.nan)   #列の名前を混同しないように　i + 0.5 とする
+    df_T.insert(i, i + 0.5, np.nan)    #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 
@@ -228,10 +243,10 @@ df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 # 40-51時間後データ予測のファイルを処理####################################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "40-51")   #データ抽出
 
-df_T = df_.T    #空の列を挿入するために転置
+df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
 list = (1, 3, 5, 7, 9, 11, 13, 15 ,17, 19, 21)  #空の列挿入(毎時30分用)
 for i in list:
-    df_T.insert(i, i + 0.5, np.nan)   #列の名前を混同しないように　i + 0.5 とする
+    df_T.insert(i, i + 0.5, np.nan)   #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 

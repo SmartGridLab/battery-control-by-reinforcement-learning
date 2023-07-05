@@ -35,26 +35,18 @@ class ESS_Model(gym.Env):
         self.all_rewards = []
         #データのロード
         print("-データロード-")
+        #学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
+        #テストデータ(これが充放電計画策定したいもの)
         predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
 
+        #学習データの日数+1日分データが必要
         #空データドッキング
         data = [[0] * 20] * 48
         columns = ["year","month","day","hour","temperature","total precipitation","u-component of wind","v-component of wind","radiation flux","pressure","relative humidity","PVout","price","imbalance",
                    "yearSin","yearCos","monthSin","monthCos","hourSin","hourCos"]
         new_rows_df = pd.DataFrame(data, columns=columns)
         input_data = input_data.append(new_rows_df, ignore_index=True)
-
-
-        #self.time_stamp = input_data["hour"]
-
-        #price_all = predict_data["price"]
-        #true_all_price = input_data["price"]
-        #imbalance_all = predict_data["imbalance"]
-        #true_imbalance_all = input_data["imbalance"]
-        #self.PV = PV_parameter #Upper, lower, PVoutの選択用
-        #PV_out_all = predict_data[self.PV]
-        #PV_true_all = input_data["PVout"]
 
         #データの作成
         print("-データ作成-")
@@ -97,7 +89,7 @@ class ESS_Model(gym.Env):
             true_imbalance_all = imbalance_all
            
 
-        #numpy変換,型変換
+        #pandas -> numpy変換,型変換
         print("-データ変換-")
         self.price_all = price_data.values
         self.price = self.price_all.reshape((len(self.price_all), 1)) 
@@ -312,14 +304,14 @@ class ESS_Model(gym.Env):
 
     # 入力データの設定
     def data_set(self):
-        ########################################
+        
         self.PV_out_time = self.PV_out[self.time]
         self.PV_true_time = self.PV_true[self.time]
         self.price_time = self.price[self.time]
         self.true_price_time = self.true_price[self.time]
         self.imbalance_time = self.imbalance[self.time]
         self.true_imbalance_time = self.true_imbalance[self.time]
-        #########################################
+        
         if self.mode == "train":
             if self.days != self.last_day:
                 self.MAX_price = max(self.true_price[48*(self.days - 1):48*self.days])
@@ -613,9 +605,12 @@ class ESS_Model(gym.Env):
                 obs = pd.Series(obs)
                 obs = torch.tensor(obs.values.astype(np.float64))
 
-action_space = 12 #アクションの数(現状は48の約数のみ)　#後で調整
+#30分1コマで、何時間先まで考慮するか
+action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
-episode = 100 # 10000000  # 学習回数
+
+# 学習回数
+episode = 100 # 10000000  
 
 print("--Trainモード開始--")
 

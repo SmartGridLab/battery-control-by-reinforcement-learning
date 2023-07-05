@@ -10,14 +10,16 @@ from tensorflow import keras
 print("\n\n---電力価格予測プログラム開始---\n\n")
 
 # データの読み込み
+# 学習データ
 input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
+# テストデータ
 pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv")
+# テストデータ(出力ファイルに値を格納するために値を処理することなく保存するため)
 pv_predict_ = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv")
 
 # 使用するパラメータ
 #parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
-              #'radiation flux', 'pressure', 'relative humidity', 'yearSin', 'yearCos', 'monthSin',
-              #'monthCos', 'hourSin', 'hourCos', 'PVout']
+              #'radiation flux', 'pressure', 'relative humidity', 'hourSin', 'hourCos', 'PVout']
 parameters = ['radiation flux', 'PVout', 'temperature', 'hourCos']           
 predict_parameters = ['price', 'imbalance']
 

@@ -25,6 +25,17 @@ print("\n\n---PV出力予測プログラム開始---\n\n")
 # Locally developed modules
 import parameters as p
 
+# bid or realtimeの判別を行う
+import main_parameters as m
+
+filename_bid = "Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv"
+filename_realtime = "Battery-Control-By-Reinforcement-Learning/weather_data_realtime.csv"
+
+if m.mode == "bid":
+    filename = filename_bid
+elif m.mode == "realtime":
+    filename = filename_realtime
+
 
 # ignore warinings
 warnings.simplefilter('ignore')
@@ -54,7 +65,8 @@ def get_feature_gain():
     return feature_gain
 
 
-df_w = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data.csv")
+df_w = pd.read_csv(filename)
+
 #時系列のsin, cosを追加
 yearSin = np.sin(df_w["year"]/8760*(ma.pi))
 yearCos = np.cos(df_w["year"]/8760*(ma.pi))
@@ -148,14 +160,14 @@ feature_gain = get_feature_gain()
 # Prepare spaces to be stored the results
 result = pd.DataFrame(columns=["number_of_features","day","Loss","PICP","MPIW"])
 pred = pd.DataFrame(columns=["number_of_features","day","upper","lower"])
-testcsv = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature"])
+pv_predict = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature",
+                                   "total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"])
+
 
 
 # Prepare time-series dat
-date_base = datetime.date(2023, 1, 30)
 #実行環境
-#date_base = datetime.date.today()
-time = np.arange(0, 24, 0.5).reshape((48, 1))
+time = df_w[["hour"]]
 time_sin = np.sin(time*2*np.pi/24)
 time_cos = np.cos(time*2*np.pi/24)
 
@@ -163,7 +175,6 @@ time_cos = np.cos(time*2*np.pi/24)
 for i in range(p.N_VERIFICATION):
     for day in range(1,p.DAYS):
         #print(day, i)
-        date_output = date_base + datetime.timedelta(days=day)
 
         # Prepare the space to store the predicted value
         pred_ = pd.DataFrame(columns=["number_of_features","day","upper","lower"])
@@ -186,36 +197,38 @@ for i in range(p.N_VERIFICATION):
         pred_["verification"] = i
         pred = pd.concat([pred,pred_],axis=0)
     
-        testcsv_ = pd.DataFrame(columns=["year","month","hour","day","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature"])
+        pv_predict_ = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature",
+                                            "total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"])
         if i == (p.N_VERIFICATION-1):
-            testcsv_[["upper","lower"]] = y_pred
-            testcsv_[["year","month","day"]] = date_output.year,date_output.month,date_output.day
-            testcsv_[["hour"]] = time
-            testcsv_[["hourSin"]] = time_sin
-            testcsv_[["hourCos"]] = time_cos
-            testcsv_[["radiation flux"]] = df_w[["radiation flux"]]
-            testcsv_[["temperature"]] = df_w[["temperature"]]
+            pv_predict_[["upper","lower"]] = y_pred
+            pv_predict_[["year","month","day"]] = df_w[["year","month","day"]]
+            pv_predict_[["hour"]] = time
+            pv_predict_[["hourSin"]] = time_sin
+            pv_predict_[["hourCos"]] = time_cos
+            pv_predict_[["radiation flux"]] = df_w[["radiation flux"]]
+            pv_predict_[["temperature"]] = df_w[["temperature"]]
+            pv_predict_[["total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"]] = df_w[["Total precipitation", "u-component of wind", "v-component of wind", "Pressure", "Relative humidity"]]
 
             #modify upper and lower
-            testcsv_.loc[testcsv_['lower'] < 0, 'lower'] = 0
-            testcsv_.loc[testcsv_['upper'] < 0, 'upper'] = 0
-            testcsv_.loc[testcsv_['hour'] < 4, 'upper'] = 0
-            testcsv_.loc[testcsv_['hour'] < 4, 'lower'] = 0
-            testcsv_.loc[testcsv_['hour'] > 19.5, 'upper'] = 0
-            testcsv_.loc[testcsv_['hour'] > 19.5, 'lower'] = 0
+            pv_predict_.loc[pv_predict_['lower'] < 0, 'lower'] = 0
+            pv_predict_.loc[pv_predict_['upper'] < 0, 'upper'] = 0
+            pv_predict_.loc[pv_predict_['hour'] < 4, 'upper'] = 0
+            pv_predict_.loc[pv_predict_['hour'] < 4, 'lower'] = 0
+            pv_predict_.loc[pv_predict_['hour'] > 19.5, 'upper'] = 0
+            pv_predict_.loc[pv_predict_['hour'] > 19.5, 'lower'] = 0
 
             #lower, upper中央値算出
-            testcsv_["PVout"] = (testcsv_["upper"] + testcsv_["lower"]) / 2
+            pv_predict_["PVout"] = (pv_predict_["upper"] + pv_predict_["lower"]) / 2
 
             
 
             #delete dummy data
-            #testcsv_.pop('dummy1')
-            testcsv = pd.concat([testcsv,testcsv_],axis=0)
+            #pv_predict_.pop('dummy1')
+            pv_predict = pd.concat([pv_predict,pv_predict_],axis=0)
     
     print(str(i+1)+"/"+str(p.N_VERIFICATION))
 
-testcsv.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
+pv_predict.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
 
 #終了
 print("\n\n---PV出力予測プログラム終了---")

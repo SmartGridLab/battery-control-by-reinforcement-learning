@@ -25,34 +25,41 @@ current_minute = int(current_minute)
 if current_minute >= 30:
     current_time += 0.5
 
-time_diff = datetime.timedelta(hours=9) #時差
+#時差
+time_diff = datetime.timedelta(hours=9) #pygribに使用
 
 
 #時間を現在時刻に関係なく指定する場合
-#current_time = 17.5   #テスト用・数値は時間(0.5刻み)を入力
+#current_time = 11.5   #テスト用・数値は時間(0.5刻み)を入力
 
 ########################################################################
 
+#ファイル名設定###################################################################################
+#例
+#ファイル名：Z__C_RJTD_20230129120000_MSM_GPV_Rjp_Lsurf_FH16-33_grib2.bin
+#公開先URL:h ttp://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/2023/01/29/
 
-#ダウンロードするファイル名の指定######################################################################################
 # この部分でJST->UTCへの変換
-#午前中：現在時刻(JST)と取得するデータ公開時刻(UTC)の日付が異なるとき(データ利用時間を考慮して0000-1130(JST))
-if current_time >= 0 and current_time <12:  
+#現在時刻(JST)と取得するデータ公開時刻(UTC)の日付が異なるとき(予測から公開まで4時間と考慮・0000-1230))
+if current_time >= 0 and current_time <13:  
     data_year = (today - datetime.timedelta(days=1)).strftime("%Y")
     data_date = (today - datetime.timedelta(days=1)).strftime("%m%d")
     data_date1 = (today - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
 
-    #0000-0230(JST)
-    if current_time < 3:    #JST
-        data_time = 120000    #UTC
-    #0300-0530(JST)
-    elif current_time < 6:    #JST
+    #0000-0030(JST)
+    if current_time < 1:    #JST
+        data_time = "090000"    #UTC
+    #0100-0330(JST)
+    elif current_time < 4:    #JST
+        data_time = "120000"    #UTC
+    #0400-0630(JST)
+    elif current_time < 7:    #JST
         data_time = "150000"    #UTC
-    #0600-0830(JST)
-    elif current_time < 9:    #JST
+    #0700-0930(JST)
+    elif current_time < 10:    #JST
         data_time = "180000"    #UTC
-    #0900-1130(JST)
-    elif current_time < 12:    #JST
+    #1000-1230(JST)
+    elif current_time < 13:    #JST
         data_time = "210000"    #UTC
 
 #現在時刻(JST)と取得するデータ公開時刻(UTC)が同じ日付になるとき
@@ -61,24 +68,25 @@ else:
     data_date = today.strftime("%m%d")
     data_date1 = today.strftime("%Y/%m/%d")
 
-    #1200-1430(JST)
-    if current_time < 15:    #JST
+    #1300-1530(JST)
+    if current_time < 16:    #JST
         data_time = "000000"    #UTC
-    #1500-1730(JST)
-    elif current_time < 18:    #JST
+    #1600-1830(JST)
+    elif current_time < 19:    #JST
         data_time = "030000"    #UTC
-    #1800-2030(JST)
-    elif current_time < 21:    #JST
+    #1900-2130(JST)
+    elif current_time < 22:    #JST
         data_time = "060000"    #UTC
-    #2100-2330(JST)
+    #2200-2330(JST)
     elif current_time < 24:    #JST
         data_time = "090000"    #UTC
     
 
 #時間を現在時刻に関係なく指定する場合
-#data_year = 2023
-#data_date = "0626"    #(当日の日付を4桁で指定)
-#data_date1 = "2023/06/26"    #YYYY/MM/DD
+#取得するデータの日付を入力(充放電計画の実行日)
+#data_year = 2023   #YYYY
+#data_date = "0131"    #MMDD
+#data_date1 = "2023/01/31"    #YYYY/MM/DD
 
 
 
@@ -88,16 +96,17 @@ lat =36.06489716079195
 lon = 140.1349848817127
 
 #最寄りのGrid Point探索の範囲指定
-#緯度 0.05度刻み
+#緯度の最小格子：0.05度刻み
 lat1 = lat - 0.025
 lat2 = lat + 0.025
-#経度 0.0625度刻み
+#経度の最小格子：0.0625度刻み
 lon1 = lon - 0.03125
 lon2 = lon + 0.03125
 
 
 
 # 表示部分################################################################
+#最初に表示(確認用)
 print("緯度 : " + str(lat))
 print("経度 : " + str(lon) + "\n")
 
@@ -109,6 +118,10 @@ print(str(data_date1) + " " + data_time + "(UTC)公開の直近の予測デー�
 
 #---------------------------------------------------------------------------------------------------------
 #GPVデータパラメータ定義
+#参考サイト
+#https://predora005.hatenablog.com/entry/2020/10/31/000000
+#https://qiita.com/kurukuruz/items/6fc0be9efa34a2fd6741
+
 #prmsl = gpv_file.select(parameterName='Pressure reduced to MSL')            #[0] 海面更正気圧[Pa]
 #sp    = gpv_file.select(parameterName='Pressure')                           #[1] 気圧[Pa]
 #uwind = gpv_file.select(parameterName='u-component of wind')                #[2] 風速(東西)[m/s]
@@ -129,9 +142,9 @@ df = pd.DataFrame(columns=["year","month","day","hour","Pressure","temperature",
 #関数：データ取得
 def data_acquisition(data_year, data_date, data_time, data_range):
 
-    # GRIB2ファイルを読み込む#########################################
+    # GPVファイル(.grib2)を読み込む#########################################
 
-    #ファイル名の文字列指定
+    #GPVファイルのファイル名指定
     #このプログラムのフォルダ名
     dataname_base = "Battery-Control-By-Reinforcement-Learning/"
 
@@ -253,23 +266,26 @@ def data_acquisition(data_year, data_date, data_time, data_range):
 
     return df_
 
+
+# 公開されているファイルごとに処理を実行##################################################################
 ##0-15時間後予測のファイルを処理#############################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "00-15")
-df_T = df_.T    #空の列を挿入するために転置
+
+df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
 list = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31)  #空の列挿入(毎時30分用)
 for i in list:  
-    df_T.insert(i, i + 0.5, np.nan)   #列の名前を混同しないように　i + 0.5 とする
+    df_T.insert(i, i + 0.5, np.nan)   #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 
 
-##16-33時間後(16-30時間後)データ
+##16-33時間後予測のファイルを処理#############################################
 df_ = data_acquisition(data_year, data_date, data_time, data_range = "16-33")
-df_.drop(range(15, 18),inplace=True)  #28-33時間後を削除
-df_T = df_.T    #空の列を挿入するために転置
-list = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27)  #空の列挿入(毎時30分用)
+
+df_T = df_.T    #空の列を挿入するために転置(毎時30分用)
+list = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35)  #空の列挿入(毎時30分用)
 for i in list:
-    df_T.insert(i, i + 0.5, np.nan)   #列の名前を混同しないように　i + 100.5 とする
+    df_T.insert(i, i + 0.5, np.nan)   #index番号の重複を避けるためi + 0.5 とする
 df_ = df_T.T    #転置して元に戻す
 df = pd.concat([df, df_], axis=0)   #出力用データフレームに統合
 
@@ -323,5 +339,5 @@ df = df.reset_index(drop=True)
 # ファイル出力###################################################################
 df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data_realtime.csv')
 print("--結果出力完了--")
-print(df)
+#print(df)
 print("\n\n---気象予報データ抽出プログラム終了---")
