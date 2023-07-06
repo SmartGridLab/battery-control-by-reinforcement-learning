@@ -8,7 +8,7 @@ LR = 0.001 # learnning rate of NN
 SEED = 2021 # seed of random numbers
 
 # Simulation conditons
-DAYS = 2 # days to be forecasted
+DAYS = 2 # days to be forecasted    #weather_data_xxx.csvで入力されたものを導入する場合は2で固定する(1セットを1日分と扱われる)
 N_VERIFICATION = 3 # the number of verification; to examine the variability of the modeling error
 
 # For Quantile regression
@@ -26,4 +26,4 @@ SEED_QR = 0
 # - (1) 'SolarIrradiation', (2) 'hourSin', (3) 'hourCos', 'yearCos', 'CloudCover',....
 #       'yearSin', 'Humidity', 'Temp', 'monthCos', 'WindSpeed', 'daySin',
 #       'dayCos', 'monthSin', (14) 'Rain'
-NUMBER_OF_FEATURES = 1
+NUMBER_OF_FEATURES = 4
