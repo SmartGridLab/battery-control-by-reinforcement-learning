@@ -38,7 +38,7 @@ class ESS_Model(gym.Env):
         #学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
         #テストデータ(これが充放電計画策定したいもの)
-        predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
+        predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict_2301.csv")
 
         #学習データの日数+1日分データが必要
         #空データドッキング
@@ -54,12 +54,12 @@ class ESS_Model(gym.Env):
 
             self.time_stamp = input_data["hour"]
 
-            price_all = predict_data["price"]/2
+            price_all = input_data["price"]/2
             true_all_price = input_data["price"]/2
-            imbalance_all = predict_data["imbalance"]/2
-            true_imbalance_all = input_data["imbalance"]/2
+            imbalance_all = input_data["imbalance"]/2*0
+            true_imbalance_all = input_data["imbalance"]/2*0
             self.PV = PV_parameter #Upper, lower, PVoutの選択用
-            PV_out_all = predict_data[self.PV]
+            PV_out_all = input_data[self.PV]
             PV_true_all = input_data["PVout"]
 
             price_data = true_all_price
@@ -74,12 +74,12 @@ class ESS_Model(gym.Env):
             self.time_stamp = predict_data["hour"]
 
             price_all = predict_data["price"]/2
-            true_all_price = predict_data["price"]/2
+            true_all_price = predict_data["price_true"]/2
             imbalance_all = predict_data["imbalance"]/2
-            true_imbalance_all = predict_data["imbalance"]/2
+            true_imbalance_all = predict_data["imbalance_true"]/2
             #self.PV = PV_parameter #upper, lower, PVoutの選択用
             PV_out_all = predict_data["PVout"]
-            PV_true_all = predict_data["PVout"]
+            PV_true_all = predict_data["PVout_true"]
         
             price_data = price_all
             price_true_data = price_all
@@ -610,21 +610,21 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100 # 10000000  
+episode = 1000 # 10000000  
 
 print("--Trainモード開始--")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
 train_days = 366 # 学習Day数 70 ~ 73
-test_day = 3 # テストDay数 + 2 (最大89)
+test_day = 33 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類)　#今後はUpper, lower, PVout
 mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
@@ -635,7 +635,7 @@ print("--充放電計画策定開始--")
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
 train_days = 366 # 学習Day数 70 ~ 73
-test_day = 3 # テストDay数 + 2 (最大89)
+test_day = 33 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類) #今後はUpper, lower, PVout
 mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end

@@ -20,22 +20,10 @@ import tensorflow as tf
 import properscoring as prscore
 
 #スタート
-print("\n\n---PV出力予測プログラム開始---\n\n")
+print("\n---PV出力予測プログラム開始---\n")
 
 # Locally developed modules
 import parameters as p
-
-# bid or realtimeの判別を行う
-import main_parameters as m
-
-filename_bid = "Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv"
-filename_realtime = "Battery-Control-By-Reinforcement-Learning/weather_data_realtime.csv"
-
-if m.mode == "bid":
-    filename = filename_bid
-elif m.mode == "realtime":
-    filename = filename_realtime
-
 
 # ignore warinings
 warnings.simplefilter('ignore')
@@ -65,7 +53,7 @@ def get_feature_gain():
     return feature_gain
 
 
-df_w = pd.read_csv(filename)
+df_w = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data.csv")
 
 #時系列のsin, cosを追加
 yearSin = np.sin(df_w["year"]/8760*(ma.pi))
@@ -226,9 +214,9 @@ for i in range(p.N_VERIFICATION):
             #pv_predict_.pop('dummy1')
             pv_predict = pd.concat([pv_predict,pv_predict_],axis=0)
     
-    print(str(i+1)+"/"+str(p.N_VERIFICATION))
+    print(str(i+1)+"/"+str(p.N_VERIFICATION)+"完了")
 
 pv_predict.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
 
 #終了
-print("\n\n---PV出力予測プログラム終了---")
+print("\n---PV出力予測プログラム終了---")
