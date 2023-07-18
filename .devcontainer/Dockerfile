@@ -19,7 +19,7 @@ RUN curl -fL https://app.getambassador.io/download/tel2/linux/amd64/latest/insta
 
 # [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
 COPY requirements.txt /tmp/pip-tmp/
-RUN pip3 --disable-pip-version-check --no-cache-dir install -v -r /tmp/pip-tmp/requirements.txt \
+RUN pip3 --disable-pip-version-check --no-cache-dir install -vvv -r /tmp/pip-tmp/requirements.txt \
      && rm -rf /tmp/pip-tmp
 
 # [Optional] Uncomment this section to install additional OS packages.

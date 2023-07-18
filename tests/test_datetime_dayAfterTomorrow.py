@@ -3,6 +3,9 @@
 # - This test check if the datetime in the obtained csv file starts from 12AM tomorrow. 
 # - Reason: `weather_data_bid.py` should generates the weather data for bidding for tomorrow.
 
+import pandas as pd
+import datetime
+
 # Read the CSV file
 weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
 
