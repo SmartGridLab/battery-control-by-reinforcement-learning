@@ -12,10 +12,12 @@ import time
 #MULTI_TEST：複数時間を指定して動作
 #SINGLE_TEST：単体時間を指定して動作
 move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
+# -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
 
 #モード選択
 #bid：前日のスポット市場入札
 #reaitime：当日のリアルタイム制御
+# -> (小平)時刻で自動的にbidとrealtimeをケースわけして実行するように実装する
 
 # タイムゾーンを設定
 tz = pytz.timezone('Asia/Tokyo')
@@ -114,7 +116,7 @@ elif move_mode == "TEST":
 elif move_mode == "SINGLE_TEST":
 
     ## 手動で時刻を設定
-    current_date = datetime.date(2023, 7, 6) #(Y, M, D)
+    current_date = datetime.date(2023, 7, 6) #(YYYY, MM, DD)
     current_time = 16   #hour(0.5刻み)
     mode = "realtime"   #reaitime　or bid
 
