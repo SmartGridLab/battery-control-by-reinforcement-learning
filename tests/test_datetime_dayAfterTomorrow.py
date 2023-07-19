@@ -6,30 +6,65 @@
 import pandas as pd
 import datetime
 
-# Read the CSV file
-weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
+## Get main.py as package here
+import sys
+import os
+# Add the root directory to the system path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Now you can import your module
+from Battery_Control_By_Reinforcement_Learning import main
 
-# Convert the date and hour columns to datetime format
-weather_data['datetime'] = pd.to_datetime(weather_data[['year', 'month', 'day', 'hour']])
+if main.move_mode == 'AIST':
+    # Read the CSV file
+    weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
 
-# Get today's date
-today = pd.Timestamp.now()
+    # Convert the date and hour columns to datetime format
+    weather_data['datetime'] = pd.to_datetime(weather_data[['year', 'month', 'day', 'hour']])
 
-# Calculate tomorrow's date
-tomorrow = today + pd.DateOffset(days=1)
+    # Get today's date
+    today = pd.Timestamp.now()
 
-# Assert that all dates in the CSV are tomorrow
-assert weather_data['datetime'].dt.date.nunique() == 1, f"Multiple dates found in CSV, expected only one date: {tomorrow.date()}"
-assert weather_data['datetime'].dt.date.unique()[0] == tomorrow.date(), f"Date {weather_data['datetime'].dt.date.unique()[0]} in CSV is not tomorrow: {tomorrow.date()}"
+    # Calculate tomorrow's date
+    tomorrow = today + pd.DateOffset(days=1)
 
-# Create a date_range of expected times starting from 00:00 to 23:30 with a 30 min interval
-expected_times = pd.date_range(start='00:00', end='23:59', freq='30min').time
+    # Assert that all dates in the CSV are tomorrow
+    assert weather_data['datetime'].dt.date.nunique() == 1, f"Multiple dates found in CSV, expected only one date: {tomorrow.date()}"
+    assert weather_data['datetime'].dt.date.unique()[0] == tomorrow.date(), f"Date {weather_data['datetime'].dt.date.unique()[0]} in CSV is not tomorrow: {tomorrow.date()}"
 
-# Now check if all these expected_times exist in the 'time' column of the DataFrame
-missing_times = [time for time in expected_times if time not in weather_data['datetime'].dt.time.unique()]
+    # Create a date_range of expected times starting from 00:00 to 23:30 with a 30 min interval
+    expected_times = pd.date_range(start='00:00', end='23:59', freq='30min').time
 
-# If any expected time is missing in the data, raise an AssertionError
-assert not missing_times, f"The following times are missing in the data: {missing_times}"
+    # Now check if all these expected_times exist in the 'time' column of the DataFrame
+    missing_times = [time for time in expected_times if time not in weather_data['datetime'].dt.time.unique()]
+
+    # If any expected time is missing in the data, raise an AssertionError
+    assert not missing_times, f"The following times are missing in the data: {missing_times}"
+
+if main.move_mode == 'TEST':
+  # Read the CSV file
+    weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
+
+    # Convert the date and hour columns to datetime format
+    weather_data['datetime'] = pd.to_datetime(weather_data[['year', 'month', 'day', 'hour']])
+
+    # Get today's date
+    today = pd.Timestamp.now()
+
+    # Calculate tomorrow's date
+    tomorrow = today + pd.DateOffset(days=1)
+
+    # Assert that all dates in the CSV are tomorrow
+    assert weather_data['datetime'].dt.date.nunique() == 1, f"Multiple dates found in CSV, expected only one date: {tomorrow.date()}"
+    assert weather_data['datetime'].dt.date.unique()[0] == tomorrow.date(), f"Date {weather_data['datetime'].dt.date.unique()[0]} in CSV is not tomorrow: {tomorrow.date()}"
+
+    # Create a date_range of expected times starting from 00:00 to 23:30 with a 30 min interval
+    expected_times = pd.date_range(start='00:00', end='23:59', freq='30min').time
+
+    # Now check if all these expected_times exist in the 'time' column of the DataFrame
+    missing_times = [time for time in expected_times if time not in weather_data['datetime'].dt.time.unique()]
+
+    # If any expected time is missing in the data, raise an AssertionError
+    assert not missing_times, f"The following times are missing in the data: {missing_times}"
 
 
 
