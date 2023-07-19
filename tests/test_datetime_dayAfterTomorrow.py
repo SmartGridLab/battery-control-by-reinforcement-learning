@@ -5,6 +5,10 @@
 
 import pandas as pd
 import datetime
+import subprocess
+
+# Run the python file
+subprocess.run(['python', './Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
 
 # Read the CSV file
 weather_data = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
