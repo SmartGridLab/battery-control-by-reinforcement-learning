@@ -39,7 +39,7 @@ def main():
     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
 
     #price_forecast.pyを実行する
-    #subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
     # ESS_control.pyを実行する
     #subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_control.py'])
