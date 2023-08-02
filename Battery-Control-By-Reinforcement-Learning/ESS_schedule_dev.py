@@ -122,12 +122,9 @@ class ESS_Model(gym.Env):
             time = self.time
             count = self.count
             soc = (self.battery / self.battery_MAX) # %
-            #soc_true = (self.battery_true / self.battery_MAX)
-            #battery_true = self.battery_true
 
             self.all_soc.append(soc*100)
             self.all_battery.append(self.battery)
-            #self.all_soc_true.append(soc_true*100)
             self.all_price.append(self.price_time)
             self.all_time.append(time/2)
             self.all_count.append(count/2)
@@ -150,40 +147,16 @@ class ESS_Model(gym.Env):
                 action_real = ACTION
             self.all_action_fil.append(action_real)
 
-            #if self.PV_true_time < -ACTION and action < 0:
-            #    action_true = -self.PV_true_time[0]
-            #elif action > 0 and 0 < battery_true < ACTION:
-            #    action_true = battery_true
-            #elif battery_true == self.battery_MAX and action < 0:
-            #    action_true = 0
-            #elif action > 0 and battery_true == 0:
-            #    action_true = 0
-            #else:
-            #    action_true = ACTION
-            #self.all_action_true.append(action_true)
-
             pred_battery = self.battery
-            #pred_battery_true = battery_true
             next_battery = self.battery - action_real/2
             next_battery = next_battery
-            #battery_true = battery_true - action_true/2
-            #battery_true = battery_true
-            #if battery_true < 0:
-                #battery_true = 0
-            #elif battery_true > self.battery_MAX:
-                #battery_true = np.array([self.battery_MAX])
-                #battery_true = battery_true[0]
+
             if next_battery > self.battery_MAX:
                 next_battery = self.battery_MAX
             elif next_battery < 0:
                 next_battery = 0
             if action_real < 0:
                 self.PV_out_time = self.PV_out_time - (self.battery - pred_battery) # 充電に使った分を引く
-            #if action_true < 0:
-                #self.PV_true_time = self.PV_true_time - (battery_true - pred_battery_true) # 充電に使った分を引く
-
-
-            
             
             # rewardの計算
             # 評価用の充電残量
@@ -197,9 +170,7 @@ class ESS_Model(gym.Env):
             time = self.time
             self.count += 1
             self.battery = next_battery
-            #self.battery_true = battery_true
             soc = (self.battery / self.battery_MAX) # %
-            #soc_true = (self.battery_true / self.battery_MAX) # %
 
             if self.time == 48:
                 self.days += 1
@@ -250,26 +221,18 @@ class ESS_Model(gym.Env):
         self.time = 0
         self.count = 0
         self.battery = 0
-        #self.battery_true = 0 
         self.days = 1
         self.rewards = []
         self.all_PV_out_time = []
-        #self.all_PV_true_time = []
         self.all_soc = []
-        #self.all_soc_true = []
-        #self.all_soc_real = []
         self.all_battery = []
         self.all_price = []
-        #self.all_price_true = []
         self.all_time = []
         self.all_count = []
         self.all_action = []
         self.all_action_fil = []
-        #self.all_action_true = []
         self.all_imbalance = []
-        #self.all_imbalance_true = []
         self.sell_PVout = []
-        #self.sell_PVtrue = []
 
         self.data_set()
         state = [self.battery/4]
@@ -326,22 +289,28 @@ class ESS_Model(gym.Env):
             self.input_imbalance_data = (self.imbalance[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
 
     #Reward設定
-    # 変更完了
     def reward_set(self, ACTION, n_battery):
+        #ACTION > 0 →放電  ACTION < 0 →充電
         reward = 0
+        
         # 現在の状態と行動に対するreward
         # 充電する場合
         if ACTION <= 0:
-             # 充電する量がPV出力より高いならペナルティ(今の状態×行動)
+            # 売電量(PV出力-充電量)に対するreward(今の状態×行動)
+            if -ACTION < self.input_PV:
+                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.input_PV + ACTION)
+            # 充電する量がPV出力より高いならペナルティ(今の状態×行動)
             if -ACTION > self.input_PV:
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION
         
         # 放電する場合
         if ACTION > 0:
+            # PV出力からの売電量に対するreward
+            reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.input_PV
             # 放電量がSoCより大きいならペナルティ(今の状態×行動)
             if ACTION > self.battery: 
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)
-            # 放電のときのreward(今の状態×行動)
+            # 売電(放電)量に対するreward(今の状態×行動)
             if ACTION <= self.battery:
                 reward += ((self.gamma)**(self.time_stamp))*self.input_price*ACTION
 
@@ -364,12 +333,6 @@ class ESS_Model(gym.Env):
         pp.savefig(graph_2)
         pp.savefig(graph_3)
 
-        #if self.mode == "test":
-            #graph_6 = self.schedule_PV(self.all_PV_out_time)
-            #pp.savefig(graph_6)
-            #self.imb_eva() # インバランス料金の算出(評価値)
-            #pp.savefig(self.imb_Graph)
-            #pp.savefig(self.imb_Graph_PV)
         pp.close()
 
     def schedule(self, action, PV, soc, mode):
@@ -419,13 +382,10 @@ class ESS_Model(gym.Env):
 
         if self.mode == "test":
             self.all_count = pd.DataFrame(self.all_count)
-
             action = pd.DataFrame(action)
 
-
             soc = [x.item() if isinstance(x, np.ndarray) else x for x in soc]
-            soc = pd.DataFrame(soc) #すでにod配列になってるくさい
-
+            soc = pd.DataFrame(soc) #すでにpd配列になってるくさい
 
             PV = pd.DataFrame(PV)
             price = pd.DataFrame(self.all_price)
@@ -489,7 +449,6 @@ class ESS_Model(gym.Env):
         
         if mode == "train":
             print("-モデル学習開始-")
-            #self.model = PPO("MlpPolicy", env, gamma = 0.9, verbose=0, ent_coef = 0.01, learning_rate = 0.0001, n_steps = 48, tensorboard_log="./PPO_tensorboard/") 
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
                             verbose=0, tensorboard_log="./PPO_tensorboard/") 
@@ -530,8 +489,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
