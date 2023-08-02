@@ -132,29 +132,39 @@ class ESS_Model(gym.Env):
             self.all_PV_out_time.append(self.PV_out_time[0])
             self.all_imbalance.append(self.imbalance)
 
+            # PV発電量が0未満の場合、0に設定
             if self.PV_out_time < 0:
                 self.PV_out_time = [0]
-                    
+            # 充電時、PV発電量<充電量で場合、充電量をPV出力値へ調整
             if self.PV_out_time < -ACTION and action < 0:
                 action_real = -self.PV_out_time
+            # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
             elif action > 0 and 0 < self.battery < ACTION:
                 action_real = self.battery
+            # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
             elif self.battery == self.battery_MAX and action < 0:
                 action_real = 0
+            # 放電時、蓄電池残量が0の場合、放電量を0へ調整
             elif action > 0 and self.battery == 0:
                 action_real = 0
+            # 上記条件に当てはまらない場合、充放電量の調整は行わない
             else:
                 action_real = ACTION
+            # 実際の充放電量をリストに追加
             self.all_action_fil.append(action_real)
 
+            # 現在のtimeにおける蓄電池残量を保存
             pred_battery = self.battery
-            next_battery = self.battery - action_real/2
-            next_battery = next_battery
+            # 次のtimeにおける蓄電池残量を計算
+            next_battery = self.battery - action_real/2 ### 1.5倍したものを0.5倍になっている理由とは###
 
+            # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
             if next_battery > self.battery_MAX:
                 next_battery = self.battery_MAX
+            # 次のtimeにおける蓄電池残量が0kwh未満の場合、0に制限
             elif next_battery < 0:
                 next_battery = 0
+            # 充電の場合、PV発電量から充電量を差し引く
             if action_real < 0:
                 self.PV_out_time = self.PV_out_time - (self.battery - pred_battery) # 充電に使った分を引く
             
@@ -292,13 +302,13 @@ class ESS_Model(gym.Env):
     def reward_set(self, ACTION, n_battery):
         #ACTION > 0 →放電  ACTION < 0 →充電
         reward = 0
-        
+
         # 現在の状態と行動に対するreward
         # 充電する場合
         if ACTION <= 0:
             # 売電量(PV出力-充電量)に対するreward(今の状態×行動)
             if -ACTION < self.input_PV:
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.input_PV + ACTION)
+                reward += ((self.omega)**(self.time_stamp))*self.input_price*self.PV_out_time
             # 充電する量がPV出力より高いならペナルティ(今の状態×行動)
             if -ACTION > self.input_PV:
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION
@@ -306,7 +316,7 @@ class ESS_Model(gym.Env):
         # 放電する場合
         if ACTION > 0:
             # PV出力からの売電量に対するreward
-            reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.input_PV
+            reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.PV_out_time
             # 放電量がSoCより大きいならペナルティ(今の状態×行動)
             if ACTION > self.battery: 
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)
@@ -399,6 +409,7 @@ class ESS_Model(gym.Env):
 
         return fig
 
+    #使用しない
     def schedule_PV(self, PV_true, PV_pred):
         fig = plt.figure(figsize=(22, 12), dpi=80)
         ax1 = fig.add_subplot(111)
@@ -489,8 +500,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
