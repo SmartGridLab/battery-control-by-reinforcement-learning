@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import torch
 import math as ma
 import tkinter as tk
@@ -52,11 +53,10 @@ class ESS_Model(gym.Env):
         #データの作成
         print("-データ作成-")
         if self.mode == "train":
-
-            self.time_stamp = input_data["hour"]
-
+            # 30分単位のため、料金を0.5倍
             price = input_data["price"]/2
             imbalance = input_data["imbalance"]/2
+
             PVout = input_data["PVout"]
     
             price_data = price
@@ -65,12 +65,10 @@ class ESS_Model(gym.Env):
             
 
         elif self.mode == "test":
-
-            self.time_stamp = predict_data["hour"]
-
+            # 30分単位のため、料金を0.5倍
             price = predict_data["price"]/2
             imbalance = predict_data["imbalance"]/2
-            self.PV = PV_parameter #upper, lower, PVoutの選択用
+            #self.PV = PV_parameter #upper, lower, PVoutの選択用、現在使ってないが、今後のために保留
             PVout = predict_data["PVout"]
             
             price_data = price
@@ -263,7 +261,6 @@ class ESS_Model(gym.Env):
     # ---------------------------------------
 
     # 入力データの設定
-    # 変更完了
     def data_set(self):
         
         self.PV_out_time = self.PVout[self.time]
@@ -345,7 +342,25 @@ class ESS_Model(gym.Env):
 
         pp.close()
 
-    def schedule(self, action, PV, soc, mode):
+    def schedule(self, action, PV, soc, mode,):
+
+        ## test時のtime_stampを取得
+        #入力データから取得
+        predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
+        year_stamp = predict_data["year"]
+        month_stamp = predict_data["month"]
+        day_stamp = predict_data["day"]
+        hour_stamp = predict_data["hour"]
+
+        # hour_stampを整数化
+        hour_stamp_ = [int(hour) for hour in hour_stamp]
+        # minute_stampをhourの小数点第一位に応じて設定
+        minute_stamp = [0 if int(hour * 10) % 10 == 0 else 30 for hour in hour_stamp]
+        
+        # 時系列として統合
+        time_stamp = pd.to_datetime({'year': year_stamp, 'month': month_stamp, 'day': day_stamp, 'hour': hour_stamp_, 'minute': minute_stamp})
+
+
         fig = plt.figure(figsize=(22, 12), dpi=80)
         ax1 = fig.add_subplot(111)
         ax2 = ax1.twinx()
@@ -356,21 +371,30 @@ class ESS_Model(gym.Env):
         ax2.tick_params(axis='y', labelsize=35)
         
         if self.mode == "train":
+            # プロット
             ax1.plot(self.all_time, action, "blue", drawstyle="steps-post", label="Charge and discharge")
             ax1.plot(self.all_time, PV, "Magenta", label="PV generation")
             ax2.plot(self.all_time, soc, "red", label="SoC")
+            # 横軸の目盛りを設定
+            ax1.set_xticks(np.arange(0, 24, 6))
+            ax2.set_xticks(np.arange(0, 24, 6))
+            
         elif self.mode == "test":
-            # テストデータの時間に対応するようにself.all_countを設定する
-            self.all_count = np.arange(0, len(action)/2, 0.5)
-            ax1.plot(self.all_count, action, "blue", drawstyle="steps-post", label="Charge and discharge")
-            ax1.plot(self.all_count, PV, "Magenta", label="PV generation")
-            ax2.plot(self.all_count, soc, "red", label="SoC")
+            # プロット
+            ax1.plot(time_stamp, action, "blue", drawstyle="steps-post",label="Charge and discharge")
+            ax1.plot(time_stamp, PV, "Magenta",label="PV generation")
+            ax2.plot(time_stamp, soc, "red",label="SoC")
+            # 横軸の設定
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter("%-H"))  # 時刻のフォーマット
+            ax1.xaxis.set_major_locator(mdates.HourLocator(interval=6))  # 6時間ごとに目盛りを設定
+            plt.xticks(rotation=45)  # x軸のラベルを回転
+
 
         if mode == 0: # 電力価格ありのグラフ
             if self.mode == "train":
                 ax1.plot(self.all_time, self.all_price, "green", drawstyle="steps-post", label="Power rates")
             elif self.mode == "test":
-                ax1.plot(self.all_count, self.all_price, "green", drawstyle="steps-post", label="Power rates")
+                ax1.plot(time_stamp, self.all_price, "green", drawstyle="steps-post", label="Power rates")
             ax1.set_ylabel("Power [kW] / Power rates [Yen]", fontsize=35)
         elif mode == 1:
             ax1.set_ylim([-2, 2])
@@ -383,7 +407,8 @@ class ESS_Model(gym.Env):
         if self.mode == "train":
             ax1.set_xlim([0, 23.5])
         elif self.mode == "test":
-            ax1.set_xlim([0, 23.5 * (self.test_days - 1)])
+            # 1日分を想定した設定(0～47)
+            ax1.set_xlim([time_stamp[0], time_stamp[47]])
         ax1.set_xlabel('Time [hour]', fontsize=35)
         ax1.grid(True)
         ax2.set_ylabel("SoC[%]", fontsize=35)
@@ -391,7 +416,10 @@ class ESS_Model(gym.Env):
         plt.close()
 
         if self.mode == "test":
-            self.all_count = pd.DataFrame(self.all_count)
+
+            # テストデータの時刻
+            hour_stamp = pd.DataFrame(hour_stamp)
+
             action = pd.DataFrame(action)
 
             soc = [x.item() if isinstance(x, np.ndarray) else x for x in soc]
@@ -399,7 +427,7 @@ class ESS_Model(gym.Env):
 
             PV = pd.DataFrame(PV)
             price = pd.DataFrame(self.all_price)
-            result_data = pd.concat([self.all_count,action],axis=1)
+            result_data = pd.concat([hour_stamp,action],axis=1)
             result_data = pd.concat([result_data,PV],axis=1)
             result_data = pd.concat([result_data,soc],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
@@ -487,7 +515,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 10 # 10000000  
+episode = 20 # 10000000  
 
 print("--Trainモード開始--")
 
@@ -500,8 +528,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
