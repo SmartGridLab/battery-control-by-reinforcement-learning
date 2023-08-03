@@ -11,7 +11,7 @@ import tkinter as tk
 
 from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
-from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
+#from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 print("\n---充放電計画策定プログラム開始---\n")
 
@@ -35,22 +35,22 @@ class ESS_Model(gym.Env):
             self.last_day = self.test_days
         self.all_rewards = []
 
-        #データのロード
+        # データのロード
         print("-データロード-")
-        #学習データ
+        # 学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
-        #テストデータ(これが充放電計画策定したいもの)
+        # テストデータ(これが充放電計画策定したいもの)
         predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
 
-        #学習データの日数+1日分データが必要
-        #空データドッキング
+        # 学習データの日数+1日分データが必要
+        # 空データドッキング
         data = [[0] * 20] * 48
         columns = ["year","month","day","hour","temperature","total precipitation","u-component of wind","v-component of wind","radiation flux","pressure","relative humidity","PVout","price","imbalance",
                    "yearSin","yearCos","monthSin","monthCos","hourSin","hourCos"]
         new_rows_df = pd.DataFrame(data, columns=columns)
         input_data = input_data.append(new_rows_df, ignore_index=True)
 
-        #データの作成
+        # データの作成
         print("-データ作成-")
         if self.mode == "train":
             # 30分単位のため、料金を0.5倍
@@ -76,7 +76,7 @@ class ESS_Model(gym.Env):
             PVout_data = PVout
            
 
-        #pandas -> numpy変換,型変換
+        # pandas -> numpy変換,型変換
         print("-データ変換-")
         self.price_all = price_data.values
         self.price = self.price_all.reshape((len(self.price_all), 1)) 
@@ -87,11 +87,11 @@ class ESS_Model(gym.Env):
         self.PVout_all = PVout_data.values
         self.PVout = self.PVout_all.reshape((len(self.PVout_all), 1))
 
-        #アクション
+        # アクション
         self.ACTION_NUM = action_space #アクションの数(現状は48の約数のみ)
         self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape = (self.ACTION_NUM,))
 
-        #状態の上限と下限の設定
+        # 状態の上限と下限の設定
         low_box = np.zeros(self.ACTION_NUM*2+1) # 入力データの下限値×入力データの数
         high_box = np.ones(self.ACTION_NUM*2+1) # 入力データの上限値×入力データの数
         LOW = np.array(low_box)
@@ -100,8 +100,9 @@ class ESS_Model(gym.Env):
 
         # 初期データの設定
         self.reset()
+        # socをここで設定
 
-    # rewardの決定
+    #### timeごとのrewardの計算
     def step(self, action): 
         done = False # True:終了　False:学習継続
 
@@ -130,6 +131,8 @@ class ESS_Model(gym.Env):
             self.all_PV_out_time.append(self.PV_out_time[0])
             self.all_imbalance.append(self.imbalance)
 
+
+            #### actionを適正化(充電をPVの出力があるときのみに変更)
             # PV発電量が0未満の場合、0に設定
             if self.PV_out_time < 0:
                 self.PV_out_time = [0]
@@ -149,13 +152,14 @@ class ESS_Model(gym.Env):
             else:
                 action_real = ACTION
             # 実際の充放電量をリストに追加
-            self.all_action_fil.append(action_real)
+            self.all_action_real.append(action_real)
 
-            # 現在のtimeにおける蓄電池残量を保存
-            pred_battery = self.battery
+
+            #### 蓄電池残量の更新
             # 次のtimeにおける蓄電池残量を計算
             next_battery = self.battery - action_real/2 ### 1.5倍したものを0.5倍になっている理由とは###
 
+            ### 蓄電池残量の挙動チェック
             # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
             if next_battery > self.battery_MAX:
                 next_battery = self.battery_MAX
@@ -164,27 +168,34 @@ class ESS_Model(gym.Env):
                 next_battery = 0
             # 充電の場合、PV発電量から充電量を差し引く
             if action_real < 0:
-                self.PV_out_time = self.PV_out_time - (self.battery - pred_battery) # 充電に使った分を引く
+                self.PV_out_time = self.PV_out_time + action_real
+
             
-            # rewardの計算
+            
+            #### rewardの計算
             # 評価用の充電残量
             n_battery = self.battery - ACTION/2 ### どうして充電残量は ACTION/2 ? ###
-
             # これまでのrewardに時刻self.timeのrewardを加算
             reward += self.reward_set(ACTION ,n_battery)
 
-                            
-            self.time += 1
-            time = self.time
-            self.count += 1
+            # SoC算出
             self.battery = next_battery
             soc = (self.battery / self.battery_MAX) # %
 
+            ## timeデータ更新         
+            self.time += 1
+            time = self.time
+            self.count += 1
+
+            # timeが最終コマのとき
             if self.time == 48:
                 self.days += 1
                 self.time = 0
 
+            # 売電量の更新
             self.sell_PVout.append(self.PV_out_time[0])
+
+
             # 入力データ(学習時：実測　テスト時：予測)
             self.data_set()
         
@@ -225,7 +236,8 @@ class ESS_Model(gym.Env):
 
         return state, reward, done, {}
     
-    def reset(self): # 状態を初期化
+    # 状態の初期化
+    def reset(self):
         self.time = 0
         self.count = 0
         self.battery = 0
@@ -233,12 +245,13 @@ class ESS_Model(gym.Env):
         self.rewards = []
         self.all_PV_out_time = []
         self.all_soc = []
+
         self.all_battery = []
         self.all_price = []
         self.all_time = []
         self.all_count = []
-        self.all_action = []
-        self.all_action_fil = []
+        self.all_action = []    # 蓄電池動作(修正なし)
+        self.all_action_real = []   # 蓄電池動作(修正あり)
         self.all_imbalance = []
         self.sell_PVout = []
 
@@ -252,10 +265,8 @@ class ESS_Model(gym.Env):
     # --------使わないけど必要---------------
     def render(self, mode='human', close=False):
         pass
-
     def close(self): 
         pass
-
     def seed(self): 
         pass
     # ---------------------------------------
@@ -295,7 +306,7 @@ class ESS_Model(gym.Env):
             self.input_price_data = (self.price[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
             self.input_imbalance_data = (self.imbalance[48*(self.days - 1) + self.time:48*(self.days - 1) + self.time + self.ACTION_NUM]/self.MAX_price).T[0]
 
-    #Reward設定
+    # timeごとのrewardの計算 > rewardの設定内容
     def reward_set(self, ACTION, n_battery):
         #ACTION > 0 →放電  ACTION < 0 →充電
         reward = 0
@@ -328,22 +339,22 @@ class ESS_Model(gym.Env):
 
         return reward
 
-    #グラフ作成 評価値算出
+    #### timeごとのrewardの計算 > グラフ作成
     def evalution(self, pdf_name):
         pp = PdfPages(pdf_name) # PDFの作成
         if self.mode == "train":
             graph_1 = self.graph(self.all_rewards)
             pp.savefig(graph_1)
-        graph_2 = self.schedule(self.all_action, self.all_PV_out_time, self.all_soc, mode = 0)
-        graph_3 = self.schedule(self.all_action, self.all_PV_out_time, self.all_soc, mode = 1)
+        graph_2 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_soc, mode = 0)
+        graph_3 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_soc, mode = 1)
 
         pp.savefig(graph_2)
         pp.savefig(graph_3)
 
         pp.close()
 
-    def schedule(self, action, PV, soc, mode,):
-
+    #### timeごとのrewardの計算 > グラフ作成 > 充放電計画のデータ出力(名前変える)
+    def schedule(self, action, PV, soc, mode,):     #修正後のactionを引き渡す
         ## test時のtime_stampを取得
         #入力データから取得
         predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
@@ -418,54 +429,39 @@ class ESS_Model(gym.Env):
         if self.mode == "test":
 
             # テストデータの時刻
+            year_stamp = pd.DataFrame(year_stamp)
+            month_stamp = pd.DataFrame(month_stamp)
+            day_stamp = pd.DataFrame(day_stamp)
             hour_stamp = pd.DataFrame(hour_stamp)
 
-            action = pd.DataFrame(action)
+            
+            
 
+            action = [x.item() if isinstance(x, np.ndarray) else x for x in action]
             soc = [x.item() if isinstance(x, np.ndarray) else x for x in soc]
-            soc = pd.DataFrame(soc) #すでにpd配列になってるくさい
+            energy_transfer = self.all_PV_out_time + self.all_action_real
 
+            action = pd.DataFrame(action)
             PV = pd.DataFrame(PV)
+            soc = pd.DataFrame(soc) 
+            energy_transfer = pd.DataFrame(energy_transfer)
             price = pd.DataFrame(self.all_price)
-            result_data = pd.concat([hour_stamp,action],axis=1)
+            result_data = pd.concat([year_stamp,month_stamp],axis=1)
+            result_data = pd.concat([result_data,day_stamp],axis=1)
+            result_data = pd.concat([result_data,hour_stamp],axis=1)
+            result_data = pd.concat([result_data,action],axis=1)
             result_data = pd.concat([result_data,PV],axis=1)
             result_data = pd.concat([result_data,soc],axis=1)
+            result_data = pd.concat([result_data,energy_transfer],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
-            label_name = ["hour","charge/discharge","PVout","soc","price"] # 列名
+            #label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price"] # 列名
+            label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","price"]
             result_data.columns = label_name # 列名付与
             result_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
         return fig
 
-    #使用しない
-    def schedule_PV(self, PV_true, PV_pred):
-        fig = plt.figure(figsize=(22, 12), dpi=80)
-        ax1 = fig.add_subplot(111)
-        #ax2 = ax1.twinx()
-        #ax2.set_ylim([-1,101])
-        ax1.tick_params(axis='x', labelsize=35)
-        ax1.tick_params(axis='y', labelsize=35)
-        #ax2.tick_params(axis='x', labelsize=35)
-        #ax2.tick_params(axis='y', labelsize=35)
-        #ax1.plot(self.all_count, action, "blue", drawstyle="steps-post",label="充放電")
-        ax1.plot(self.all_count, PV_true, "red",label="PV generation: Actual")
-        ax1.plot(self.all_count, PV_pred, "blue",label="PV generation: Forecast")
-        #ax2.plot(self.all_count, soc, "red",label="SoC")
-        ax1.plot(self.all_count, self.all_price_true, "green",drawstyle="steps-post",label="Electricity Price: Actual")
-        ax1.plot(self.all_count, self.all_price, "Magenta",drawstyle="steps-post",label="Electricity Price: Forecast")
-        ax1.set_ylabel("Power [kW] Price [Yen]", fontsize = 35) 
-        h1, l1 = ax1.get_legend_handles_labels()
-        #h2, l2 = ax2.get_legend_handles_labels()
-        ax1.legend(h1, l1, loc='upper left', prop={"size": 35}).get_frame().set_alpha(0.0)
-        ax1.set_xlim([0,23.5*(self.test_days - 1)])
-        ax1.set_xlabel('Time [hour]', fontsize = 35)
-        ax1.grid(True)
-        #ax2.set_ylabel("SoC[%]", fontsize = 35)
-        plt.tick_params(labelsize=35)
-        plt.close()
-
-        return fig
-    
+    # timeごとのrewardの計算 > グラフ作成 > rewardの推移のグラフ出力
     def graph(self, y):
         fig = plt.figure(figsize=(24, 14), dpi=80)
         plt.plot(np.arange(self.episode), y, label = "Reward")
@@ -477,14 +473,12 @@ class ESS_Model(gym.Env):
         
         return fig
 
-    #メインルーチン   
-    #root = tk.Tk()
-    #root.mainloop()
+    # メインルーチン   
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
         
         # #Tkinter処理 epsode途中に終了を防ぐ
-        # root = tk.Tk()
-        # root.withdraw()
+        root = tk.Tk()
+        root.withdraw()
         
         if mode == "train":
             print("-モデル学習開始-")
@@ -515,7 +509,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 20 # 10000000  
+episode = 1000 # 10000000  
 
 print("--Trainモード開始--")
 
@@ -528,8 +522,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
