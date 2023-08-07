@@ -17,4 +17,5 @@ dataframe = pd.DataFrame(columns=columns)
 
 
 # DataframeをCSVファイルとして出力
+# 作成時間も同時に記入できるとよさそう？
 dataframe.to_csv('./Battery-Control-By-Reinforcement-Learning/dataframe.csv', index=False)

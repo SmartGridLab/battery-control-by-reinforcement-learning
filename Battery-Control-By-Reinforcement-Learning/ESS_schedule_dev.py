@@ -24,10 +24,12 @@ class ESS_Model(gym.Env):
         self.total_step = action_space # 1Dayの総コマ数
         self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = ma.exp(1/action_space) # 充電に対する割引率
-        self.battery_MAX = 4 # ４kWh
+        self.battery_MAX = 4 # 蓄電池の定格容量4kWh
         self.MAX_reward = -10000
         self.Train_Days = train_days # 学習Day
         self.test_days = test_day - 1 # テストDay数
+        
+        # mode select
         self.mode = mode
         if mode == "train":
             self.last_day = self.Train_Days
@@ -54,11 +56,12 @@ class ESS_Model(gym.Env):
         print("-データ作成-")
         if self.mode == "train":
             # 30分単位のため、料金を0.5倍
-            price = input_data["price"]/2
-            imbalance = input_data["imbalance"]/2
+            price = input_data["price"]/2   # [JPY/kWh/30min]
+            imbalance = input_data["imbalance"]/2   # [JPY/kWh/30min]
 
-            PVout = input_data["PVout"]
-    
+            PVout = input_data["PVout"] # [kW]
+
+            # 値を格納
             price_data = price
             imbalance_data = imbalance
             PVout_data = PVout
@@ -66,11 +69,12 @@ class ESS_Model(gym.Env):
 
         elif self.mode == "test":
             # 30分単位のため、料金を0.5倍
-            price = predict_data["price"]/2
-            imbalance = predict_data["imbalance"]/2
+            price = predict_data["price"]/2   # [JPY/kWh/30min]
+            imbalance = predict_data["imbalance"]/2   # [JPY/kWh/30min]
             #self.PV = PV_parameter #upper, lower, PVoutの選択用、現在使ってないが、今後のために保留
-            PVout = predict_data["PVout"]
+            PVout = predict_data["PVout"]   # [kW]
             
+            # 値を格納
             price_data = price
             imbalance_data = imbalance
             PVout_data = PVout
@@ -454,8 +458,8 @@ class ESS_Model(gym.Env):
             result_data = pd.concat([result_data,soc],axis=1)
             result_data = pd.concat([result_data,energy_transfer],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
-            #label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price"] # 列名
-            label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","price"]
+            label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price"] # 列名
+            #label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","price"]
             result_data.columns = label_name # 列名付与
             result_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
@@ -509,7 +513,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 1000 # 10000000  
+episode = 100 # 10000000  
 
 print("--Trainモード開始--")
 
