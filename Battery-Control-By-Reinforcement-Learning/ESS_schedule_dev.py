@@ -471,7 +471,6 @@ class ESS_Model(gym.Env):
             result_data = pd.concat([result_data,energy_transfer],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
             label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price"] # 列名
-            #label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","price"]
             result_data.columns = label_name # 列名付与
             result_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
