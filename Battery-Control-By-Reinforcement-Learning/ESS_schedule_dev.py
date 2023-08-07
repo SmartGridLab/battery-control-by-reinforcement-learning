@@ -21,6 +21,7 @@ class ESS_Model(gym.Env):
     def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
         #パラメータの定義
         self.episode = 0
+        self.end_count = 0  # 追加エピソード
         self.total_step = action_space # 1Dayの総コマ数
         self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = ma.exp(1/action_space) # 充電に対する割引率
@@ -112,7 +113,7 @@ class ESS_Model(gym.Env):
 
         #初期のreward
         reward = 0
-        all_action = action
+        all_action = action #[kW]
 
         #action > 0 →放電  action < 0 →充電
         for self.time_stamp in range(0, self.ACTION_NUM):
@@ -120,8 +121,8 @@ class ESS_Model(gym.Env):
             # float型へ
             action = float(all_action[self.time_stamp])
 
-            ACTION = action*1.5 ### ACTIONとは？なぜ1.5倍？###
-            ACTION = round(ACTION, 1)
+            ACTION = action*1.2 # [kW]  #値を拡大することでrewardへ影響力を持たせる
+            ACTION = round(ACTION, 1) # 小数点第1位にまるめる
             time = self.time
             count = self.count
             soc = (self.battery / self.battery_MAX) # %
@@ -161,7 +162,7 @@ class ESS_Model(gym.Env):
 
             #### 蓄電池残量の更新
             # 次のtimeにおける蓄電池残量を計算
-            next_battery = self.battery - action_real/2 ### 1.5倍したものを0.5倍になっている理由とは###
+            next_battery = self.battery - action_real*0.5 #action_real*0.5とすることで[kWh]へ変換
 
             ### 蓄電池残量の挙動チェック
             # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
@@ -174,11 +175,9 @@ class ESS_Model(gym.Env):
             if action_real < 0:
                 self.PV_out_time = self.PV_out_time + action_real
 
-            
-            
             #### rewardの計算
             # 評価用の充電残量
-            n_battery = self.battery - ACTION/2 ### どうして充電残量は ACTION/2 ? ###
+            n_battery = self.battery - ACTION*0.5 #action_real*0.5とすることで[kWh]へ変換
             # これまでのrewardに時刻self.timeのrewardを加算
             reward += self.reward_set(ACTION ,n_battery)
 
@@ -197,30 +196,40 @@ class ESS_Model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            self.sell_PVout.append(self.PV_out_time[0])
+            energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
+            self.all_energy_transfer.append(energy_transfer)
 
 
             # 入力データ(学習時：実測　テスト時：予測)
             self.data_set()
-        
+    
+        # 現在のrewardをself.rewardsリストに追加
         self.rewards.append(reward)
+
+        # timeが最終かつ学習データ最終日(エピソード終了時)に記録
         if time == 48 and self.days == self.last_day and self.mode == "train": #学習の経過表示、リセット
+            # 最初のエピソードのときに値を設定
             if self.episode == 0:
                 self.MAX_reward = np.sum(self.rewards)
+
+            # エピソード数更新
             self.episode += 1
-
-            print("episode:"+str(self.episode) + "/"+str(episode))
-
+            #print("episode:"+str(self.episode) + "/"+str(episode) + " + " + str(self.end_count))
+            # 現在のエピソードのall_rewardsをself.all_rewardsリストに追加
             self.all_rewards.append(np.sum(self.rewards))
 
+            # モデルの報酬の最高値を更新した場合はモデル"ESS_model"を保存
             if np.sum(self.rewards) >= self.MAX_reward:
                 self.MAX_reward = np.sum(self.rewards) # rewardの最高値
                 self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
                 self.model.save("ESS_model")
                 self.end_count = 0
+            # モデルの報酬の最高値を更新できなかった場合はend_count(追加エピソード)を設定
+            # 動作詳細不明
             elif np.sum(self.rewards) < self.MAX_reward:
                 self.end_count += 1
 
+            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
             if self.end_count >= 20000:
                 if self.episode == 100000 or self.episode > 20000:
                     self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
@@ -228,11 +237,17 @@ class ESS_Model(gym.Env):
                     #done = True # 学習終了
                     self.end_count = 0
 
+            # エピソード数表示
+            # print("episode:"+str(self.episode) + "/" + str(episode + self.end_count))
+            print("episode:"+str(self.episode) + "/" + str(episode))
+
+        # testモードの最後に結果をpdfで保存
         if time == 48 and self.days == self.last_day and self.mode == "test":
             self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
-
+        # エピソードが終了の場合は状態をリセット
         if time == 48 and self.days == self.last_day:
             state = self.reset()
+        # 新たな状態を生成
         else:
             state = [soc]
             state.extend(self.input_PV_data)
@@ -249,7 +264,6 @@ class ESS_Model(gym.Env):
         self.rewards = []
         self.all_PV_out_time = []
         self.all_soc = []
-
         self.all_battery = []
         self.all_price = []
         self.all_time = []
@@ -257,7 +271,7 @@ class ESS_Model(gym.Env):
         self.all_action = []    # 蓄電池動作(修正なし)
         self.all_action_real = []   # 蓄電池動作(修正あり)
         self.all_imbalance = []
-        self.sell_PVout = []
+        self.all_energy_transfer = []
 
         self.data_set()
         state = [self.battery/4]
@@ -316,23 +330,24 @@ class ESS_Model(gym.Env):
         reward = 0
 
         # 現在の状態と行動に対するreward
+        # rewardはすべて入出力[kW]*値段[JPY/30min]で計算(実際の報酬ではない)
         # 充電する場合
         if ACTION <= 0:
-            # 売電量(PV出力-充電量)に対するreward(今の状態×行動)
+            # 売電(PV出力-BT入力)に対するreward(今の状態×行動)
             if -ACTION < self.input_PV:
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*self.PV_out_time
-            # 充電する量がPV出力より高いならペナルティ(今の状態×行動)
+                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.PV_out_time + ACTION)
+            # BT入力がPV出力より高いならペナルティ(今の状態×行動)
             if -ACTION > self.input_PV:
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION
         
         # 放電する場合
         if ACTION > 0:
-            # PV出力からの売電量に対するreward
+            # PV出力(売電)に対するreward
             reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.PV_out_time
-            # 放電量がSoCより大きいならペナルティ(今の状態×行動)
+            # BT出力がSoCより大きいならペナルティ(今の状態×行動)
             if ACTION > self.battery: 
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)
-            # 売電(放電)量に対するreward(今の状態×行動)
+            # BT出力(売電)に対するreward(今の状態×行動)...PV出力に加えてBT出力が報酬として加算される
             if ACTION <= self.battery:
                 reward += ((self.gamma)**(self.time_stamp))*self.input_price*ACTION
 
@@ -349,8 +364,8 @@ class ESS_Model(gym.Env):
         if self.mode == "train":
             graph_1 = self.graph(self.all_rewards)
             pp.savefig(graph_1)
-        graph_2 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_soc, mode = 0)
-        graph_3 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_soc, mode = 1)
+        graph_2 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 0)
+        graph_3 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 1)
 
         pp.savefig(graph_2)
         pp.savefig(graph_3)
@@ -358,7 +373,7 @@ class ESS_Model(gym.Env):
         pp.close()
 
     #### timeごとのrewardの計算 > グラフ作成 > 充放電計画のデータ出力(名前変える)
-    def schedule(self, action, PV, soc, mode,):     #修正後のactionを引き渡す
+    def schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後のactionを引き渡す
         ## test時のtime_stampを取得
         #入力データから取得
         predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
@@ -388,7 +403,7 @@ class ESS_Model(gym.Env):
         if self.mode == "train":
             # プロット
             ax1.plot(self.all_time, action, "blue", drawstyle="steps-post", label="Charge and discharge")
-            ax1.plot(self.all_time, PV, "Magenta", label="PV generation")
+            ax1.plot(self.all_time, PVout, "Magenta", label="PV generation")
             ax2.plot(self.all_time, soc, "red", label="SoC")
             # 横軸の目盛りを設定
             ax1.set_xticks(np.arange(0, 24, 6))
@@ -397,7 +412,7 @@ class ESS_Model(gym.Env):
         elif self.mode == "test":
             # プロット
             ax1.plot(time_stamp, action, "blue", drawstyle="steps-post",label="Charge and discharge")
-            ax1.plot(time_stamp, PV, "Magenta",label="PV generation")
+            ax1.plot(time_stamp, PVout, "Magenta",label="PV generation")
             ax2.plot(time_stamp, soc, "red",label="SoC")
             # 横軸の設定
             ax1.xaxis.set_major_formatter(mdates.DateFormatter("%-H"))  # 時刻のフォーマット
@@ -438,15 +453,12 @@ class ESS_Model(gym.Env):
             day_stamp = pd.DataFrame(day_stamp)
             hour_stamp = pd.DataFrame(hour_stamp)
 
-            
-            
-
+            # 値の形式変換
             action = [x.item() if isinstance(x, np.ndarray) else x for x in action]
             soc = [x.item() if isinstance(x, np.ndarray) else x for x in soc]
-            energy_transfer = self.all_PV_out_time + self.all_action_real
 
             action = pd.DataFrame(action)
-            PV = pd.DataFrame(PV)
+            PVout = pd.DataFrame(PVout)
             soc = pd.DataFrame(soc) 
             energy_transfer = pd.DataFrame(energy_transfer)
             price = pd.DataFrame(self.all_price)
@@ -454,7 +466,7 @@ class ESS_Model(gym.Env):
             result_data = pd.concat([result_data,day_stamp],axis=1)
             result_data = pd.concat([result_data,hour_stamp],axis=1)
             result_data = pd.concat([result_data,action],axis=1)
-            result_data = pd.concat([result_data,PV],axis=1)
+            result_data = pd.concat([result_data,PVout],axis=1)
             result_data = pd.concat([result_data,soc],axis=1)
             result_data = pd.concat([result_data,energy_transfer],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
@@ -481,8 +493,8 @@ class ESS_Model(gym.Env):
     def main_root(self, mode, num_episodes, train_days, episode, model_name):
         
         # #Tkinter処理 epsode途中に終了を防ぐ
-        root = tk.Tk()
-        root.withdraw()
+        #root = tk.Tk()
+        #root.withdraw()
         
         if mode == "train":
             print("-モデル学習開始-")
@@ -513,7 +525,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100 # 10000000  
+episode = 5 # 10000000  
 
 print("--Trainモード開始--")
 
@@ -526,8 +538,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
