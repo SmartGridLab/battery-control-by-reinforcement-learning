@@ -57,8 +57,8 @@ class ESS_Model(gym.Env):
         print("-データ作成-")
         if self.mode == "train":
             # 30分単位のため、料金を0.5倍
-            price = input_data["price"]/2   # [JPY/kWh/30min]
-            imbalance = input_data["imbalance"]/2   # [JPY/kWh/30min]
+            price = input_data["price"]/2   # [JPY/kWh] -> [JPY/kW/30min]
+            imbalance = input_data["imbalance"]/2   # [JPY/kWh] -> [JPY/kW/30min]
 
             PVout = input_data["PVout"] # [kW]
 
@@ -70,8 +70,8 @@ class ESS_Model(gym.Env):
 
         elif self.mode == "test":
             # 30分単位のため、料金を0.5倍
-            price = predict_data["price"]/2   # [JPY/kWh/30min]
-            imbalance = predict_data["imbalance"]/2   # [JPY/kWh/30min]
+            price = predict_data["price"]/2   # [JPY/kWh] -> [JPY/kW/30min]
+            imbalance = predict_data["imbalance"]/2   # [JPY/kWh] -> [JPY/kW/30min]
             #self.PV = PV_parameter #upper, lower, PVoutの選択用、現在使ってないが、今後のために保留
             PVout = predict_data["PVout"]   # [kW]
             
@@ -105,7 +105,7 @@ class ESS_Model(gym.Env):
 
         # 初期データの設定
         self.reset()
-        # socをここで設定
+
 
     #### timeごとのrewardの計算
     def step(self, action): 
@@ -460,17 +460,22 @@ class ESS_Model(gym.Env):
             action = pd.DataFrame(action)
             PVout = pd.DataFrame(PVout)
             soc = pd.DataFrame(soc) 
-            energy_transfer = pd.DataFrame(energy_transfer)
-            price = pd.DataFrame(self.all_price)
+            energytransfer = pd.DataFrame(energy_transfer)
+            price = pd.DataFrame(self.price)
+            imbalance = pd.DataFrame(self.imbalance)
+
+            # データ結合
             result_data = pd.concat([year_stamp,month_stamp],axis=1)
             result_data = pd.concat([result_data,day_stamp],axis=1)
             result_data = pd.concat([result_data,hour_stamp],axis=1)
             result_data = pd.concat([result_data,action],axis=1)
             result_data = pd.concat([result_data,PVout],axis=1)
             result_data = pd.concat([result_data,soc],axis=1)
-            result_data = pd.concat([result_data,energy_transfer],axis=1)
+            result_data = pd.concat([result_data,energytransfer],axis=1)
             result_data = pd.concat([result_data,price],axis=1)
-            label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price"] # 列名
+            result_data = pd.concat([result_data,imbalance],axis=1)
+
+            label_name = ["year","month","day","hour","charge/discharge","PVout","SoC","energy_transfer","price","imbalance"] # 列名
             result_data.columns = label_name # 列名付与
             result_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
@@ -537,8 +542,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
 
