@@ -1,1 +1,0 @@
-year,month,day,hour,PV_predict,PV_actual,energyprice_predict,energyprice_actual,imbalanceprice_predict,imbalanceprice_actual,charge/discharge_bid,charge/discharge_plan,charge/discharge_actual,SoC_bid,SoC_plan,SoC_actual,energytransfer_bid,energytransfer_plan,energytransfer_actual,profit

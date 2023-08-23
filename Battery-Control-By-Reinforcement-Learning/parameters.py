@@ -3,13 +3,13 @@ ALPHA_ = 0.05 #　measure of the confidence level of the prediction intervals
 SOFTEN_ = 160 # parameter of Loss to smooth the NN learning curve
 N_LAMBDA = 5 # parameter of Loss that ratios MPIW to PICP
 BETA = 0.01 # the exponential decay rate for the 1st moment estimates in Adam optimization
-EPOCHS = 100 # number of NN learning times
+EPOCHS = 1000 # number of NN learning times
 LR = 0.001 # learnning rate of NN
 SEED = 2021 # seed of random numbers
 
 # Simulation conditons
 DAYS = 2 # days to be forecasted    #weather_data_xxx.csvで入力されたものを導入する場合は2で固定する(1セットを1日分と扱われる)
-N_VERIFICATION = 3 # the number of verification; to examine the variability of the modeling error
+N_VERIFICATION = 4 # the number of verification; to examine the variability of the modeling error
 
 # For Quantile regression
 LOWER_ALPHA = 0.025
