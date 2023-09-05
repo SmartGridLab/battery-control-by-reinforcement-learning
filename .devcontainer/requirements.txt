@@ -85,7 +85,6 @@ rsa==4.9
 scikit-learn==1.1.1
 scipy==1.9.3
 six==1.16.0
-sklearn==0.0.post1
 sphinx-rtd-theme==0.2.4
 stable-baselines3==1.2.0
 stack-data==0.5.1

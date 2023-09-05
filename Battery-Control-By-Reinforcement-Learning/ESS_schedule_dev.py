@@ -230,21 +230,23 @@ class ESS_Model(gym.Env):
                 self.end_count += 1
 
             # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
+            # [2023.09.05 小平]　end_countとepisodeの違いがよくわからない
             if self.end_count >= 20000:
                 if self.episode == 100000 or self.episode > 20000:
                     self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
                     self.model.save("ESS_model_end")
-                    #done = True # 学習終了
+                    #done = True # 学習終了　＃ [2023.09.05 小平]　なぜコメントアウトされている？
                     self.end_count = 0
 
             # エピソード数表示
-            # print("episode:"+str(self.episode) + "/" + str(episode + self.end_count))
+            # print("episode:"+str(self.episode) + "/" + str(episode + self.end_count))  # [2023.09.05 小平]　これいる？
             print("episode:"+str(self.episode) + "/" + str(episode))
 
         # testモードの最後に結果をpdfで保存
         if time == 48 and self.days == self.last_day and self.mode == "test":
             self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
         # エピソードが終了の場合は状態をリセット
+        # [2023.09.05 小平]　なぜリセットする必要があるのか？
         if time == 48 and self.days == self.last_day:
             state = self.reset()
         # 新たな状態を生成
@@ -255,7 +257,7 @@ class ESS_Model(gym.Env):
 
         return state, reward, done, {}
     
-    # 状態の初期化
+    # 状態の初期化：[2023.09.05 小平] 各要素の説明がほしい
     def reset(self):
         self.time = 0
         self.count = 0
@@ -268,13 +270,14 @@ class ESS_Model(gym.Env):
         self.all_price = []
         self.all_time = []
         self.all_count = []
-        self.all_action = []    # 蓄電池動作(修正なし)
-        self.all_action_real = []   # 蓄電池動作(修正あり)
+        self.all_action = []    # 蓄電池動作(修正なし)　[2023.09.05 小平]　具体的に何を修正？
+        self.all_action_real = []   # 蓄電池動作(修正あり)　[2023.09.05 小平]　具体的に何を修正？
         self.all_imbalance = []
         self.all_energy_transfer = []
 
         self.data_set()
-        state = [self.battery/4]
+        # [2023.09.05 小平] stateの要素に何が入る（べきな）のかを説明する
+        state = [self.battery/4] # [2023.09.05 小平]　これは初期SoCだと思われるが、なぜ４ぶんの１？
         state.extend(self.input_PV_data)
         state.extend(self.input_price_data)
 
