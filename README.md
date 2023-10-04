@@ -11,6 +11,9 @@
 何をするのか？：発電量の確率的予測と電力取引（インバランス取引）のアルゴリズムを開発する  
 URL：[LinkedInのリンク](https://www.linkedin.com/posts/rbessa_are-you-a-data-scientist-are-you-interested-activity-7098248306677460992-5DO8?utm_source=share&utm_medium=member_desktop)
 
+■情報
+[Google Drive](https://drive.google.com/drive/folders/1hwIEnC7d4CLOBH7XhkvrMrnH0HQpmEEG?usp=sharing)に情報を集約しています
+
 ■スケジュール  
 2023年11月1日：IEEE DataPortを通じて登録が開始  
 2023年11月1日：開発およびテストのためのコンペティションプラットフォームがOpen  
