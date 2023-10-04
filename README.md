@@ -1,7 +1,42 @@
 ## これはなに？
 強化学習による蓄電池の最適な充放電を実現するためのコードです。  
-2023年10月から IEEE PES のコンペ用に開発しています。詳細はこちら：[Hybrid energy forecasting and trading competition](https://github.com/users/daisukekodaira/projects/4/views/1)
 
+------------  
+2023年10月から IEEE PES のコンペ用に開発しています。Projectはこちら：[Hybrid energy forecasting and trading competition](https://github.com/users/daisukekodaira/projects/4/views/1)   
+
+■コンペの概要  
+主催：IEEE Power & Energy Society Working Group  
+　　　（電力システムの分野で一番大きな学会のworking groupが主催）  
+賞金：2100ドル、320万円  
+何をするのか？：発電量の確率的予測と電力取引（インバランス取引）のアルゴリズムを開発する  
+URL：[LinkedInのリンク](https://www.linkedin.com/posts/rbessa_are-you-a-data-scientist-are-you-interested-activity-7098248306677460992-5DO8?utm_source=share&utm_medium=member_desktop)
+
+■スケジュール  
+2023年11月1日：IEEE DataPortを通じて登録が開始  
+2023年11月1日：開発およびテストのためのコンペティションプラットフォームがOpen  
+2024年1月31日：コンペティション期間の最初の提出（2024年2月1日の予測および入札）  
+2024年4月29日：コンペティション期間の最後の提出  
+2024年5月20日：最終リーダーボードおよび賞の発表  
+
+■作業内容  
+　web上でデータが提供される  
+　↓  
+　自分たちのアルゴリズムによる予測と取引の決定  
+　↓  
+　APIによって自動的に送信される（APIの実装はサポートを受けられる）  
+
+■作業の分担  
+　1. 取りまとめ：小平  
+　2. 電力価格予測:大曽根  
+　3. PV発電量予測:野村  
+　3. 強化学習モデル：後藤  
+　4. インバランス設計：小平  
+
+■進め方  
+全員が集まる定期MTを開催（週に１度　水13:00-14:00）  
+小平との個別のMTは都度  
+
+------------
 
 ## Gettering Started
 ### Installation / 導入
