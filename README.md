@@ -1,6 +1,6 @@
 ## これはなに？
 強化学習による蓄電池の最適な充放電を実現するためのコードです。  
-2023年10月から IEEE PES のコンペ用に開発しています。詳細はこちら：[Hybrid energy forecasting and trading competition]([/Battery-Control-By-Reinforcement-Learning/main.py](https://github.com/users/daisukekodaira/projects/4))
+2023年10月から IEEE PES のコンペ用に開発しています。詳細はこちら：[Hybrid energy forecasting and trading competition]([/Battery-Control-By-Reinforcement-Learning/main.py]([https://github.com/users/daisukekodaira/projects/4](https://github.com/users/daisukekodaira/projects/4/views/1)))
 
 
 ## Gettering Started
