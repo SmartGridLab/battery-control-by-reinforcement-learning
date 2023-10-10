@@ -7,12 +7,14 @@ import pytz
 import time
 
 
-#動作環境選択
-#AIST：実際の時間に合わせて動作
-#MULTI_TEST：複数時間を指定して動作
-#SINGLE_TEST：単体時間を指定して動作
-move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
+# 動作モードの選択
 # -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
+# -------------------------------------------------------------------------
+# 1. AIST: 現実の時刻に合わせて、リアルタイムのデータを読み込んで30分ごとにプログラムを実行
+# 2. MULTI_TEST：指定の日時の期間でプログラムを実行
+# 3. SINGLE_TEST：指定の日時の１コマだけでプログラムを実行
+# -------------------------------------------------------------------------
+move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
 
 #モード選択
 #bid：前日のスポット市場入札
@@ -22,35 +24,8 @@ move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
 # タイムゾーンを設定
 tz = pytz.timezone('Asia/Tokyo')
 
-def main():
-    print("\n---プログラム起動---\n")
-
-    #時刻表示
-    print("時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")
-    print("mode:" + mode)
-
-    #天気予報データ取得
-    if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid_test.py'])
-    elif mode == "realtime":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
-
-    #PV出力予測
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
-
-    #price_forecast.pyを実行する
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
-
-    # ESS_control.pyを実行する
-    #subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_control.py'])
-
-    #終了
-    print("\n---プログラム終了---\n")
-
-
-#AISTモード
+# 1. 実装モード
 if move_mode == "AIST":
-
     #無限ループ
     while True:
     # プログラムの実行コードをここに書く
@@ -72,7 +47,7 @@ if move_mode == "AIST":
         # 30分待機する
         time.sleep(1800)
 
-#MULTI_TESTモード
+# 2. MULTI_TESTモード
 elif move_mode == "TEST":
 
     # 動作開始日と動作終了日の指定
@@ -112,7 +87,7 @@ elif move_mode == "TEST":
             current_time += 0.5
         current_date += datetime.timedelta(days=1)
 
-#SINGLE_TESTモード
+# 3. SINGLE_TESTモード
 elif move_mode == "SINGLE_TEST":
 
     ## 手動で時刻を設定
@@ -120,6 +95,27 @@ elif move_mode == "SINGLE_TEST":
     current_time = 16   #hour(0.5刻み)
     mode = "realtime"   #reaitime　or bid
 
-    main()
+if __name__ == "__main__":
+    print("\n---プログラム起動---\n")
 
+    #時刻表示
+    print("時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")
+    print("mode:" + mode)
 
+    #天気予報データ取得
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid_test.py'])
+    elif mode == "realtime":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
+
+    # PV出力予測：
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
+
+    # 電力価格予測：price_forecast.pyを実行する
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
+
+    # 強化学習による充放電スケジュール：RL_main.pyを実行する
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
+
+    #終了
+    print("\n---プログラム終了---\n")

@@ -15,43 +15,52 @@ from stable_baselines3 import PPO
 warnings.simplefilter('ignore')
 
 class ESS_Model(gym.Env):
-    def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
-        #パラメータの定義
-        self.episode = 0
-        self.end_count = 0  # 追加エピソード
-        self.total_step = action_space # 1Dayの総コマ数
+    def __init__(self, mode, train_days, test_day):      
+        # Action spaceの定義(上下限値を設定。actionは連続値。)
+        self.action_spcae = gym.spaces.Box(low=-1.0, high=1.0) 
+
+        # 状態の上限と下限の設定
+        self.observation_space  = gym.spaces.Box(low=0, high=1)
+
+        # PPOで使うパラメーターの設定        
         self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = ma.exp(1/action_space) # 充電に対する割引率
         self.battery_MAX = 4 # 蓄電池の定格容量4kWh
         self.MAX_reward = -10000
         self.Train_Days = train_days # 学習Day
         self.test_days = test_day - 1 # テストDay数
-        
-        # mode select
-        self.mode = mode
-        if mode == "train":
-            self.last_day = self.Train_Days
-        elif mode == "test":
-            self.last_day = self.test_days
-        self.all_rewards = []
 
-        # アクション
-        self.ACTION_NUM = action_space #アクションの数(現状は48の約数のみ)
-        self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape = (self.ACTION_NUM,)) # Actionに上下限値を設定
+        # ----------------------------------------------------------------------------------
+        num_steps = 200 # M: number of steps
+        num_envs = 1 # N: number of environment
+        envs = RL_env(num_envs)
+        agent = Agent() # PPO
 
-        # 状態の上限と下限の設定
-        low_box = np.zeros(self.ACTION_NUM*2+1) # 入力データの下限値×入力データの数
-        high_box = np.ones(self.ACTION_NUM*2+1) # 入力データの上限値×入力データの数
-        LOW = np.array(low_box)
-        HIGH = np.array(high_box)
-        self.observation_space  = gym.spaces.Box(low=LOW, high=HIGH)
+        # Initial observations and done flags
+        next_obs = envs.reset()
+        next_done = [0] * num_envs  # List of zeros of length N
 
-        # 初期データの設定
-        self.reset()
+        num_updates = total_timesteps // (num_envs * num_steps)
+
+    # Training loop
+    for update in range(1, num_updates):
+        data = []
+
+        # ROLLOUT PHASE: Interact with the environment
+        for step in range(num_steps):
+            obs, done = next_obs, next_done
+            action, other_stuff = agent.get_action(obs)
+            next_obs, reward, next_done, _ = envs.step(action)
+
+            # Store interaction data
+            data.append([obs, action, reward, done, other_stuff])
+
+        # LEARNING PHASE: Update the agent
+        agent.learn(data, next_obs, next_done)
 
 
     #### timeごとのrewardの計算
-    def step(self, action): 
+    def step(self, action):
         done = False # True:終了　False:学習継続
 
         #初期のreward
