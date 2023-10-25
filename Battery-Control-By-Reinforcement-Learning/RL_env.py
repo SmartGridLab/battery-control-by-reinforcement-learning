@@ -14,7 +14,7 @@ from stable_baselines3 import PPO
 
 warnings.simplefilter('ignore')
 
-class ESS_Model(gym.Env):
+class ESS_ModelEnv(gym.Env):
     def __init__(self, mode, train_days, test_day):      
         # Action spaceの定義(上下限値を設定。actionは連続値。)
         self.action_spcae = gym.spaces.Box(low=-1.0, high=1.0) 
@@ -42,21 +42,21 @@ class ESS_Model(gym.Env):
 
         num_updates = total_timesteps // (num_envs * num_steps)
 
-    # Training loop
-    for update in range(1, num_updates):
-        data = []
+    # # Training loop
+    # for update in range(1, num_updates):
+    #     data = []
 
-        # ROLLOUT PHASE: Interact with the environment
-        for step in range(num_steps):
-            obs, done = next_obs, next_done
-            action, other_stuff = agent.get_action(obs)
-            next_obs, reward, next_done, _ = envs.step(action)
+    #     # ROLLOUT PHASE: Interact with the environment
+    #     for step in range(num_steps):
+    #         obs, done = next_obs, next_done
+    #         action, other_stuff = agent.get_action(obs)
+    #         next_obs, reward, next_done, _ = envs.step(action)
 
-            # Store interaction data
-            data.append([obs, action, reward, done, other_stuff])
+    #         # Store interaction data
+    #         data.append([obs, action, reward, done, other_stuff])
 
-        # LEARNING PHASE: Update the agent
-        agent.learn(data, next_obs, next_done)
+    #     # LEARNING PHASE: Update the agent
+    #     agent.learn(data, next_obs, next_done)
 
 
     #### timeごとのrewardの計算
@@ -247,7 +247,7 @@ class ESS_Model(gym.Env):
         pass
 
     # timeごとのrewardの計算 > rewardの設定内容
-    def reward_set(self, ACTION, n_battery):
+    def calc_reward(self, ACTION, n_battery):
         #ACTION > 0 →放電  ACTION < 0 →充電
         reward = 0
 

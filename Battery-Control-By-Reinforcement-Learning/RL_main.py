@@ -33,7 +33,8 @@ if __name__ == "__main__" :
 
     # Training環境設定と実行
     env = ESS_ModelEnv(pdf_day, train_days, test_day, PV_parameter)
-    env.train_PPOModel(train_days, episode, model_name) # Trainingを実行
+    trainModel = TrainModel
+    trainModel.dispatch_train(env) # Trainingを実行
 
     print("--Trainモード終了--")
 
@@ -47,8 +48,8 @@ if __name__ == "__main__" :
     model_name = "ESS_model" # ESS_model ESS_model_end
 
     # Test環境設定と実行 学習
-    env = ESS_Model(pdf_day, train_days, test_day, PV_parameter)
-    env.main_root(mode, train_days, episode, model_name)
+    env = ESS_ModelEnv(pdf_day, train_days, test_day, PV_parameter)
+    env.test_PPOModel(train_days, episode, model_name)
 
     print("--充放電計画策定終了--")
     print("\n---充放電計画策定プログラム終了---\n")
