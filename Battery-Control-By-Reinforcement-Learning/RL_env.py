@@ -1,3 +1,4 @@
+# インポート：外部モジュール
 import gym
 import warnings
 import numpy as np
@@ -5,9 +6,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import torch
-import math as ma
+import math
 import tkinter as tk
-
 from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
@@ -16,121 +16,33 @@ warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
     def __init__(self, mode, train_days, test_day):      
+        # PPOで使うパラメーターの設定        
+        self.gamma = math.exp(-(1/action_space)) # 放電に対する割引率
+        self.omega = math.exp(1/action_space) # 充電に対する割引率
+        self.battery_max_cap = 4 # 蓄電池の定格容量4kWh
+        self.reward_range = (-10000, math.inf)
+        self.train_Days = train_days # 学習Day
+        self.test_days = test_day - 1 # テストDay数
+        self.timesteps = 100 # 1つのtime_frameの中で何度action -> observe -> rewardを繰り返すかの設定値
+        self.battery
+
         # Action spaceの定義(上下限値を設定。actionは連続値。)
         self.action_spcae = gym.spaces.Box(low=-1.0, high=1.0) 
 
         # 状態の上限と下限の設定
         self.observation_space  = gym.spaces.Box(low=0, high=1)
 
-        # PPOで使うパラメーターの設定        
-        self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
-        self.omega = ma.exp(1/action_space) # 充電に対する割引率
-        self.battery_MAX = 4 # 蓄電池の定格容量4kWh
-        self.MAX_reward = -10000
-        self.Train_Days = train_days # 学習Day
-        self.test_days = test_day - 1 # テストDay数
-
-        # ----------------------------------------------------------------------------------
-        num_steps = 200 # M: number of steps
-        num_envs = 1 # N: number of environment
-        envs = RL_env(num_envs)
-        agent = Agent() # PPO
-
-        # Initial observations and done flags
-        next_obs = envs.reset()
-        next_done = [0] * num_envs  # List of zeros of length N
-
-        num_updates = total_timesteps // (num_envs * num_steps)
-
-    # # Training loop
-    # for update in range(1, num_updates):
-    #     data = []
-
-    #     # ROLLOUT PHASE: Interact with the environment
-    #     for step in range(num_steps):
-    #         obs, done = next_obs, next_done
-    #         action, other_stuff = agent.get_action(obs)
-    #         next_obs, reward, next_done, _ = envs.step(action)
-
-    #         # Store interaction data
-    #         data.append([obs, action, reward, done, other_stuff])
-
-    #     # LEARNING PHASE: Update the agent
-    #     agent.learn(data, next_obs, next_done)
-
 
     #### timeごとのrewardの計算
     def step(self, action):
         done = False # True:終了　False:学習継続
 
-        #初期のreward
-        reward = 0
-        all_action = action #[kW]
-
         #action > 0 →放電  action < 0 →充電
-        for self.time_stamp in range(0, self.ACTION_NUM):
-
-            # float型へ
-            action = float(all_action[self.time_stamp])
-
-            ACTION = action*1.2 # [kW]  #値を拡大することでrewardへ影響力を持たせる
-            ACTION = round(ACTION, 1) # 小数点第1位にまるめる
-            time = self.time
-            count = self.count
-            soc = (self.battery / self.battery_MAX) # %
-
-            # [2023.09.07 小平] この操作は何？
-            self.all_soc.append(soc*100)
-            self.all_battery.append(self.battery)
-            self.all_price.append(self.price_time)
-            self.all_time.append(time/2)
-            self.all_count.append(count/2)
-            self.all_action.append(ACTION)
-            self.all_PV_out_time.append(self.PV_out_time[0])
-            self.all_imbalance.append(self.imbalance)
-
-
-            #### actionを適正化(充電をPVの出力があるときのみに変更)
-            # PV発電量が0未満の場合、0に設定
-            if self.PV_out_time < 0:
-                self.PV_out_time = [0]
-            # 充電時、PV発電量<充電量で場合、充電量をPV出力値へ調整
-            if self.PV_out_time < -ACTION and action < 0:
-                action_real = -self.PV_out_time
-            # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
-            elif action > 0 and 0 < self.battery < ACTION:
-                action_real = self.battery
-            # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
-            elif self.battery == self.battery_MAX and action < 0:
-                action_real = 0
-            # 放電時、蓄電池残量が0の場合、放電量を0へ調整
-            elif action > 0 and self.battery == 0:
-                action_real = 0
-            # 上記条件に当てはまらない場合、充放電量の調整は行わない
-            else:
-                action_real = ACTION
-            # 実際の充放電量をリストに追加
-            self.all_action_real.append(action_real)
-
-
-            #### 蓄電池残量の更新
-            # 次のtimeにおける蓄電池残量を計算
-            next_battery = self.battery - action_real*0.5 #action_real*0.5とすることで[kWh]へ変換
-
-            ### 蓄電池残量の挙動チェック
-            # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
-            if next_battery > self.battery_MAX:
-                next_battery = self.battery_MAX
-            # 次のtimeにおける蓄電池残量が0kwh未満の場合、0に制限
-            elif next_battery < 0:
-                next_battery = 0
-            # 充電の場合、PV発電量から充電量を差し引く
-            if action_real < 0:
-                self.PV_out_time = self.PV_out_time + action_real
-
+        for self.time_stamp in range(0, self.timesteps):
+            soc = (self.battery_cunnret_energy / self.battery_max_cap) # SoC∈[0,1]へ変換
             #### rewardの計算
             # 評価用の充電残量
-            n_battery = self.battery - ACTION*0.5 #action_real*0.5とすることで[kWh]へ変換
+            n_battery = self.battery - action
             # これまでのrewardに時刻self.timeのrewardを加算
             reward += self.reward_set(ACTION ,n_battery)
 
@@ -280,3 +192,40 @@ class ESS_ModelEnv(gym.Env):
 
         return reward
 
+    def _get_possible_schedule(action):
+        #### actionを適正化(充電をPVの出力があるときのみに変更)
+        # PV発電量が0未満の場合、0に設定
+        if self.PV_out_time < 0:
+            self.PV_out_time = [0]
+        # 充電時、PV発電量<充電量 の場合、充電量をPV出力値へ調整
+        if self.PV_out_time < -ACTION and action < 0:
+            action_real = -self.PV_out_time
+        # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
+        elif action > 0 and 0 < self.battery < ACTION:
+            action_real = self.battery
+        # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
+        elif self.battery == self.battery_MAX and action < 0:
+            action_real = 0
+        # 放電時、蓄電池残量が0の場合、放電量を0へ調整
+        elif action > 0 and self.battery == 0:
+            action_real = 0
+        # 上記条件に当てはまらない場合、充放電量の調整は行わない
+        else:
+            action_real = ACTION
+        # 実際の充放電量をリストに追加
+        self.all_action_real.append(action_real)
+
+        #### 蓄電池残量の更新
+        # 次のtimeにおける蓄電池残量を計算
+        next_battery = self.battery - action_real*0.5 #action_real*0.5とすることで[kWh]へ変換
+
+        ### 蓄電池残量の挙動チェック
+        # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
+        if next_battery > self.battery_MAX:
+            next_battery = self.battery_MAX
+        # 次のtimeにおける蓄電池残量が0kwh未満の場合、0に制限
+        elif next_battery < 0:
+            next_battery = 0
+        # 充電の場合、PV発電量から充電量を差し引く
+        if action_real < 0:
+            self.PV_out_time = self.PV_out_time + action_real
