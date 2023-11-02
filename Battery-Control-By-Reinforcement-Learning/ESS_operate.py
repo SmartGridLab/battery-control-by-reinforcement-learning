@@ -38,6 +38,7 @@ for i in range(0,48):
         else:
             before_soc = dataframe.at[j, 'SoC_actual']
         soc = before_soc - (dataframe.at[j, 'charge/discharge_actual']*0.5)*100/battery_MAX   #出力[kW]を30分あたりの電力量[kWh]に変換、定格容量[kWh]で割って[%]変換
+        
         # SoCが100に到達した場合
         if soc > 100:
             # オーバーした入力
@@ -49,6 +50,18 @@ for i in range(0,48):
             dataframe.at[j, 'energytransfer_actual'] += soc_over_enegy
 
             dataframe.at[j, 'mode'] = 3
+        
+        # SoCが0に到達
+        if soc < 0:
+            # オーバーした出力
+            soc_over_enegy = (0-soc)*0.01*battery_MAX / 0.5 #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+            # 放電量はSoC0までの量
+            dataframe.at[j, 'charge/discharge_actual'] -= soc_over_enegy
+            soc = 0
+            # 差分だけ売電量減少
+            dataframe.at[j, 'energytransfer_actual'] -= soc_over_enegy
+
+            dataframe.at[j, 'mode'] = 5
                 
 
     # PVが計画よりも少ない場合
@@ -66,6 +79,18 @@ for i in range(0,48):
             before_soc = dataframe.at[j, 'SoC_actual']
         soc = before_soc - (dataframe.at[j, 'charge/discharge_actual']*0.5)*100/battery_MAX
 
+        # SoCが100に到達した場合
+        if soc > 100:
+            # オーバーした入力
+            soc_over_enegy = (soc-100)*0.01*battery_MAX / 0.5    #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+            # 充電量はSoC100までの量
+            dataframe.at[j, 'charge/discharge_actual'] += soc_over_enegy #充電量は負の値のため、正方向が減少
+            soc = 100
+            # 差分は売電量を増加させる
+            dataframe.at[j, 'energytransfer_actual'] += soc_over_enegy
+
+            dataframe.at[j, 'mode'] = -3
+
         # if:SoCが0に到達
         if soc < 0:
             # オーバーした出力
@@ -76,7 +101,7 @@ for i in range(0,48):
             # 差分だけ売電量減少
             dataframe.at[j, 'energytransfer_actual'] -= soc_over_enegy
 
-            dataframe.at[j, 'mode'] = -3
+            dataframe.at[j, 'mode'] = -5
 
     # energytransfer_actualの修正
     if dataframe.at[j, 'energytransfer_actual'] < 0:
