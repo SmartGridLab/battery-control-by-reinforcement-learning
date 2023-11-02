@@ -9,7 +9,8 @@ columns = [
     'energyprice_predict', 'energyprice_actual', 'imbalanceprice_predict', 'imbalanceprice_actual',
     'charge/discharge_bid', 'charge/discharge_plan', 'charge/discharge_actual',
     'SoC_bid', 'SoC_plan', 'SoC_actual', 'energytransfer_bid', 'energytransfer_plan', 'energytransfer_actual',
-    'energy_profit', 'imbalance_penalty', 'total_profit'
+    'energy_profit', 'imbalance_penalty', 'total_profit',
+    'mode'
 ]
 
 # 空のDataframeを作成
