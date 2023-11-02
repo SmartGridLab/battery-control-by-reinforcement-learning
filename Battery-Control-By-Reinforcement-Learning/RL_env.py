@@ -12,6 +12,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
+# internal modules
+import RL_visualize
+
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
@@ -37,40 +40,32 @@ class ESS_ModelEnv(gym.Env):
     def step(self, action):
         done = False # True:終了　False:学習継続
 
-        #action > 0 →放電  action < 0 →充電
-        for self.time_stamp in range(0, self.timesteps):
-            soc = (self.battery_cunnret_energy / self.battery_max_cap) # SoC∈[0,1]へ変換
-            #### rewardの計算
-            # 評価用の充電残量
-            n_battery = self.battery - action
-            # これまでのrewardに時刻self.timeのrewardを加算
-            reward += self.reward_set(ACTION ,n_battery)
+        soc = (self.battery_cunnret_energy / self.battery_max_cap) # SoC∈[0,1]へ変換
 
-            # SoC算出
-            self.battery = next_battery
-            soc = (self.battery / self.battery_MAX) # %
-
-            ## timeデータ更新         
-            self.time += 1
-            time = self.time
-            self.count += 1
-
-            # timeが最終コマのとき
-            if self.time == 48:
-                self.days += 1
-                self.time = 0
-
-            # 売電量の更新
-            energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
-            self.all_energy_transfer.append(energy_transfer)
-
-            # 入力データ(学習時：実測　テスト時：予測)
-            self.data_set()
-    
+        #### rewardの計算
+        # 評価用の充電残量
+        n_battery = self.battery - action
+        # これまでのrewardに時刻self.timeのrewardを加算
+        reward += self.reward_set(ACTION ,n_battery)
+        # SoC算出
+        self.battery = next_battery
+        soc = (self.battery / self.battery_MAX) # %
+        ## timeデータ更新         
+        self.time += 1
+        time = self.time
+        self.count += 1
+        # timeが最終コマのとき
+        if self.time == 48:
+            self.days += 1
+            self.time = 0
+        # 売電量の更新
+        energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
+        self.all_energy_transfer.append(energy_transfer)
+        # 入力データ(学習時：実測　テスト時：予測)
+        self.data_set()
         # 現在のrewardをself.rewardsリストに追加
         # action_space(ex. 12コマ分)の合計の報酬を記録
         self.rewards.append(reward)
-
         # timeが最終かつ学習データ最終日(エピソード終了時)に記録
         # [2023.09.07 小平]　最終日とはどういう意味？日はepisodeで対応しているのではないか？
         if time == 48 and self.days == self.last_day and self.mode == "train": #学習の経過表示、リセット
@@ -97,22 +92,16 @@ class ESS_ModelEnv(gym.Env):
 
             # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
             # [2023.09.05 小平]　end_countとepisodeの違いがよくわからない
-            if self.end_count >= 20000:
-                if self.episode == 100000 or self.episode > 20000:
-                    self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
-                    self.model.save("ESS_model_end")
-                    done = True # 学習終了　＃ [2023.09.05 小平]　なぜコメントアウトされている？
-                    self.end_count = 0
+            RL_visualize("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
+            self.model.save("ESS_model_end")
+            self.end_count = 0
 
             # エピソード数表示
             # print("episode:"+str(self.episode) + "/" + str(episode + self.end_count))  # [2023.09.05 小平]　これいる？
             print("episode:"+str(self.episode) + "/" + str(episode))
 
-        # testモードの最後に結果をpdfで保存
-        if time == 48 and self.days == self.last_day and self.mode == "test":
-            self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
         # エピソードが終了の場合は状態をリセット
-        # [2023.09.05 小平]　なぜリセットする必要があるのか？ -> episodeごとに学習状況をリセットする必要があるため。
+        # [2023.09.05 小平]　なぜリセットする必要があるのか？ -> episodeごと(例えば1日ごと)に学習状況をリセットする必要があるため。（本当か？）
         if time == 48 and self.days == self.last_day:
             state = self.reset()
         # 新たな状態を生成
@@ -120,7 +109,7 @@ class ESS_ModelEnv(gym.Env):
             state = [soc]
             state.extend(self.input_PV_data)
             state.extend(self.input_price_data)
-        return state, reward, done, {}
+        return state, reward, done, {}  # info={}
     
     # 状態の初期化：[2023.09.05 小平] 各要素の説明がほしい
     def reset(self):
