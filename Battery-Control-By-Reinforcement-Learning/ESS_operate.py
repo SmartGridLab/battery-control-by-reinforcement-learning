@@ -8,11 +8,11 @@ dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_datafr
 
 print("-機器動作開始-")
 
-# 繰り返し文(同時に計算したい時間幅に調整)
-for i in range(0,47):
-    # operate計算していない最後の行を探索
+# 繰り返し文(同時に計算したい時間幅に調整->リアルタイム制御時にも使えるように)
+for i in range(0,48):
+    # operate計算していない最後の行を探索(次の行から書き込み)
     last_data_row = dataframe['energytransfer_actual'].last_valid_index()
-    # 0行目から格納するとき(データがない)
+    # 0行目から格納するとき(まだデータがない)
     if last_data_row == None:
         last_data_row = -1
     j = last_data_row + 1
@@ -28,6 +28,8 @@ for i in range(0,47):
         # 充電量増加(放電量抑制)・売電量変化なし
         dataframe.at[j, 'charge/discharge_actual'] = dataframe.at[j, 'charge/discharge_bid'] - abs(delta_PV) #充電量は負の値なので、値を負の方向へ
         dataframe.at[j, 'energytransfer_actual'] = dataframe.at[j, 'energytransfer_bid']
+
+        dataframe.at[j, 'mode'] = 1
     
         ## SoCのチェック
         # SoCの計算
@@ -45,6 +47,8 @@ for i in range(0,47):
             soc = 100
             # 差分は売電量を増加させる
             dataframe.at[j, 'energytransfer_actual'] += soc_over_enegy
+
+            dataframe.at[j, 'mode'] = 3
                 
 
     # PVが計画よりも少ない場合
@@ -52,6 +56,8 @@ for i in range(0,47):
         # 充電量抑制(放電量増加)・売電量変化なし
         dataframe.at[j, 'charge/discharge_actual'] = dataframe.at[j, 'charge/discharge_bid'] + abs(delta_PV)    #充電量は負の値なので、値を正の方向へ
         dataframe.at[j, 'energytransfer_actual'] = dataframe.at[j, 'energytransfer_bid']
+
+        dataframe.at[j, 'mode'] = -1
     
         # SoCの計算
         if j == 0:
@@ -70,9 +76,13 @@ for i in range(0,47):
             # 差分だけ売電量減少
             dataframe.at[j, 'energytransfer_actual'] -= soc_over_enegy
 
+            dataframe.at[j, 'mode'] = -3
+
     # energytransfer_actualの修正
     if dataframe.at[j, 'energytransfer_actual'] < 0:
         dataframe.at[j, 'energytransfer_actual'] = 0
+
+        dataframe.at[j, 'mode'] *= 2
 
     # SoCの最終処理
     if j == 0:
