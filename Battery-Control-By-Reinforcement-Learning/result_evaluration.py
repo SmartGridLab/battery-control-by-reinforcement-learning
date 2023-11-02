@@ -5,10 +5,10 @@ import pandas as pd
 df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
 
 # "energy_profit" 列を計算
-df["energy_profit"] = df["energyprice_actual"] * 0.5 * df["energytransfer_actual"]
+df["energy_profit"] = df["energyprice_actual"] * df["energytransfer_actual"]
 
 # "imbalance_penalty" 列を計算
-df["imbalance_penalty"] = abs(df["energytransfer_actual"] - df["energytransfer_bid"]) * df["imbalanceprice_actual"] * 0.5
+df["imbalance_penalty"] = abs(df["energytransfer_actual"] - df["energytransfer_bid"]) * df["imbalanceprice_actual"]
 
 # "total_profit" 列を計算
 df["total_profit"] = df["energy_profit"] - df["imbalance_penalty"]
