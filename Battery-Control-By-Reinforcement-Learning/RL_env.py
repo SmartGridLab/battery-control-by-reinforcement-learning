@@ -13,47 +13,55 @@ from stable_baselines3 import PPO
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 # internal modules
-import RL_visualize
+import RL_visualize as visual
+import RL_dataframe_manager as df_manage
 
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
-    def __init__(self, mode, train_days, test_day):      
-        # PPOで使うパラメーターの設定        
+    def __init__(self, mode, train_days, test_days):      
+        # PPOで使うパラメーターの設定   
         self.gamma = math.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = math.exp(1/action_space) # 充電に対する割引率
+        self.reward_range = (-10000, math.inf)  # Reardの範囲
+
+        # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の定格容量4kWh
-        self.reward_range = (-10000, math.inf)
-        self.train_Days = train_days # 学習Day
-        self.test_days = test_day - 1 # テストDay数
-        self.timesteps = 100 # 1つのtime_frameの中で何度action -> observe -> rewardを繰り返すかの設定値
-        self.battery
+        self.battery_current_energy = 0 # SoC[kW]初期値
 
-        # Action spaceの定義(上下限値を設定。actionは連続値。)
+        # 学習とテストに使うデータの選択
+        self.train_days = train_days # 学習する日数
+        self.test_days = test_days # テストDay数
+
+        # action spaceの定義(上下限値を設定。actionは連続値。)
         self.action_spcae = gym.spaces.Box(low=-1.0, high=1.0) 
-
         # 状態の上限と下限の設定
         self.observation_space  = gym.spaces.Box(low=0, high=1)
 
+        # step関数内でつかうカウンター
+        self.state_idx = 0 # time_steps in all episodes (time frames in train/test days: 48*n)
+        self.total_reward = 0 # 全episodeでの合計のreward
+        self.reward = [] # 各stepでのreward
 
-    #### timeごとのrewardの計算
+        # Mode選択
+        self.mode = mode    # train or test
+
+    #### time_stepごとのactionの決定とrewardの計算を行う
     def step(self, action):
-        done = False # True:終了　False:学習継続
-
+        # time_stepを一つ進める
+        self.state_idx += 1
+        # Socを計算
         soc = (self.battery_cunnret_energy / self.battery_max_cap) # SoC∈[0,1]へ変換
 
         #### rewardの計算
+        _get_reward(df.input)
         # 評価用の充電残量
         n_battery = self.battery - action
         # これまでのrewardに時刻self.timeのrewardを加算
-        reward += self.reward_set(ACTION ,n_battery)
+        reward += self.reward_set(action ,n_battery)
         # SoC算出
         self.battery = next_battery
         soc = (self.battery / self.battery_MAX) # %
-        ## timeデータ更新         
-        self.time += 1
-        time = self.time
-        self.count += 1
         # timeが最終コマのとき
         if self.time == 48:
             self.days += 1
@@ -61,80 +69,47 @@ class ESS_ModelEnv(gym.Env):
         # 売電量の更新
         energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
         self.all_energy_transfer.append(energy_transfer)
-        # 入力データ(学習時：実測　テスト時：予測)
-        self.data_set()
-        # 現在のrewardをself.rewardsリストに追加
-        # action_space(ex. 12コマ分)の合計の報酬を記録
-        self.rewards.append(reward)
-        # timeが最終かつ学習データ最終日(エピソード終了時)に記録
-        # [2023.09.07 小平]　最終日とはどういう意味？日はepisodeで対応しているのではないか？
-        if time == 48 and self.days == self.last_day and self.mode == "train": #学習の経過表示、リセット
-            # 最初のエピソードのときに値を設定
-            if self.episode == 0:
-                self.MAX_reward = np.sum(self.rewards)
 
-            # エピソード数更新
-            self.episode += 1
-            #print("episode:"+str(self.episode) + "/"+str(episode) + " + " + str(self.end_count))
-            # 現在のエピソードのall_rewardsをself.all_rewardsリストに追加
-            self.all_rewards.append(np.sum(self.rewards))
+        self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
+        self.model.save("ESS_model")
 
-            # モデルの報酬の最高値を更新した場合はモデル"ESS_model"を保存
-            if np.sum(self.rewards) >= self.MAX_reward:
-                self.MAX_reward = np.sum(self.rewards) # rewardの最高値
-                self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
-                self.model.save("ESS_model")
-                self.end_count = 0
-            # モデルの報酬の最高値を更新できなかった場合はend_count(追加エピソード)を設定
-            # 動作詳細不明
-            elif np.sum(self.rewards) < self.MAX_reward:
-                self.end_count += 1
+        # checking whether our episode (day) ends
+        if self.state_idx == 48
+        done = False # True:終了　False:学習継続 -> Trueだと勝手にresetが走る
 
-            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
-            # [2023.09.05 小平]　end_countとepisodeの違いがよくわからない
-            RL_visualize("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
-            self.model.save("ESS_model_end")
-            self.end_count = 0
 
-            # エピソード数表示
-            # print("episode:"+str(self.episode) + "/" + str(episode + self.end_count))  # [2023.09.05 小平]　これいる？
-            print("episode:"+str(self.episode) + "/" + str(episode))
+        # actionした結果をobservationにいれる
+        observation = [soc]
+        observation.extend(self.input_PV_data)
+        observation.extend(self.input_price_data)
+        
+        # 付随情報をinfoに入れる
+        info = {}
+        
+        ## time_stepを次へ進める
+        if self.time == self.last_timestep:
+            done = True
+        else
+            self.time_step += 1
+        
 
-        # エピソードが終了の場合は状態をリセット
-        # [2023.09.05 小平]　なぜリセットする必要があるのか？ -> episodeごと(例えば1日ごと)に学習状況をリセットする必要があるため。（本当か？）
-        if time == 48 and self.days == self.last_day:
-            state = self.reset()
-        # 新たな状態を生成
-        else:
-            state = [soc]
-            state.extend(self.input_PV_data)
-            state.extend(self.input_price_data)
-        return state, reward, done, {}  # info={}
+        return observation, reward, done, info
     
-    # 状態の初期化：[2023.09.05 小平] 各要素の説明がほしい
+    # 状態の初期化
+    # - step関数において、done = Trueになると呼ばれる。任意のタイミングで呼ぶこともできる。
+    # - 1episode(1日)終わるとresetが呼ばれるので、次の日のデータをstateへ入れる
+    # - 現状ではQuantile 50%の予測を使っている -> 改良が必要。任意に選べる等
+    # MPI: MPIの予測値
+    # SSP: SSPの予測値
+    # wind: MPIの予測値
+    # PV: MPIの予測値
     def reset(self):
-        self.time = 0
-        self.count = 0
-        self.battery = 0
-        self.days = 1
-        self.rewards = []
-        self.all_PV_out_time = []
-        self.all_soc = []
-        self.all_battery = []
-        self.all_price = []
-        self.all_time = []
-        self.all_count = []
-        self.all_action = []    # 蓄電池動作(修正なし)　[2023.09.05 小平]　具体的に何を修正？
-        self.all_action_real = []   # 蓄電池動作(修正あり)　[2023.09.05 小平]　具体的に何を修正？
-        self.all_imbalance = []
-        self.all_energy_transfer = []
-
-        self.data_set()
-        # [2023.09.05 小平] stateの要素に何が入る（べきな）のかを説明する
-        state = [self.battery/4] # [2023.09.05 小平]　これは初期SoCを設定している。根拠は特に無く25%(1/4)に設定。
-        state.extend(self.input_PV_data)
-        state.extend(self.input_price_data)
-
+        state = [
+            df_manage.df_input(MIP_q50[state_idx:state_idx + 48]),   # MIP
+            df_manage.df_input(SSP_q50[state_idx:state_idx + 48]),   # SSP
+            df_manage.df_input(wind_q50[state_idx:state_idx + 48]),  # wind
+            df_manage.df_input(PV_q50[state_idx:state_idx + 48])   # PV
+        ]
         return state
 
     # Envを描写する関数 -> 使っていない
@@ -148,36 +123,35 @@ class ESS_ModelEnv(gym.Env):
         pass
 
     # timeごとのrewardの計算 > rewardの設定内容
-    def calc_reward(self, ACTION, n_battery):
-        #ACTION > 0 →放電  ACTION < 0 →充電
-        reward = 0
-
+    # - rewardは1日(1 episode)ごとに合計される
+    # - action > 0 →放電  action < 0 →充電
+    def _get_reward(self, action, n_battery):
         # 現在の状態と行動に対するreward
         # rewardはすべて入出力[kW]*値段[JPY/30min]で計算(実際の報酬ではない)
         # 充電する場合
-        if ACTION <= 0:
+        if action <= 0:
             # 売電(PV出力-BT入力)に対するreward(今の状態×行動)
-            if -ACTION < self.input_PV:
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.PV_out_time + ACTION)
+            if -action < self.input_PV:
+                reward += ((self.omega)**(self.state_idx))*self.input_price*(self.PV_out_time + action)
             # BT入力がPV出力より高いならペナルティ(今の状態×行動)
-            if -ACTION > self.input_PV:
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION
+            if -action > self.input_PV:
+                reward += ((self.omega)**(self.state_idx))*self.input_price*action
         
         # 放電する場合
-        if ACTION > 0:
+        if action > 0:
             # PV出力(売電)に対するreward
-            reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.PV_out_time
+            reward += ((self.gamma)**(self.state_idx))*self.input_price*self.PV_out_time
             # BT出力がSoCより大きいならペナルティ(今の状態×行動)
-            if ACTION > self.battery: 
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)
+            if action > self.battery: 
+                reward += ((self.omega)**(self.state_idx))*self.input_price*(self.battery - action)
             # BT出力(売電)に対するreward(今の状態×行動)...PV出力に加えてBT出力が報酬として加算される
-            if ACTION <= self.battery:
-                reward += ((self.gamma)**(self.time_stamp))*self.input_price*ACTION
+            if action <= self.battery:
+                reward += ((self.gamma)**(self.state_idx))*self.input_price*action
 
         # 次の状態と行動に対するreward
         # SoCが100％以上でペナルティ
         if n_battery > self.battery_MAX: 
-            reward += ((self.omega)**(self.time_stamp))*self.input_price*(-n_battery)
+            reward += ((self.omega)**(self.state_idx))*self.input_price*(-n_battery)
 
         return reward
 
@@ -187,10 +161,10 @@ class ESS_ModelEnv(gym.Env):
         if self.PV_out_time < 0:
             self.PV_out_time = [0]
         # 充電時、PV発電量<充電量 の場合、充電量をPV出力値へ調整
-        if self.PV_out_time < -ACTION and action < 0:
+        if self.PV_out_time < -action and action < 0:
             action_real = -self.PV_out_time
         # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
-        elif action > 0 and 0 < self.battery < ACTION:
+        elif action > 0 and 0 < self.battery < action:
             action_real = self.battery
         # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
         elif self.battery == self.battery_MAX and action < 0:
@@ -200,7 +174,7 @@ class ESS_ModelEnv(gym.Env):
             action_real = 0
         # 上記条件に当てはまらない場合、充放電量の調整は行わない
         else:
-            action_real = ACTION
+            action_real = action
         # 実際の充放電量をリストに追加
         self.all_action_real.append(action_real)
 
