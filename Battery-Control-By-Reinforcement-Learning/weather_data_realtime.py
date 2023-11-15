@@ -203,7 +203,7 @@ def main():
             "Pressure":[
                 msg.data(lat1, lat2, lon1, lon2)[0][0][0] * 0.01 for msg in p_messages
             ]
-    })
+        })
         #気温(摂氏変換)
         df2 = pd.DataFrame({
             "temperature": [
@@ -306,7 +306,7 @@ def main():
     # 線形補間後の数値調整
     # 年・日付・月をまたぐときに数値がおかしくならないための調整
 
-    for i in range(5,59):   #ファイルの開始時間は3の倍数時からなので、確認するのは5番目のデータからでいい
+    for i in range(5,67):   #ファイルの開始時間は3の倍数時からなので、確認するのは5番目のデータからでいい
         #年またぎ
         if df.at[i, 'year'] != df.at[i+1, 'year']:
             df.at[i, 'year'] = df.at[i-1, 'year']
