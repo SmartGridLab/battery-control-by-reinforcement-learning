@@ -1,6 +1,6 @@
 year,month,day,hour,PV_predict,PV_actual,energyprice_predict,energyprice_actual,imbalanceprice_predict,imbalanceprice_actual,charge/discharge_bid,charge/discharge_plan,charge/discharge_actual,SoC_bid,SoC_plan,SoC_actual,energytransfer_bid,energytransfer_plan,energytransfer_actual,energy_profit,imbalance_penalty,total_profit,mode
-2023,1,1,0.0,0.0,0.0,9.6401415,12.45,10.643997,11.255,-0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,1.0
-2023,1,1,0.5,0.0,0.0,9.714717,11.83,10.725898,11.235,0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,-1.0
+2023,1,1,0.0,0.0,0.0,9.6401415,12.45,10.643997,11.255,-0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,
+2023,1,1,0.5,0.0,0.0,9.714717,11.83,10.725898,11.235,0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,
 2023,1,1,1.0,0.0,0.0,9.83552,11.65,10.824896,11.16,-0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,
 2023,1,1,1.5,0.0,0.0,10.0347035,11.77,10.984457,11.15,-0.0,0.0,,0.0,0.0,,0.0,0.0,,,,,
 2023,1,1,2.0,0.0,0.0,10.271406,11.025,11.159666,11.175,-0.0,-0.0,,0.0,0.0,,0.0,0.0,,,,,
