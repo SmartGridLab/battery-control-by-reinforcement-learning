@@ -19,83 +19,74 @@ import RL_dataframe_manager as df_manage
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
-    def __init__(self, mode, train_days, test_days):      
-        # PPOで使うパラメーターの設定   
-        self.gamma = math.exp(-(1/action_space)) # 放電に対する割引率
-        self.omega = math.exp(1/action_space) # 充電に対する割引率
-        self.reward_range = (-10000, math.inf)  # Reardの範囲
+    def __init__(self, train_days, test_days):
+        ## データ読み込み
+        # 学習データの読み込み（予測日の前日までを学習データとして利用する）
+        # train_days: 学習日数
+        # target_day: 予測日
+        self.df_input = df_manage.get_input_df(target_day, train_days)
+        # テストデータの読み込み
+        self.df_predict = df_manage.get_preidct_df(target_day, test_days)
+        # 結果を格納するテーブルの読み込み
+        self.df_result = df_manage.get_result_df(test_days)
 
         # Batteryのパラメーター
-        self.battery_max_cap = 4 # 蓄電池の定格容量4kWh
-        self.battery_current_energy = 0 # SoC[kW]初期値
+        self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
+        self.inverter_max_cap = 4 # インバーターの定格容量 ex.4kW
+        self.obs_list = [0.5] # SoC[0,1]の初期値 ex.0.5 (50%)
 
-        # 学習とテストに使うデータの選択
-        self.train_days = train_days # 学習する日数
-        self.test_days = test_days # テストDay数
-
+        ## PPOで使うパラメーターの設定
         # action spaceの定義(上下限値を設定。actionは連続値。)
-        self.action_spcae = gym.spaces.Box(low=-1.0, high=1.0) 
-        # 状態の上限と下限の設定
+        # - 1time_step(ex.30 min)での充放電量(規格値[0,1])の上下限値を設定
+        # - 本当はinverter_max_capとbattery_max_capを使って、上下限値を設定したい
+        self.action_space = gym.spaces.Box(low=-1.0, high=1.0)
+        # 状態(observation=SoC)の上限と下限の設定
         self.observation_space  = gym.spaces.Box(low=0, high=1)
 
-        # step関数内でつかうカウンター
-        self.state_idx = 0 # time_steps in all episodes (time frames in train/test days: 48*n)
-        self.total_reward = 0 # 全episodeでの合計のreward
-        self.reward = [] # 各stepでのreward
+        # # Rewardの範囲(いらないかも)
+        # self.reward_range = (-10000, math.inf) 
 
-        # Mode選択
-        self.mode = mode    # train or test
+        # step関数内でつかうカウンター
+        self.state_idx = 0 # time_steps in all episodes (all episodes is a sum of time frames in train/test days 48*days)
+        self.reward_total = 0 # 全episodeでの合計のreward
+        self.reward_list = [] # 各stepでのreward
+
+        # # Mode選択
+        # self.mode = train    # train or test
 
     #### time_stepごとのactionの決定とrewardの計算を行う
     def step(self, action):
         # time_stepを一つ進める
         self.state_idx += 1
-        # Socを計算
-        soc = (self.battery_cunnret_energy / self.battery_max_cap) # SoC∈[0,1]へ変換
 
-        #### rewardの計算
-        _get_reward(df.input)
-        # 評価用の充電残量
-        n_battery = self.battery - action
-        # これまでのrewardに時刻self.timeのrewardを加算
-        reward += self.reward_set(action ,n_battery)
-        # SoC算出
-        self.battery = next_battery
-        soc = (self.battery / self.battery_MAX) # %
-        # timeが最終コマのとき
-        if self.time == 48:
-            self.days += 1
-            self.time = 0
-        # 売電量の更新
-        energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
-        self.all_energy_transfer.append(energy_transfer)
-
-        self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
+        ## rewardの計算
+        # 各stepでのrewardをリストに追加
+        reward = self._get_reward(action)
+        self.reward_list.append(reward)
+        # 全episodeでのrewardを計算
+        self.reward_total += self.reward_list[-1]
+        # SoC[0,1]をactionの分だけ更新する
+        # - obs_listの最後の要素(前timestepのSoC)にactionを足す
+        obs = self.obs_list[-1] + action
+        # 各timestepでのobsをリストに追加
+        self.obs_list.append(obs)
+        # モデルを保存する
         self.model.save("ESS_model")
 
         # checking whether our episode (day) ends
-        if self.state_idx == 48
-        done = False # True:終了　False:学習継続 -> Trueだと勝手にresetが走る
-
-
-        # actionした結果をobservationにいれる
-        observation = [soc]
-        observation.extend(self.input_PV_data)
-        observation.extend(self.input_price_data)
+        # - 1日(1 episode)が終わったら、done = Trueにする
+        # state_idxは48コマ(1日)で割った余りが0になると、1日終了とする
+        if self.state_idx % 48 == 0:
+            done = True # Trueだと勝手にresetが走る
+        else:
+            done = False         
         
         # 付随情報をinfoに入れる
         info = {}
         
-        ## time_stepを次へ進める
-        if self.time == self.last_timestep:
-            done = True
-        else
-            self.time_step += 1
-        
-
-        return observation, reward, done, info
+        return obs, reward, done, info
     
-    # 状態の初期化
+    ## 状態の初期化
     # - step関数において、done = Trueになると呼ばれる。任意のタイミングで呼ぶこともできる。
     # - 1episode(1日)終わるとresetが呼ばれるので、次の日のデータをstateへ入れる
     # - 現状ではQuantile 50%の予測を使っている -> 改良が必要。任意に選べる等
@@ -103,12 +94,14 @@ class ESS_ModelEnv(gym.Env):
     # SSP: SSPの予測値
     # wind: MPIの予測値
     # PV: MPIの予測値
+    # SoC: 前日の最終SoC obs_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
         state = [
-            df_manage.df_input(MIP_q50[state_idx:state_idx + 48]),   # MIP
-            df_manage.df_input(SSP_q50[state_idx:state_idx + 48]),   # SSP
-            df_manage.df_input(wind_q50[state_idx:state_idx + 48]),  # wind
-            df_manage.df_input(PV_q50[state_idx:state_idx + 48])   # PV
+            df_manage.df_input(MIP_q50[1+48*(state_idx-1):48*state_idx]),   # MIP
+            df_manage.df_input(SSP_q50[1+48*(state_idx-1):48*state_idx]),   # SSP
+            df_manage.df_input(wind_q50[1+48*(state_idx-1):48*state_idx]),  # wind
+            df_manage.df_input(PV_q50[1+48*(state_idx-1):48*state_idx]),    # PV
+            self.obs_list[-1] # SoC
         ]
         return state
 
@@ -125,7 +118,7 @@ class ESS_ModelEnv(gym.Env):
     # timeごとのrewardの計算 > rewardの設定内容
     # - rewardは1日(1 episode)ごとに合計される
     # - action > 0 →放電  action < 0 →充電
-    def _get_reward(self, action, n_battery):
+    def _get_reward(self, action):
         # 現在の状態と行動に対するreward
         # rewardはすべて入出力[kW]*値段[JPY/30min]で計算(実際の報酬ではない)
         # 充電する場合

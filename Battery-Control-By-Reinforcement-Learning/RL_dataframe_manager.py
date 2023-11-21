@@ -1,8 +1,8 @@
 import pandas as pd
 
 Class Dataframe_Manager():
-    def __init__(self):
-        ## 強化学習の学習に使うテーブル(df_input)を作成
+    ## 強化学習の学習に使うテーブル(df_input)を作成
+    def get_input_df(self, target_day, train_days):
         # - 前提：PV発電予測と価格予測の結果のcsvがあること
         # - CSVファイルから学習データと予測子のデータを読み込む
 
@@ -10,10 +10,14 @@ Class Dataframe_Manager():
         price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
         # PV, wind予測結果データ（過去＋予測）
         pv_wind_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_wind_predict.csv")
-        # 電力価格とPV/windテーブルを結合（キーはyear, month, day, hour　が全て一致）
-        self.df_input = pd.merge(price_predict, pv_wind_predict, how='outer', on=['year','month','day','hour'])
+        # 電力価格とPV/windテーブルを結合（キーはref_datetime, valid_datetimeが全て一致）
+        self.df_input = pd.merge(price_predict, pv_wind_predict, how='outer', on=['ref_datetime','valid_datetime'])
+        # target_dayの前日からdays日数分、以前のデータを抽出
+        self.df_input = self.df_input[(self.df_input['ref_datetime'] >= target_day - pd.Timedelta(days=train_days)) & (self.df_input['ref_datetime'] < target_day)]
+        return self.df_input
 
-        ## 強化学習の結果を入れるテーブル(df_result)を作成
+    ## 強化学習の結果を入れるテーブル(df_result)を作成
+    def get_result_df(self):
         # 列名をリストとして定義
         # wind_q10: Quantile Regressionによる10%分位点の風力発電の発電量[MWh]の予測結果
         col = [
@@ -26,8 +30,9 @@ Class Dataframe_Manager():
             'SoC_bid', 'SoC_plan', 'SoC_actual', 'energytransfer_bid', 'energytransfer_plan', 'energytransfer_actual',
             'energy_profit', 'imbalance_penalty', 'total_profit'
         ]
-        # 空のDataframeを作成
+
         self.df_result = pd.DataFrame(columns=col)
+        return self.df_result
 
     # 学習データと予測子のデータをテーブル形式で返す
     def get_DataTable(self):
