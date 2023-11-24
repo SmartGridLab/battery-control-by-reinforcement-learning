@@ -17,7 +17,7 @@ print("\n---充放電計画策定プログラム開始---\n")
 
 warnings.simplefilter('ignore')
 
-class ESS_Model(gym.Env):
+class ESS_model_sell(gym.Env):
     def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
         #パラメータの定義
         self.episode = 0
@@ -219,22 +219,22 @@ class ESS_Model(gym.Env):
             # 現在のエピソードのall_rewardsをself.all_rewardsリストに追加
             self.all_rewards.append(np.sum(self.rewards))
 
-            # モデルの報酬の最高値を更新した場合はモデル"ESS_model"を保存
+            # モデルの報酬の最高値を更新した場合はモデル"ESS_model_sell"を保存
             if np.sum(self.rewards) >= self.MAX_reward:
                 self.MAX_reward = np.sum(self.rewards) # rewardの最高値
                 self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
-                self.model.save("ESS_model")
+                self.model.save("ESS_model_sell")
                 self.end_count = 0
             # モデルの報酬の最高値を更新できなかった場合はend_count(追加エピソード)を設定
             # 動作詳細不明
             elif np.sum(self.rewards) < self.MAX_reward:
                 self.end_count += 1
 
-            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
+            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_sell_end"を保存し終了
             if self.end_count >= 20000:
                 if self.episode == 100000 or self.episode > 20000:
                     self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
-                    self.model.save("ESS_model_end")
+                    self.model.save("ESS_model_sell_end")
                     #done = True # 学習終了
                     self.end_count = 0
 
@@ -542,10 +542,10 @@ train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類)　#今後はUpper, lower, PVout
 mode = "train" # train or test
-model_name = "ESS_model" # ESS_model ESS_model_end
+model_name = "ESS_model_sell" # ESS_model_sell ESS_model_sell_end
 
 # Training環境設定と実行
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env = ESS_model_sell(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("--Trainモード終了--")
@@ -558,10 +558,10 @@ train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類) #今後はUpper, lower, PVout
 mode = "test" # train or test
-model_name = "ESS_model" # ESS_model ESS_model_end
+model_name = "ESS_model_sell" # ESS_model_sell ESS_model_sell_end
 
 # Test環境設定と実行 学習
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env = ESS_model_sell(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
 print("--充放電計画策定終了--")
