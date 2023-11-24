@@ -63,7 +63,9 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
 
     # operate
-    if mode == "realtime":
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate.py'])
+    elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
 
     # 評価
