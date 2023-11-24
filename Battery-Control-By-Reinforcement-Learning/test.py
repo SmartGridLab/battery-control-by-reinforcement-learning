@@ -17,4 +17,4 @@ else:
 
 print(now_battery)
 
-print("テスト")
+print("--テスト--")
