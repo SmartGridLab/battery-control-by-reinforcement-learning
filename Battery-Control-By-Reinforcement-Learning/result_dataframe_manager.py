@@ -7,9 +7,11 @@ print("dataframe作成")
 columns = [
     'year', 'month', 'day', 'hour', 'PV_predict', 'PV_actual',
     'energyprice_predict', 'energyprice_actual', 'imbalanceprice_predict', 'imbalanceprice_actual',
+    # 'energyprice_predict_bid', 'energyprice_predict_plan', 'energyprice_actual', 'imbalanceprice_predict_bid', 'imbalanceprice_predict_plan', 'imbalanceprice_actual',
     'charge/discharge_bid', 'charge/discharge_plan', 'charge/discharge_actual',
     'SoC_bid', 'SoC_plan', 'SoC_actual', 'energytransfer_bid', 'energytransfer_plan', 'energytransfer_actual',
     'energy_profit', 'imbalance_penalty', 'total_profit',
+    # 'energy_profit_bid', 'energy_profit_realtime', 'imbalance_penalty_bid', 'imbalance_penalty_realtime', 'total_profit_bid', 'total_profit_realtime',
     'mode'
 ]
 
