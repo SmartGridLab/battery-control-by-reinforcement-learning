@@ -1,6 +1,6 @@
 import pandas as pd
 
-print("-realtimeモード結果書き込み開始-")
+print("\n---realtimeモード結果書き込み開始---")
 
 # result_data.csvを読み込む
 result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
@@ -24,9 +24,10 @@ result_data = result_data.loc[:index_to_keep.max()]
 # result_dataframe.csvを読み込む
 existing_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
 
-# ###ここから変更
+# ここから変更
 # 0行目のhourの値がexisting_dataのどの行に対応するかを探索
 x_row = existing_data[existing_data['hour'] == result_data['hour'].iloc[0]].index[0]
+
 
 # result_dataから必要な列を取得し、existing_dataの対応する行に格納
 existing_data.loc[x_row:47, 'PV_predict'] = result_data['PV_predict'].values
@@ -39,5 +40,5 @@ existing_data.loc[x_row:47, 'energytransfer_plan'] = result_data['energytransfer
 # 更新されたデータをresult_dataframe.csvに保存
 existing_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
 
-print("-realtimeモード結果書き込み完了-")
+print("---realtimeモード結果書き込み完了---")
 
