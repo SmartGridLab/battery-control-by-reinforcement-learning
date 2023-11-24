@@ -116,8 +116,8 @@ def main():
     print("緯度 : " + str(lat))
     print("経度 : " + str(lon) + "\n")
 
-    print("今日の日付:" + str(date.strftime("%Y/%m/%d")))
-    print("時刻:" + str(current_time) + "\n")
+    #print("今日の日付:" + str(date.strftime("%Y/%m/%d")))
+    #print("時刻:" + str(current_time) + "\n")
     print(str(data_date1) + " " + data_time + "(UTC)公開の直近の予測データを取得\n")
 
 

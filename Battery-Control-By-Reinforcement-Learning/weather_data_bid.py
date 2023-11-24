@@ -76,7 +76,7 @@ def main():
     print("緯度 : " + str(lat))
     print("経度 : " + str(lon) + "\n")
 
-    print("日付:" + str(date.strftime("%Y/%m/%d")) + "(JST)")
+    #print("日付:" + str(date.strftime("%Y/%m/%d")) + "(JST)")
     print(str(data_date1) + " 21:00(JST)/12:00(UTC)公開のデータを取得\n")
 
 
