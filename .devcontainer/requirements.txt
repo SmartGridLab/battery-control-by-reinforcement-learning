@@ -87,6 +87,7 @@ scipy==1.9.3
 six==1.16.0
 sphinx-rtd-theme==0.2.4
 stable-baselines3==1.2.0
+statsmodels==0.14.0
 stack-data==0.5.1
 tensorboard==2.9.1
 tensorboard-data-server==0.6.1
