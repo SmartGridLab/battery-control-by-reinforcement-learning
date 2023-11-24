@@ -1,7 +1,7 @@
 import pandas as pd
 
 def main():
-    print("-実績データ参照開始-")
+    print("---実績データ参照開始---")
 
     # result_data.csvからyear, month, dayを取得
     result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
@@ -39,7 +39,7 @@ def main():
     # result_dataframe.csvを上書き保存
     dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
 
-    print("-実績データ書き込み完了-")
+    print("---実績データ書き込み完了---")
 
 if __name__ == "__main__":
     main()

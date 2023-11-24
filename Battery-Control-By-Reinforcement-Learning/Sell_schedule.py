@@ -17,7 +17,7 @@ print("\n---充放電計画策定プログラム開始---\n")
 
 warnings.simplefilter('ignore')
 
-class ESS_Model(gym.Env):
+class ESS_model_sell(gym.Env):
     def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
         #パラメータの定義
         self.episode = 0
@@ -25,7 +25,7 @@ class ESS_Model(gym.Env):
         self.total_step = action_space # 1Dayの総コマ数
         self.gamma = ma.exp(-(1/action_space)) # 放電に対する割引率
         self.omega = ma.exp(1/action_space) # 充電に対する割引率
-        self.battery_MAX = 4 # 蓄電池の定格容量4kWh
+        self.battery_MAX = 0 # 蓄電池の定格容量4kWh
         self.MAX_reward = -10000
         self.Train_Days = train_days # 学習Day
         self.test_days = test_day - 1 # テストDay数
@@ -39,7 +39,7 @@ class ESS_Model(gym.Env):
         self.all_rewards = []
 
         # データのロード
-        print("データロード")
+        print("-データロード-")
         # 学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
         # テストデータ(これが充放電計画策定したいもの)
@@ -54,7 +54,7 @@ class ESS_Model(gym.Env):
         input_data = pd.concat([input_data, new_rows_df], ignore_index=True)
 
         # データの作成
-        print("データ作成")
+        print("-データ作成-")
         if self.mode == "train":
             # 30分単位のため、料金を0.5倍
             price = input_data["price"]/2   # [JPY/kWh] -> [JPY/kW/30min]
@@ -82,7 +82,7 @@ class ESS_Model(gym.Env):
            
 
         # pandas -> numpy変換,型変換
-        print("データ変換")
+        print("-データ変換-")
         self.price_all = price_data.values
         self.price = self.price_all.reshape((len(self.price_all), 1)) 
 
@@ -125,7 +125,8 @@ class ESS_Model(gym.Env):
             ACTION = round(ACTION, 1) # 小数点第1位にまるめる
             time = self.time
             count = self.count
-            soc = (self.battery / self.battery_MAX) # %
+            #soc = (self.battery / self.battery_MAX) # %
+            soc = 0
 
             self.all_soc.append(soc*100)
             self.all_battery.append(self.battery)
@@ -183,7 +184,7 @@ class ESS_Model(gym.Env):
 
             # SoC算出
             self.battery = next_battery
-            soc = (self.battery / self.battery_MAX) # %
+            soc = 0
 
             ## timeデータ更新         
             self.time += 1
@@ -218,22 +219,22 @@ class ESS_Model(gym.Env):
             # 現在のエピソードのall_rewardsをself.all_rewardsリストに追加
             self.all_rewards.append(np.sum(self.rewards))
 
-            # モデルの報酬の最高値を更新した場合はモデル"ESS_model"を保存
+            # モデルの報酬の最高値を更新した場合はモデル"ESS_model_sell"を保存
             if np.sum(self.rewards) >= self.MAX_reward:
                 self.MAX_reward = np.sum(self.rewards) # rewardの最高値
                 self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + ".pdf")
-                self.model.save("ESS_model")
+                self.model.save("ESS_model_sell")
                 self.end_count = 0
             # モデルの報酬の最高値を更新できなかった場合はend_count(追加エピソード)を設定
             # 動作詳細不明
             elif np.sum(self.rewards) < self.MAX_reward:
                 self.end_count += 1
 
-            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_end"を保存し終了
+            # end_countが20000以上になった場合は十分学習したと判定し、モデル"ESS_model_sell_end"を保存し終了
             if self.end_count >= 20000:
                 if self.episode == 100000 or self.episode > 20000:
                     self.evalution("Battery-Control-By-Reinforcement-Learning/" + "result-" + self.mode + "-end.pdf")
-                    self.model.save("ESS_model_end")
+                    self.model.save("ESS_model_sell_end")
                     #done = True # 学習終了
                     self.end_count = 0
 
@@ -331,14 +332,16 @@ class ESS_Model(gym.Env):
 
         # 現在の状態と行動に対するreward
         # rewardはすべて入出力[kW]*値段[JPY/30min]で計算(実際の報酬ではない)
+        reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.PV_out_time + ACTION)
+
         # 充電する場合
         if ACTION <= 0:
             # 売電(PV出力-BT入力)に対するreward(今の状態×行動)
             if -ACTION < self.input_PV:
                 reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.PV_out_time + ACTION)*0
             # BT入力がPV出力より高いならペナルティ(今の状態×行動)
-            if -ACTION > self.input_PV:
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION
+            if -ACTION > 0:
+                reward += ((self.omega)**(self.time_stamp))*self.input_price*ACTION*0
         
         # 放電する場合
         if ACTION > 0:
@@ -346,14 +349,14 @@ class ESS_Model(gym.Env):
             reward += ((self.gamma)**(self.time_stamp))*self.input_price*self.PV_out_time*0
             # BT出力がSoCより大きいならペナルティ(今の状態×行動)
             if ACTION > self.battery: 
-                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)
+                reward += ((self.omega)**(self.time_stamp))*self.input_price*(self.battery - ACTION)*0
             # BT出力(売電)に対するreward(今の状態×行動)...PV出力に加えてBT出力が報酬として加算される
             if ACTION <= self.battery:
-                reward += ((self.gamma)**(self.time_stamp))*self.input_price*ACTION
+                reward += ((self.gamma)**(self.time_stamp))*self.input_price*ACTION*0
 
         # 次の状態と行動に対するreward
         # SoCが100％以上でペナルティ
-        if n_battery > self.battery_MAX: 
+        if n_battery != 0 : 
             reward += ((self.omega)**(self.time_stamp))*self.input_price*(-n_battery)
 
         return reward
@@ -507,12 +510,12 @@ class ESS_Model(gym.Env):
                             verbose=0, tensorboard_log="./PPO_tensorboard/") 
             #モデルの学習
             self.model.learn(total_timesteps=num_episodes*train_days*episode)
-            print("モデル学習終了")
+            print("-モデル学習終了-")
 
         
         if mode == "test":
             #モデルのロード
-            print("モデルロード")
+            print("-モデルロード-")
             self.model = PPO.load(model_name)
             #モデルのテスト
             obs = env.reset() # 最初のstate
@@ -529,9 +532,9 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100000 # 10000000  
+episode = 20 # 10000000  
 
-print("-Trainモード開始-")
+print("--Trainモード開始--")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
@@ -539,15 +542,15 @@ train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類)　#今後はUpper, lower, PVout
 mode = "train" # train or test
-model_name = "ESS_model" # ESS_model ESS_model_end
+model_name = "ESS_model_sell" # ESS_model_sell ESS_model_sell_end
 
 # Training環境設定と実行
-#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+env = ESS_model_sell(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
-print("-Trainモード終了-")
+print("--Trainモード終了--")
 
-print("-充放電計画策定開始-")
+print("--充放電計画策定開始--")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
@@ -555,13 +558,13 @@ train_days = 366 # 学習Day数 70 ~ 73
 test_day = 3 # テストDay数 + 2 (最大89)
 PV_parameter = "PVout" # Forecast or PVout_true (学習に使用するPV出力値の種類) #今後はUpper, lower, PVout
 mode = "test" # train or test
-model_name = "ESS_model" # ESS_model ESS_model_end
+model_name = "ESS_model_sell" # ESS_model_sell ESS_model_sell_end
 
 # Test環境設定と実行 学習
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env = ESS_model_sell(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
-print("-充放電計画策定終了-")
+print("--充放電計画策定終了--")
 
 
 print("\n---充放電計画策定プログラム終了---\n")

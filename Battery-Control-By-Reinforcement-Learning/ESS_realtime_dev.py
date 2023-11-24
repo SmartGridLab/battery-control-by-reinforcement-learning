@@ -13,11 +13,13 @@ from matplotlib.backends.backend_pdf import PdfPages
 from stable_baselines3 import PPO
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
-print("\n---充放電計画策定プログラム開始---\n")
+print("\n---充放電計画策定プログラム(リアルタイム)開始---\n")
 
 warnings.simplefilter('ignore')
 
-class ESS_Model(gym.Env):
+
+
+class ESS_model(gym.Env):
     def __init__(self, mode, pdf_day, train_days, test_day, PV_parameter, action_space):
         #パラメータの定義
         self.episode = 0
@@ -39,7 +41,7 @@ class ESS_Model(gym.Env):
         self.all_rewards = []
 
         # データのロード
-        print("データロード")
+        print("-データロード-")
         # 学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
         # テストデータ(これが充放電計画策定したいもの)
@@ -181,6 +183,8 @@ class ESS_Model(gym.Env):
             # これまでのrewardに時刻self.timeのrewardを加算
             reward += self.reward_set(ACTION ,n_battery)
 
+            print(self.time_stamp, reward)
+
             # SoC算出
             self.battery = next_battery
             soc = (self.battery / self.battery_MAX) # %
@@ -257,9 +261,21 @@ class ESS_Model(gym.Env):
     
     # 状態の初期化
     def reset(self):
+        # 結果データ
+        result_dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        # 蓄電池データ取得
+        # dataframe最終行から取得
+        last_soc_actual_row = result_dataframe[result_dataframe['SoC_actual'].notna()].tail(1)
+
+        if not last_soc_actual_row.empty:
+            last_soc_actual_value = last_soc_actual_row['SoC_actual'].values[0]
+            now_battery = last_soc_actual_value * 0.01 * self.battery_MAX  # 電力量[kWh]に変換
+        else:
+            now_battery = 0
+
         self.time = 0
         self.count = 0
-        self.battery = 0
+        self.battery = now_battery    #max:4[kWh]
         self.days = 1
         self.rewards = []
         self.all_PV_out_time = []
@@ -501,7 +517,7 @@ class ESS_Model(gym.Env):
         #root.withdraw()
         
         if mode == "train":
-            print("-モデル学習開始-")
+            print("モデル学習開始")
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
                             verbose=0, tensorboard_log="./PPO_tensorboard/") 
@@ -529,7 +545,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100000 # 10000000  
+episode = 5 # 10000000  
 
 print("-Trainモード開始-")
 
@@ -542,8 +558,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-#env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+env = ESS_model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("-Trainモード終了-")
 
@@ -558,10 +574,10 @@ mode = "test" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Test環境設定と実行 学習
-env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+env = ESS_model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
 print("-充放電計画策定終了-")
 
 
-print("\n---充放電計画策定プログラム終了---\n")
+print("\n---充放電計画策定プログラム(リアルタイム)終了---\n")
