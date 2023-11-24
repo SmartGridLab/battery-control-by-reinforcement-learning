@@ -39,7 +39,7 @@ class ESS_Model(gym.Env):
         self.all_rewards = []
 
         # データのロード
-        print("-データロード-")
+        print("データロード")
         # 学習データ
         input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
         # テストデータ(これが充放電計画策定したいもの)
@@ -54,7 +54,7 @@ class ESS_Model(gym.Env):
         input_data = pd.concat([input_data, new_rows_df], ignore_index=True)
 
         # データの作成
-        print("-データ作成-")
+        print("データ作成")
         if self.mode == "train":
             # 30分単位のため、料金を0.5倍
             price = input_data["price"]/2   # [JPY/kWh] -> [JPY/kW/30min]
@@ -82,7 +82,7 @@ class ESS_Model(gym.Env):
            
 
         # pandas -> numpy変換,型変換
-        print("-データ変換-")
+        print("データ変換")
         self.price_all = price_data.values
         self.price = self.price_all.reshape((len(self.price_all), 1)) 
 
@@ -196,7 +196,7 @@ class ESS_Model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            energy_transfer = self.PV_out_time[0] * 0.5 #[kW]->[kWh]
+            energy_transfer = self.PV_out_time[0] #[kW]
             self.all_energy_transfer.append(energy_transfer)
 
 
@@ -507,12 +507,12 @@ class ESS_Model(gym.Env):
                             verbose=0, tensorboard_log="./PPO_tensorboard/") 
             #モデルの学習
             self.model.learn(total_timesteps=num_episodes*train_days*episode)
-            print("-モデル学習終了-")
+            print("モデル学習終了")
 
         
         if mode == "test":
             #モデルのロード
-            print("-モデルロード-")
+            print("モデルロード")
             self.model = PPO.load(model_name)
             #モデルのテスト
             obs = env.reset() # 最初のstate
@@ -529,9 +529,9 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 20000 # 10000000  
+episode = 100000 # 10000000  
 
-print("--Trainモード開始--")
+print("-Trainモード開始-")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
@@ -545,9 +545,9 @@ model_name = "ESS_model" # ESS_model ESS_model_end
 #env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 #env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
-print("--Trainモード終了--")
+print("-Trainモード終了-")
 
-print("--充放電計画策定開始--")
+print("-充放電計画策定開始-")
 
 # test 1Day　Reward最大
 pdf_day = 0 #確率密度関数作成用のDay数 75 80
@@ -561,7 +561,7 @@ model_name = "ESS_model" # ESS_model ESS_model_end
 env = ESS_Model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
 env.main_root(mode, num_episodes, train_days, episode, model_name)
 
-print("--充放電計画策定終了--")
+print("-充放電計画策定終了-")
 
 
 print("\n---充放電計画策定プログラム終了---\n")
