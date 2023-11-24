@@ -16,3 +16,5 @@ else:
     now_battery = 0
 
 print(now_battery)
+
+print("テスト")
