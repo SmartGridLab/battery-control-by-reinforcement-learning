@@ -529,7 +529,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100000 # 10000000  
+episode = 30000 # 10000000  
 
 print("-Trainモード開始-")
 

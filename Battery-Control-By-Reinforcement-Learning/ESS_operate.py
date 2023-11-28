@@ -6,7 +6,7 @@ battery_MAX = 4
 # result_dataframe.csvを読み込む
 dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
 
-print("-機器動作開始-")
+print("-bidモード機器動作開始-")
 
 # 繰り返し文(同時に計算したい時間幅に調整->リアルタイム制御時にも使えるように)
 for i in range(0,48):
@@ -122,4 +122,4 @@ for i in range(0,48):
 # result_dataframe.csvを上書き保存
 dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
 
-print("-機器動作終了-")
+print("-bidモード機器動作終了-")

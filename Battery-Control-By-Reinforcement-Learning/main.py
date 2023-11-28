@@ -11,7 +11,7 @@ import time
 #AIST：実際の時間に合わせて動作
 #MULTI_TEST：複数時間を指定して動作
 #SINGLE_TEST：単体時間を指定して動作
-move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
+move_mode = "TEST"  #AIST or MULTI_TEST or SINGLE_TEST
 # -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
 
 #モード選択
@@ -63,7 +63,9 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
 
     # operate
-    if mode == "realtime":
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate.py'])
+    elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
 
     # 評価
@@ -79,8 +81,8 @@ if move_mode == "TEST":
 
     # 動作開始日と動作終了日の指定
     # JST
-    start_date = datetime.date(2023, 1, 1)
-    end_date = datetime.date(2023, 1, 1)
+    start_date = datetime.date(2023, 1, 31)
+    end_date = datetime.date(2023, 1, 31)
 
     #日付設定
     #current_date = start_date - datetime.timedelta(days=1)
@@ -106,6 +108,7 @@ if move_mode == "TEST":
                 print(mode)
 
                 yesterday_date = current_date - datetime.timedelta(days=1)
+                data_time = 0
                 data_to_send = {'year': yesterday_date.year,'month': yesterday_date.month,'day': yesterday_date.day,'hour':current_time}
                 print(data_to_send)
                 main()
@@ -138,12 +141,15 @@ elif move_mode == "SINGLE_TEST":
     year = 2023
     month = 1
     day = 1
-    current_time = 6.5   #hour(0.5刻み) #bidの場合は0に設定
+    current_time = 23.5   #hour(0.5刻み) #bidの場合は0に設定
     mode = "realtime"   #reaitime　or bid
     #######################
 
     current_date = datetime.date(year, month, day)
     data_time = current_time - 0.5
+    if data_time == -0.5:
+        data_time = 23.5
+
     
     data_to_send = {'year': year,'month': month,'day': day,'hour':data_time}
     main()
