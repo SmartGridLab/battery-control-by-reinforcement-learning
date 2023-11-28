@@ -115,25 +115,33 @@ class ESS_ModelEnv(gym.Env):
     def seed(self): 
         pass
 
-    # timeごとのrewardの計算 > rewardの設定内容
+    # 現在の状態と行動に対するrewardを返す(1step分)
     # - rewardは1日(1 episode)ごとに合計される
     # - action > 0 →放電  action < 0 →充電
     def _get_reward(self, action):
-        # 現在の状態と行動に対するreward
-        # rewardはすべて入出力[kW]*値段[JPY/30min]で計算(実際の報酬ではない)
+        ## df.inputからstate_idx(当該time_step)部分のデータを抽出
+        # Generation: 発電量
+        gen = self.df_input.loc[self.state_idx, "q50"]  # q50: Quantile Regressionによる50%分位点の発電量[MWh]の予測結果。qいくつをとるかは検討の余地あり。
+        # SSP: 電力価格 (single sytem price)
+        ssp = self.df_input.loc[self.state_idx, "SSP_q_0.5"] 
+        # MIP: 電力価格 (market index price)
+        dap = self.df_input.loc[self.state_idx, "DA_price_q_0.5"] 
+
         # 充電する場合
         if action <= 0:
-            # 売電(PV出力-BT入力)に対するreward(今の状態×行動)
-            if -action < self.input_PV:
-                reward += ((self.omega)**(self.state_idx))*self.input_price*(self.PV_out_time + action)
-            # BT入力がPV出力より高いならペナルティ(今の状態×行動)
-            if -action > self.input_PV:
-                reward += ((self.omega)**(self.state_idx))*self.input_price*action
+            # 売電(発電出力-バッテリー充電)に対するreward
+            if -action < gen:
+                trade = -action
+                reward = trade*dap+(gen-action)*(ssp-0.07*(gen-action))    # 0.07は事前に与えられた固定値（公式document参照）
+            # バッテリー充電が発電出力より高いならペナルティ
+            if -action > gen:
+                reward = action*dap+(gen-action)*(ssp-0.07*(gen-action))    # 0.07は事前に与えられた固定値（公式document参照）
         
         # 放電する場合
         if action > 0:
             # PV出力(売電)に対するreward
-            reward += ((self.gamma)**(self.state_idx))*self.input_price*self.PV_out_time
+            trade = action
+            reward = trade*dap+(gen-action)*(ssp-0.07*(gen-action))    # 0.07は事前に与えられた固定値（公式document参照）
             # BT出力がSoCより大きいならペナルティ(今の状態×行動)
             if action > self.battery: 
                 reward += ((self.omega)**(self.state_idx))*self.input_price*(self.battery - action)
