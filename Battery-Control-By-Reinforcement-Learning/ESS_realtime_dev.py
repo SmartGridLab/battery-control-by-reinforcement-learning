@@ -200,7 +200,14 @@ class ESS_model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            energy_transfer = self.PV_out_time[0] #[kW]
+            # 放電量のみ抽出
+            if action_real > 0:
+                temp = action_real
+            else:
+                temp = 0
+            
+            # 発電量(充電量のぞく)+放電量
+            energy_transfer = self.PV_out_time[0] + temp #[kW]
             self.all_energy_transfer.append(energy_transfer)
 
 

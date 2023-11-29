@@ -196,7 +196,14 @@ class ESS_Model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            energy_transfer = self.PV_out_time[0] #[kW]
+            # 放電量のみ抽出
+            if action_real > 0:
+                temp = action_real
+            else:
+                temp = 0
+
+            # 発電量(充電量のぞく)+放電量
+            energy_transfer = self.PV_out_time[0] + temp #[kW]
             self.all_energy_transfer.append(energy_transfer)
 
 
@@ -529,7 +536,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 30000 # 10000000  
+episode = 10000 # 10000000  
 
 print("-Trainモード開始-")
 
