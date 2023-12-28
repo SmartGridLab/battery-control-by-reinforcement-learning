@@ -121,21 +121,26 @@ class ESS_ModelEnv(gym.Env):
     def _get_reward(self, action):
         ## df.inputからstate_idx(当該time_step)部分のデータを抽出
         # Generation: 発電量
-        gen = self.df_input.loc[self.state_idx, "q50"]  # q50: Quantile Regressionによる50%分位点の発電量[MWh]の予測結果。qいくつをとるかは検討の余地あり。
+        gen_predict = self.df_input.loc[self.state_idx, "q50"]  # q50: Quantile Regressionによる50%分位点の発電量[MWh]の予測結果。qいくつをとるかは検討の余地あり。
+        gen_observed = self.df_input.loc[self.state_idx,"total_generation_MWh"] # 実績発電量
         # SSP: 電力価格 (single sytem price)
         ssp = self.df_input.loc[self.state_idx, "SSP_q_0.5"] 
         # MIP: 電力価格 (market index price)
         dap = self.df_input.loc[self.state_idx, "DA_price_q_0.5"] 
 
-        # 充電する場合
-        if action <= 0:
-            # 売電(発電出力-バッテリー充電)に対するreward
-            if -action < gen:
-                trade = -action
-                reward = trade*dap+(gen-action)*(ssp-0.07*(gen-action))    # 0.07は事前に与えられた固定値（公式document参照）
-            # バッテリー充電が発電出力より高いならペナルティ
-            if -action > gen:
-                reward = action*dap+(gen-action)*(ssp-0.07*(gen-action))    # 0.07は事前に与えられた固定値（公式document参照）
+        # Reward1: Energy Trasnfer（電力系統へ流す売電電力量）を計算する
+        # bid_energy, transfer_energyは action + genと0の大きい方を採用する
+        #  action + gen > 0 →action + gen
+        #  action + gen < 0 →0
+        bid_energy = max(action + gen_predict, 0)                
+        transfer_energy = max(action + gen_observed, 0)
+        # rewardを計算
+        reward = transfer_energy*dap + (transfer_energy-bid_energy)*(ssp-0.07*(transfer_energy-bid_energy))    # 0.07は事前に与えられた固定値（公式document参照）
+
+        # Reward2: 制約条件
+        # バッテリー充電が発電出力より高いならペナルティ
+        if action < 0 and action < gen_predict: 
+            reward += -1000
         
         # 放電する場合
         if action > 0:
