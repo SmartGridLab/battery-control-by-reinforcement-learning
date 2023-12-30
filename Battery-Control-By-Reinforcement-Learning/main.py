@@ -82,8 +82,8 @@ if move_mode == "TEST":
     # 動作開始日と動作終了日の指定
     # JST
     # 現状複数日非対応
-    start_date = datetime.date(2023, 1, 31)
-    end_date = datetime.date(2023, 1, 31)
+    start_date = datetime.date(2022, 8, 8)
+    end_date = datetime.date(2022, 8, 8)
 
     #日付設定
     #current_date = start_date - datetime.timedelta(days=1)

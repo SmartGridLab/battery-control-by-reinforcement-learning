@@ -4,9 +4,9 @@ import subprocess
 
 #送るデータ
 data_to_send = {
-    'year': 2022,
-    'month': 4,
-    'day': 12,
+    'year': 2023,
+    'month': 3,
+    'day': 15,
     'hour':23.5
 }
 
