@@ -202,13 +202,17 @@ class ESS_model(gym.Env):
             # 売電量の更新
             # 放電量のみ抽出
             if action_real > 0:
-                temp = action_real
+                temp = float(action_real)
             else:
                 temp = 0
             
             # 発電量(充電量のぞく)+放電量
             energy_transfer = self.PV_out_time[0] + temp #[kW]
+            
+            #print(type(energy_transfer), type(self.PV_out_time[0]), type(temp))
+
             self.all_energy_transfer.append(energy_transfer)
+
 
 
             # 入力データ(学習時：実測　テスト時：予測)
@@ -527,7 +531,7 @@ class ESS_model(gym.Env):
             print("モデル学習開始")
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
-                            verbose=0, tensorboard_log="./PPO_tensorboard/") 
+                            verbose=1, tensorboard_log="./PPO_tensorboard/") 
             #モデルの学習
             self.model.learn(total_timesteps=num_episodes*train_days*episode)
             print("モデル学習終了")
