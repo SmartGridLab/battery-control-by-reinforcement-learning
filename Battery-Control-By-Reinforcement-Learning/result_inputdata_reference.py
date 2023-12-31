@@ -1,10 +1,14 @@
+# 充放電計画の性能評価のためのデータを集めるコード
+# - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
+# - 実績値ベースでの売電による収益の計算を行う
+
 import pandas as pd
 
 def main():
     print("---実績データ参照開始---")
 
-    # result_data.csvからyear, month, dayを取得
-    result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
+    # result_dataframe.csvからyear, month, dayを取得(充放電計画を行った)
+    result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
     year = int(result_data.loc[0, "year"])
     month = int(result_data.loc[0, "month"])
     day = int(result_data.loc[0, "day"])

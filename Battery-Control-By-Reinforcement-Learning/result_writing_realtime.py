@@ -1,3 +1,8 @@
+# 強化学習の結果をresult_dataframe.csvに書き込むプログラム
+# - 強化学習の結果で得られたものすべてがresult_dataframe.csvに必要な訳では無い
+# - planの場合は、当日分のデータのみ必要（resut_data.csvには常に48コマ分の結果が入る）
+#　　そのため、翌日以降のデータを消して、resut_dataframe.csvに書き込む
+
 import pandas as pd
 
 print("\n---realtimeモード結果書き込み開始---")

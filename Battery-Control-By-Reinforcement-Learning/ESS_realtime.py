@@ -278,6 +278,7 @@ class ESS_model(gym.Env):
         # dataframe最終行から取得
         last_soc_actual_row = result_dataframe[result_dataframe['SoC_actual_realtime'].notna()].tail(1)
 
+        # エラー処理：SoCのデータがdaraframeになければ0に設定する
         if not last_soc_actual_row.empty:
             last_soc_actual_value = last_soc_actual_row['SoC_actual_realtime'].values[0]
             now_battery = last_soc_actual_value * 0.01 * self.battery_MAX  # 電力量[kWh]に変換

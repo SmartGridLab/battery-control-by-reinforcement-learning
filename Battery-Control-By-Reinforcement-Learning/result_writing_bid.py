@@ -1,3 +1,6 @@
+# 強化学習の結果をresult_dataframe.csvに書き込むプログラム
+# - フォーマットをあわせているだけ。ヘッダーを変えて、result_dataframe.csv内で一致するものを探索して、書き込む
+
 import pandas as pd
 
 print("-bidモード結果書き込み開始-")
