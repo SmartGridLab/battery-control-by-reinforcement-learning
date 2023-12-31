@@ -72,8 +72,8 @@ class ESS_Model(gym.Env):
             # 30分単位のため、料金を0.5倍
             price = predict_data["price"]/2   # [JPY/kWh] -> [JPY/kW/30min]
             imbalance = predict_data["imbalance"]/2   # [JPY/kWh] -> [JPY/kW/30min]
-            #self.PV = PV_parameter #upper, lower, PVoutの選択用、現在使ってないが、今後のために保留
-            PVout = predict_data["PVout"]   # [kW]
+            self.PV = PV_parameter #upper, lower, PVoutの選択用、現在使ってないが、今後のために保留
+            PVout = predict_data[self.PV]   # [kW]
             
             # 値を格納
             price_data = price
@@ -121,7 +121,7 @@ class ESS_Model(gym.Env):
             # float型へ
             action = float(all_action[self.time_stamp])
 
-            ACTION = action*1.2 # [kW]  #値を拡大することでrewardへ影響力を持たせる
+            ACTION = action*1.5 # [kW]  #値を拡大することでrewardへ影響力を持たせる
             ACTION = round(ACTION, 1) # 小数点第1位にまるめる
             time = self.time
             count = self.count
@@ -196,7 +196,14 @@ class ESS_Model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            energy_transfer = self.PV_out_time[0] #[kW]
+            # 放電量のみ抽出
+            if action_real > 0:
+                temp = float(action_real)
+            else:
+                temp = 0
+
+            # 発電量(充電量のぞく)+放電量
+            energy_transfer = self.PV_out_time[0] + temp #[kW]
             self.all_energy_transfer.append(energy_transfer)
 
 
@@ -504,7 +511,7 @@ class ESS_Model(gym.Env):
             print("-モデル学習開始-")
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
-                            verbose=0, tensorboard_log="./PPO_tensorboard/") 
+                            verbose=1, tensorboard_log="./PPO_tensorboard/") 
             #モデルの学習
             self.model.learn(total_timesteps=num_episodes*train_days*episode)
             print("モデル学習終了")
@@ -529,7 +536,7 @@ action_space = 12 #アクションの数(現状は48の約数のみ)
 num_episodes = int(48/action_space) # 1Dayのコマ数(固定)
 
 # 学習回数
-episode = 100000 # 10000000  
+episode = 30000 # 10000000  
 
 print("-Trainモード開始-")
 

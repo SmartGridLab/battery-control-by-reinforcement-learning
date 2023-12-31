@@ -183,7 +183,7 @@ class ESS_model(gym.Env):
             # これまでのrewardに時刻self.timeのrewardを加算
             reward += self.reward_set(ACTION ,n_battery)
 
-            print(self.time_stamp, reward)
+            #print(self.time_stamp, reward)
 
             # SoC算出
             self.battery = next_battery
@@ -200,8 +200,19 @@ class ESS_model(gym.Env):
                 self.time = 0
 
             # 売電量の更新
-            energy_transfer = self.PV_out_time[0] #[kW]
+            # 放電量のみ抽出
+            if action_real > 0:
+                temp = float(action_real)
+            else:
+                temp = 0
+            
+            # 発電量(充電量のぞく)+放電量
+            energy_transfer = self.PV_out_time[0] + temp #[kW]
+            
+            #print(type(energy_transfer), type(self.PV_out_time[0]), type(temp))
+
             self.all_energy_transfer.append(energy_transfer)
+
 
 
             # 入力データ(学習時：実測　テスト時：予測)
@@ -265,10 +276,10 @@ class ESS_model(gym.Env):
         result_dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
         # 蓄電池データ取得
         # dataframe最終行から取得
-        last_soc_actual_row = result_dataframe[result_dataframe['SoC_actual'].notna()].tail(1)
+        last_soc_actual_row = result_dataframe[result_dataframe['SoC_actual_realtime'].notna()].tail(1)
 
         if not last_soc_actual_row.empty:
-            last_soc_actual_value = last_soc_actual_row['SoC_actual'].values[0]
+            last_soc_actual_value = last_soc_actual_row['SoC_actual_realtime'].values[0]
             now_battery = last_soc_actual_value * 0.01 * self.battery_MAX  # 電力量[kWh]に変換
         else:
             now_battery = 0
@@ -520,7 +531,7 @@ class ESS_model(gym.Env):
             print("モデル学習開始")
             self.model = PPO("MlpPolicy", env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                             ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
-                            verbose=0, tensorboard_log="./PPO_tensorboard/") 
+                            verbose=1, tensorboard_log="./PPO_tensorboard/") 
             #モデルの学習
             self.model.learn(total_timesteps=num_episodes*train_days*episode)
             print("モデル学習終了")
@@ -558,8 +569,8 @@ mode = "train" # train or test
 model_name = "ESS_model" # ESS_model ESS_model_end
 
 # Training環境設定と実行
-env = ESS_model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
-env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
+#env = ESS_model(mode, pdf_day, train_days, test_day, PV_parameter, action_space)
+#env.main_root(mode, num_episodes, train_days, episode, model_name)# Trainingを実行
 
 print("-Trainモード終了-")
 
