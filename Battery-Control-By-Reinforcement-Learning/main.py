@@ -1,10 +1,7 @@
 #メインプログラム
-
-import os
 import subprocess
 import datetime
 import pytz
-import time
 
 # 動作環境選択
 # TEST：日付だけを指定して動作 ->　79行目以降指定
@@ -22,23 +19,25 @@ def main():
     print("データ時刻:" + current_date.strftime("%Y/%m/%d") + " " + str(data_time) + "時")
     print("\nmode:" + mode +"\n")
 
-    #天気予報データ取得(GPVデータ取得)
-    if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py', str(data_to_send)])
-    elif mode == "realtime":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py', str(data_to_send)])
+    # #天気予報データ取得(GPVデータ取得)
+    # if mode == "bid":
+    #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py', str(data_to_send)])
+    # elif mode == "realtime":
+    #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py', str(data_to_send)])
 
-    #PV出力を予測する
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
+    # #PV出力を予測する
+    # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
 
-    #電力価格を予測する
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
+    # #電力価格を予測する
+    # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
     # Batteryの充放電計画を強化学習モデルで策定する
     if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_schedule.py'])
+        # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_schedule.py'])
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
     elif mode == "realtime":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_realtime.py'])
+        # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_realtime.py'])
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
     # dataframeの用意
     if mode == "bid":

@@ -1,38 +1,55 @@
+# csvからのデータの読み込みを行うクラス
+
 import pandas as pd
 
-Class Dataframe_Manager():
-    ## 強化学習の学習に使うテーブル(df_input)を作成
-    def get_input_df(self, target_day, train_days):
-        # - 前提：PV発電予測と価格予測の結果のcsvがあること
-        # - CSVファイルから学習データと予測子のデータを読み込む
+class Dataframe_Manager():
+    ## 強化学習の学習に使うテーブル(df_train)を作成
+    def get_train_df(self):
+        # CSVファイル(input_data2022.csv)から学習データを読み込む
+        self.trainData = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
 
+        return self.trainData
+
+    def get_train_df(self):
+        # - 前提：PV発電予測と価格予測の結果のcsvがあること
+        # - CSVファイルから予測結果のデータを読み込む
         # 電力価格データ（過去＋予測）
         price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
-        # PV, wind予測結果データ（過去＋予測）
-        pv_wind_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_wind_predict.csv")
-        # 電力価格とPV/windテーブルを結合（キーはref_datetime, valid_datetimeが全て一致）
-        self.df_input = pd.merge(price_predict, pv_wind_predict, how='outer', on=['ref_datetime','valid_datetime'])
-        # target_dayの前日からdays日数分、以前のデータを抽出
-        self.df_input = self.df_input[(self.df_input['ref_datetime'] >= target_day - pd.Timedelta(days=train_days)) & (self.df_input['ref_datetime'] < target_day)]
+        # PV予測結果データ（過去＋予測）
+        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv")
+        # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致）
+        # 
+        self.df_input = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
         return self.df_input
+
 
     ## 強化学習の結果を入れるテーブル(df_result)を作成
     def get_result_df(self):
         # 列名をリストとして定義
-        # wind_q10: Quantile Regressionによる10%分位点の風力発電の発電量[MWh]の予測結果
         col = [
-            'year', 'month', 'day', 'hour', 
-            'PV_q10', 'PV_q20', 'PV_q30', 'PV_q40', 'PV_q50', 'PV_q60', 'PV_q70', 'PV_q80', 'PV_q90', 'PV_actual', 
-            'wind_q10', 'wind_q20', 'wind_q30', 'wind_q40', 'wind_q50', 'wind_q60', 'wind_q70', 'wind_q80', 'wind_q90', 'wind_actual',
-            'MIP_q10', 'MIP_q20', 'MIP_q30', 'MIP_q40', 'MIP_q50', 'MIP_q60', 'MIP_q70', 'MIP_q80', 'MIP_q90','MIP_actual',
-            'SSP_q10', 'SSP_q20', 'SSP_q30', 'SSP_q40', 'SSP_q50', 'SSP_q60', 'SSP_q70', 'SSP_q80', 'SSP_q90','SSP_actual',
-            'charge/discharge_bid', 'charge/discharge_plan', 'charge/discharge_actual',
-            'SoC_bid', 'SoC_plan', 'SoC_actual', 'energytransfer_bid', 'energytransfer_plan', 'energytransfer_actual',
-            'energy_profit', 'imbalance_penalty', 'total_profit'
+            # 時系列関係
+            'year', 'month', 'day', 'hour',
+            # PV関連
+            'PV_predict_bid', 'PV_predict_realtime', 'PV_actual',
+            # 電力価格関連
+            'energyprice_predict_bid', 'energyprice_predict_realtime', 'energyprice_actual', 
+            'imbalanceprice_predict_bid', 'imbalanceprice_predict_realtime', 'imbalanceprice_actual',
+            # 充放電量関連
+            'charge/discharge_bid', 'charge/discharge_realtime', 'charge/discharge_actual_bid', 'charge/discharge_actual_realtime',
+            # SoC関連
+            'SoC_bid', 'SoC_realtime', 'SoC_actual_bid', 'SoC_actual_realtime', 
+            # 売電量関連
+            'energytransfer_bid', 'energytransfer_realtime', 'energytransfer_actual_bid','energytransfer_actual_realtime',
+            # 売電利益関連
+            'energyprofit_bid', 'energyprofit_realtime', 'imbalancepenalty_bid', 'imbalancepenalty_realtime', 'totalprofit_bid', 'totalprofit_realtime',
+            # 動作モード：operateの条件分岐を見るためのもの。デバッグ用
+            'mode', 'mode_realtime'
         ]
 
-        self.df_result = pd.DataFrame(columns=col)
-        return self.df_result
+        # 空のDataframeを作成
+        dataframe = pd.DataFrame(columns=col)
+
+        return dataframe
 
     # 学習データと予測子のデータをテーブル形式で返す
     def get_DataTable(self):
@@ -59,8 +76,8 @@ Class Dataframe_Manager():
         return price, imbalance, PVout
 
 
-    def get_data(self,idx):
-        return  self.datafame(idx,:)
+    # def get_data(self,idx):
+    #     return  self.datafame(idx,:)
 
 
     def get_result_csv(self):

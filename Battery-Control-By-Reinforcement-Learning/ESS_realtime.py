@@ -210,10 +210,7 @@ class ESS_model(gym.Env):
             energy_transfer = self.PV_out_time[0] + temp #[kW]
             
             #print(type(energy_transfer), type(self.PV_out_time[0]), type(temp))
-
             self.all_energy_transfer.append(energy_transfer)
-
-
 
             # 入力データ(学習時：実測　テスト時：予測)
             self.data_set()

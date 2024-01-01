@@ -14,21 +14,19 @@ from stable_baselines3 import PPO
 
 # internal modules
 import RL_visualize as visual
-import RL_dataframe_manager as df_manage
+from RL_dataframe_manager import Dataframe_Manager as df_manage
 
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
-    def __init__(self, train_days, test_days):
+    def __init__(self):
         ## データ読み込み
         # 学習データの読み込み（予測日の前日までを学習データとして利用する）
-        # train_days: 学習日数
-        # target_day: 予測日
-        self.df_input = df_manage.get_input_df(target_day, train_days)
+        self.df_input = df_manage.get_train_df
         # テストデータの読み込み
-        self.df_predict = df_manage.get_preidct_df(target_day, test_days)
+        self.df_predict = df_manage.get_preidct_df
         # 結果を格納するテーブルの読み込み
-        self.df_result = df_manage.get_result_df(test_days)
+        self.df_result = df_manage.get_result_df
 
         # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
@@ -131,8 +129,6 @@ class ESS_ModelEnv(gym.Env):
         gen_predict = self.df_input.loc[self.state_idx, "q50"]  # q50: Quantile Regressionによる50%分位点の発電量[MWh]の予測結果。qいくつをとるかは検討の余地あり。
         # gen_observed = self.df_input.loc[self.state_idx,"total_generation_MWh"] # 実績発電量
 
-        # SSP: 電力価格 (single sytem price)
-        ssp = self.df_input.loc[self.state_idx, "SSP_q_0.5"] 
         # MIP: 電力価格 (market index price)
         dap = self.df_input.loc[self.state_idx, "DA_price_q_0.5"] 
 
@@ -144,8 +140,6 @@ class ESS_ModelEnv(gym.Env):
         bid_energy = max(action + gen_predict, 0)
         # rewardを計算
         reward = bid_energy*dap
-        # 評価時はこれ：reward = transfer_energy*dap + (transfer_energy-bid_energy)*(ssp-0.07*(transfer_energy-bid_energy))    # 0.07は事前に与えられた固定値（公式document参照）
-
 
         # Reward2: 制約条件
         # バッテリー充電が発電出力より高いならペナルティ
@@ -167,6 +161,15 @@ class ESS_ModelEnv(gym.Env):
         return reward
 
     def _get_possible_schedule(action):
+        # 入力データの設定
+        self.PV_out_time = self.PVout[self.time]
+        self.price_time = self.price[self.time]
+        self.imbalance_time = self.imbalance[self.time]
+                
+        #時刻self.timeに対応するデータを取得
+        self.input_price = self.price[48*(self.days - 1) + self.time]
+        self.input_PV = self.PVout[48*(self.days - 1) + self.time]
+
         #### actionを適正化(充電をPVの出力があるときのみに変更)
         # PV発電量が0未満の場合、0に設定
         if self.PV_out_time < 0:
