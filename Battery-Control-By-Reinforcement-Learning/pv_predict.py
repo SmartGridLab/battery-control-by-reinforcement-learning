@@ -219,4 +219,4 @@ for i in range(p.N_VERIFICATION):
 pv_predict.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
 
 #終了
-print("\n---PV出力予測プログラム終了---")
+print("\n---PV出力予測プログラム終了---\n")

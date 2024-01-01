@@ -1,10 +1,14 @@
+# 充放電計画の性能評価のためのデータを集めるコード
+# - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
+# - 実績値ベースでの売電による収益の計算を行う
+
 import pandas as pd
 
 def main():
-    print("-実績データ参照開始-")
+    print("---実績データ参照開始---")
 
-    # result_data.csvからyear, month, dayを取得
-    result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
+    # result_dataframe.csvからyear, month, dayを取得(充放電計画を行った)
+    result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
     year = int(result_data.loc[0, "year"])
     month = int(result_data.loc[0, "month"])
     day = int(result_data.loc[0, "day"])
@@ -33,13 +37,13 @@ def main():
         i = -1
     # i+1行目からi+48行目に実績データを挿入
     dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('PV_actual')] = PV_actual
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('energyprice_actual')] = energyprice_actual
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('imbalanceprice_actual')] = imbalanceprice_actual
+    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('energyprice_actual')] = energyprice_actual * 0.5
+    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('imbalanceprice_actual')] = imbalanceprice_actual * 0.5
    
     # result_dataframe.csvを上書き保存
     dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
 
-    print("-実績データ書き込み完了-")
+    print("---実績データ書き込み完了---")
 
 if __name__ == "__main__":
     main()

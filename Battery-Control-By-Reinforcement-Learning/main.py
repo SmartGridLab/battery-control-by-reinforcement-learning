@@ -6,64 +6,87 @@ import datetime
 import pytz
 import time
 
-
-# 動作モードの選択
-# -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
-# -------------------------------------------------------------------------
-# 1. AIST: 現実の時刻に合わせて、リアルタイムのデータを読み込んで30分ごとにプログラムを実行
-# 2. MULTI_TEST：指定の日時の期間でプログラムを実行
-# 3. SINGLE_TEST：指定の日時の１コマだけでプログラムを実行
-# -------------------------------------------------------------------------
-move_mode = "SINGLE_TEST"  #AIST or MULTI_TEST or SINGLE_TEST
-
-#モード選択
-#bid：前日のスポット市場入札
-#reaitime：当日のリアルタイム制御
-# -> (小平)時刻で自動的にbidとrealtimeをケースわけして実行するように実装する
+# 動作環境選択
+# TEST：日付だけを指定して動作 ->　79行目以降指定
+# SINGLE_TEST：単体時間(1コマ30分)を指定して動作（動作確認用という感じ）
+move_mode = "TEST"  #TEST or SINGLE_TEST
 
 # タイムゾーンを設定
 tz = pytz.timezone('Asia/Tokyo')
 
-# 1. 実装モード
-if move_mode == "AIST":
-    #無限ループ
-    while True:
-    # プログラムの実行コードをここに書く
-        now = datetime.datetime.now(tz)
-        current_date = now.date()
-        current_time = now.hour
-        current_time = int(current_time)
+def main():
+    print("\n---プログラム起動---\n")
 
-        #毎時30分を超えた場合、current_timeをn.5時になるよう設定
-        current_minute = now.minute
-        current_minute = int(current_minute)
-        if current_minute >= 30:
-            current_time += 0.5
+    #時刻表示
+    print("現在時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")
+    print("データ時刻:" + current_date.strftime("%Y/%m/%d") + " " + str(data_time) + "時")
+    print("\nmode:" + mode +"\n")
 
-        #時間ごとにモードを指定し、main.pyを動作
-        #mode = "bid"
-        subprocess.run(['python', 'main.py'])
+    #天気予報データ取得(GPVデータ取得)
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py', str(data_to_send)])
+    elif mode == "realtime":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py', str(data_to_send)])
 
-        # 30分待機する
-        time.sleep(1800)
+    #PV出力を予測する
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
 
-# 2. MULTI_TESTモード
-elif move_mode == "TEST":
+    #電力価格を予測する
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
+    # Batteryの充放電計画を強化学習モデルで策定する
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_schedule.py'])
+    elif mode == "realtime":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_realtime.py'])
+
+    # dataframeの用意
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_dataframe_manager.py'])
+
+    # 結果のdataframeへの書き込み
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_writing_bid.py'])
+    elif mode == "realtime":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_writing_realtime.py'])
+
+    # 充放電計画の性能評価のためのデータを集める
+    # - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
+    # - 実績値ベースでの売電による収益の計算を行う
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
+
+    # 機器動作を策定する
+    # - 強化学習で作られたcharge/discharge_realtime通りの充放電を実行しようとしてみる
+    # - だけど、PVの予測値が外れたり、SoCの値がrealtime通りにならなかったりする
+    # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する-> charge/discharge_actual_bid
+    # - realtime_mode：直前のコマの充放電計画(energytransfer_realtime)に寄せて現実的な充放電を策定する -> charge/discharge_actual_realtime
+    if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_bid.py'])
+    elif mode == "realtime":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
+
+    # 1日の最終コマ(23.5)の動作終了後に、1日分の結果を集計する
+    if current_time == 23.5:
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
+
+    #終了
+    print("\n---プログラム終了---\n")
+
+
+# TESTモード
+if move_mode == "TEST":
     # 動作開始日と動作終了日の指定
     # JST
-    start_date = datetime.date(2023, 1, 1)
-    end_date = datetime.date(2023, 1, 3)
+    # 現状複数日非対応
+    # ex) 2022年8月8日のみ動作:(2022, 8, 8)
+    start_date = datetime.date(2022, 8, 8)
+    end_date = datetime.date(2022, 8, 8)
 
-    # 日付の範囲で動作
-
-    #日付設定
-    current_date = start_date - datetime.timedelta(days=1)
-    current_time = 0
-    mode = "bid"
-    print(mode)
-    #subprocess.run(['python', 'main.py'])
-
+    # 日付と時刻のカウンタ設定
+    # current_date = start_date - datetime.timedelta(days=1)
+    current_date = start_date   # 日付の初期値設定
+    current_time = 0            # 時刻の初期値設定(0.5刻み,  max23.5)
 
     while current_date <= end_date:
         print("日付：" + current_date.strftime("%Y/%m/%d"))
@@ -71,32 +94,56 @@ elif move_mode == "TEST":
         #時間の初期値設定(hour表記)
         current_time = 0
         while current_time < 24:
-            print("時刻：" + str(current_time))
-            
             # 0時の場合は bidモードで充放電計画策定も行う
             if current_time == 0:
                 mode = "bid"
                 print(mode)
-                #subprocess.run(['python', 'main.py'])
+                # bidのときは前日の10AM時点で手に入るデータで入札をしていることになるので、そのスケジュールを生成するために実行する
+                yesterday_date = current_date - datetime.timedelta(days=1)
+                data_time = 0
+                # GPVデータの所得のために時刻を生成
+                data_to_send = {'year': yesterday_date.year,'month': yesterday_date.month,'day': yesterday_date.day,'hour':current_time}
+                print(data_to_send)
+                main()
+                # realtimeのときは、直前のコマ（前日の23.5）のデータを使って充放電計画を立てる
+                mode = "realtime"
+                print(mode)
+                data_time = 23.5
+                data_to_send = {'year': yesterday_date.year,'month': yesterday_date.month,'day': yesterday_date.day,'hour':data_time}
+                print(data_to_send)
+                main()
+            else: 
+                mode = "realtime"
+                print(mode)
+                data_time = current_time - 0.5
+                data_to_send = {'year': current_date.year,'month': current_date.month,'day': current_date.day,'hour':data_time}
+                print(data_to_send)
+                main()
 
-            mode = "realtime"
-            print(mode)
-            #subprocess.run(['python', 'main.py'])
-
-            #時間を変更
+            # １コマ分時間を進める
             current_time += 0.5
+        # １日分日付を進める
         current_date += datetime.timedelta(days=1)
 
-# 3. SINGLE_TESTモード
+# SINGLE_TESTモード
 elif move_mode == "SINGLE_TEST":
 
-    ## 手動で時刻を設定
-    current_date = datetime.date(2023, 7, 6) #(YYYY, MM, DD)
-    current_time = 16   #hour(0.5刻み)
+    ## 手動で時刻を設定 ###
+    year = 2023
+    month = 1
+    day = 1
+    current_time = 23.5   #hour(0.5刻み) #bidの場合は0に設定
     mode = "realtime"   #reaitime　or bid
+    #######################
 
-if __name__ == "__main__":
-    print("\n---プログラム起動---\n")
+    current_date = datetime.date(year, month, day)
+    data_time = current_time - 0.5
+    if data_time == -0.5:
+        data_time = 23.5
+
+    
+    data_to_send = {'year': year,'month': month,'day': day,'hour':data_time}
+    main()
 
     #時刻表示
     print("時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")

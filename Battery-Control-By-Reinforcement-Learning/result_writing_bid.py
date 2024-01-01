@@ -1,3 +1,6 @@
+# 強化学習の結果をresult_dataframe.csvに書き込むプログラム
+# - フォーマットをあわせているだけ。ヘッダーを変えて、result_dataframe.csv内で一致するものを探索して、書き込む
+
 import pandas as pd
 
 print("-bidモード結果書き込み開始-")
@@ -7,9 +10,9 @@ result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data
 
 # 列名の変更
 result_data.rename(columns={
-    "PVout": "PV_predict",
-    "price": "energyprice_predict",
-    "imbalance": "imbalanceprice_predict",
+    "PVout": "PV_predict_bid",
+    "price": "energyprice_predict_bid",
+    "imbalance": "imbalanceprice_predict_bid",
     "charge/discharge": "charge/discharge_bid",
     "SoC": "SoC_bid",
     "energy_transfer": "energytransfer_bid"
