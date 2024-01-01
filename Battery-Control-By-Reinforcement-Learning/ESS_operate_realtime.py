@@ -30,8 +30,8 @@ for i in range(0,1):
     # PVが計画よりも多い場合
     if delta_PV >= 0:
         # 充電量増加(放電量抑制)・売電量変化なし
-        dataframe.at[j, 'charge/discharge_actual_realtime'] = dataframe.at[j, 'charge/discharge_plan'] - abs(delta_PV) #充電量は負の値なので、値を負の方向へ
-        dataframe.at[j, 'energytransfer_actual_realtime'] = dataframe.at[j, 'energytransfer_plan']
+        dataframe.at[j, 'charge/discharge_actual_realtime'] = dataframe.at[j, 'charge/discharge_realtime'] - abs(delta_PV) #充電量は負の値なので、値を負の方向へ
+        dataframe.at[j, 'energytransfer_actual_realtime'] = dataframe.at[j, 'energytransfer_realtime']
 
         dataframe.at[j, 'mode_realtime'] = 1
     
@@ -71,8 +71,8 @@ for i in range(0,1):
     # PVが計画よりも少ない場合
     else:
         # 充電量抑制(放電量増加)・売電量変化なし
-        dataframe.at[j, 'charge/discharge_actual_realtime'] = dataframe.at[j, 'charge/discharge_plan'] + abs(delta_PV)    #充電量は負の値なので、値を正の方向へ
-        dataframe.at[j, 'energytransfer_actual_realtime'] = dataframe.at[j, 'energytransfer_plan']
+        dataframe.at[j, 'charge/discharge_actual_realtime'] = dataframe.at[j, 'charge/discharge_realtime'] + abs(delta_PV)    #充電量は負の値なので、値を正の方向へ
+        dataframe.at[j, 'energytransfer_actual_realtime'] = dataframe.at[j, 'energytransfer_realtime']
 
         dataframe.at[j, 'mode_realtime'] = -1
     

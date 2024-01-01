@@ -23,7 +23,7 @@ for i in range(0,48):
     last_csv_row = dataframe['year'].last_valid_index()
 
     # PVの予測値と実測値の差を計算
-    delta_PV = dataframe.at[j, 'PV_actual'] - dataframe.at[j, 'PV_predict']
+    delta_PV = dataframe.at[j, 'PV_actual'] - dataframe.at[j, 'PV_predict_bid']
 
     # PVが計画よりも多い場合
     if delta_PV >= 0:

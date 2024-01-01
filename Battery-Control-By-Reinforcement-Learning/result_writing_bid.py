@@ -10,7 +10,7 @@ result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data
 
 # 列名の変更
 result_data.rename(columns={
-    "PVout": "PV_predict",
+    "PVout": "PV_predict_bid",
     "price": "energyprice_predict_bid",
     "imbalance": "imbalanceprice_predict_bid",
     "charge/discharge": "charge/discharge_bid",

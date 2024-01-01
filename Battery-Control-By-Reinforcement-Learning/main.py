@@ -11,7 +11,7 @@ import time
 # TEST：日付だけを指定して動作 ->　79行目以降指定
 # SINGLE_TEST：単体時間(1コマ30分)を指定して動作（動作確認用という感じ）
 # -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
-move_mode = "TEST"  #AIST or MULTI_TEST or SINGLE_TEST
+move_mode = "TEST"  #TEST or SINGLE_TEST
 
 # タイムゾーンを設定
 tz = pytz.timezone('Asia/Tokyo')

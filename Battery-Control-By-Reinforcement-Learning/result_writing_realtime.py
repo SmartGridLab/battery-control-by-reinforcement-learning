@@ -1,6 +1,6 @@
 # 強化学習の結果をresult_dataframe.csvに書き込むプログラム
 # - 強化学習の結果で得られたものすべてがresult_dataframe.csvに必要な訳では無い
-# - planの場合は、当日分のデータのみ必要（resut_data.csvには常に48コマ分の結果が入る）
+# - realtimeの場合は、当日分のデータのみ必要（resut_data.csvには常に48コマ分の結果が入る）
 #　　そのため、翌日以降のデータを消して、resut_dataframe.csvに書き込む
 
 import pandas as pd
@@ -13,11 +13,11 @@ result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data
 # 列名の変更
 result_data.rename(columns={
     "PVout": "PV_predict_realtime",
-    "price": "energyprice_predict_plan",
-    "imbalance": "imbalanceprice_predict_plan",
-    "charge/discharge": "charge/discharge_plan",
-    "SoC": "SoC_plan",
-    "energy_transfer": "energytransfer_plan"
+    "price": "energyprice_predict_realtime",
+    "imbalance": "imbalanceprice_predict_realtime",
+    "charge/discharge": "charge/discharge_realtime",
+    "SoC": "SoC_realtime",
+    "energy_transfer": "energytransfer_realtime"
 }, inplace=True)
 
 # "hour"列で23.5が格納されている行のインデックスを取得
@@ -36,11 +36,11 @@ x_row = existing_data[existing_data['hour'] == result_data['hour'].iloc[0]].inde
 
 # result_dataから必要な列を取得し、existing_dataの対応する行に格納
 existing_data.loc[x_row:47, 'PV_predict_realtime'] = result_data['PV_predict_realtime'].values
-existing_data.loc[x_row:47, 'energyprice_predict_plan'] = result_data['energyprice_predict_plan'].values
-existing_data.loc[x_row:47, 'imbalanceprice_predict_plan'] = result_data['imbalanceprice_predict_plan'].values
-existing_data.loc[x_row:47, 'charge/discharge_plan'] = result_data['charge/discharge_plan'].values
-existing_data.loc[x_row:47, 'SoC_plan'] = result_data['SoC_plan'].values
-existing_data.loc[x_row:47, 'energytransfer_plan'] = result_data['energytransfer_plan'].values
+existing_data.loc[x_row:47, 'energyprice_predict_realtime'] = result_data['energyprice_predict_realtime'].values
+existing_data.loc[x_row:47, 'imbalanceprice_predict_realtime'] = result_data['imbalanceprice_predict_realtime'].values
+existing_data.loc[x_row:47, 'charge/discharge_realtime'] = result_data['charge/discharge_realtime'].values
+existing_data.loc[x_row:47, 'SoC_realtime'] = result_data['SoC_realtime'].values
+existing_data.loc[x_row:47, 'energytransfer_realtime'] = result_data['energytransfer_realtime'].values
 
 # 更新されたデータをresult_dataframe.csvに保存
 existing_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
