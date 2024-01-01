@@ -6,11 +6,9 @@ import datetime
 import pytz
 import time
 
-
 # 動作環境選択
 # TEST：日付だけを指定して動作 ->　79行目以降指定
 # SINGLE_TEST：単体時間(1コマ30分)を指定して動作（動作確認用という感じ）
-# -> (小平)Multiとsingleは１つのモードに統合する（singleで動作させたければ、multiで開始と終了を同一時刻にする）
 move_mode = "TEST"  #TEST or SINGLE_TEST
 
 # タイムゾーンを設定
@@ -59,16 +57,16 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
 
     # 機器動作を策定する
-    # - 強化学習で作られたplanを実行しようとしてみる
-    # - だけど、PVの予測値が外れたり、SoCの値がplan通りにならなかったりする
-    # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する
-    # - realtime_mode：直前のコマの充放電計画(energytransfer_plan)に寄せて現実的な充放電を策定する
+    # - 強化学習で作られたcharge/discharge_realtime通りの充放電を実行しようとしてみる
+    # - だけど、PVの予測値が外れたり、SoCの値がrealtime通りにならなかったりする
+    # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する-> charge/discharge_actual_bid
+    # - realtime_mode：直前のコマの充放電計画(energytransfer_realtime)に寄せて現実的な充放電を策定する -> charge/discharge_actual_realtime
     if mode == "bid":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_bid.py'])
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
 
-    # 評価
+    # 1日の最終コマ(23.5)の動作終了後に、1日分の結果を集計する
     if current_time == 23.5:
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
 
