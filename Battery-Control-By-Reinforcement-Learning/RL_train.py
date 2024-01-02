@@ -2,17 +2,19 @@
 import os
 import warnings
 from stable_baselines3 import PPO
+import datetime
+
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 # 内製モジュール
-import RL_env as env
+from RL_env import ESS_ModelEnv as Env
 
 warnings.simplefilter('ignore')
 print("\n---充放電計画策定プログラム開始---\n")
 
 class TrainModel:
-    def __init__(self,env):
-        self.env = env
+    def __init__(self):
+        self.env = Env() # 環境のインスタンス化
         # 現在のpathを取得して、モデルの保存先を指定
         self.path = os.getcwd() + "/RL_trainedModels"
 
@@ -22,9 +24,10 @@ class TrainModel:
         # total_timesteps: 学習全体での合計step数。n_steps * episode = total_timesteps
         print("-モデル学習開始-")
         model = PPO("MlpPolicy", self.env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
-                        ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
-                        verbose=0, tensorboard_log="./PPO_tensorboard/") 
-        model.learn(total_timesteps=20000)
+                    ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
+                    verbose=0, tensorboard_log="./PPO_tensorboard/") 
+        model.learn(total_timesteps=20000)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
+
         print("-モデル学習終了-")
 
         # 学習済みモデルの保存
@@ -35,5 +38,5 @@ class TrainModel:
         model.save(self.path + "/" + model_name)
                 
         # 環境のクローズ
-        env.close()
+        self.env.close()
 

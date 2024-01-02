@@ -6,21 +6,27 @@ class Dataframe_Manager():
     ## 強化学習の学習に使うテーブル(df_train)を作成
     def get_train_df(self):
         # CSVファイル(input_data2022.csv)から学習データを読み込む
-        self.trainData = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
+        # 読み込む行を列名で指定：year,month,day,hour, PVout, price, imbalance
+        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
+                                      usecols=["year","month","day","hour","PVout","price","imbalance"])        
+        return df_traindata
 
-        return self.trainData
-
-    def get_train_df(self):
+    def get_test_df(self):
         # - 前提：PV発電予測と価格予測の結果のcsvがあること
         # - CSVファイルから予測結果のデータを読み込む
-        # 電力価格データ（過去＋予測）
-        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
-        # PV予測結果データ（過去＋予測）
-        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv")
-        # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致）
-        # 
-        self.df_input = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
-        return self.df_input
+        # 電力価格データからyear, month, day,hour,price, imbalanceを読み込む
+        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
+                                    usecols=["year","month","day","hour","price","imbalance"])
+        # 列名を変更する
+        price_predict = price_predict.rename(columns={'price': 'energyprice_predict', 'imbalance': 'imbalanceprice_predict'})
+        # PV予測結果データからyear, month, day,hour, PVoutを読み込む
+        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
+                                    usecols=["year","month","day","hour","PVout"])
+        # 列名を変更する
+        pv_predict = pv_predict.rename(columns={'PVout': 'PV_predict'})
+        # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
+        df_testdata = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
+        return df_testdata
 
 
     ## 強化学習の結果を入れるテーブル(df_result)を作成

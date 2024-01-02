@@ -22,9 +22,9 @@ class ESS_ModelEnv(gym.Env):
     def __init__(self):
         ## データ読み込み
         # 学習データの読み込み（予測日の前日までを学習データとして利用する）
-        self.df_input = df_manage.get_train_df
+        self.df_train = df_manage.get_train_df
         # テストデータの読み込み
-        self.df_predict = df_manage.get_preidct_df
+        self.df_test = df_manage.get_test_df
         # 結果を格納するテーブルの読み込み
         self.df_result = df_manage.get_result_df
 
@@ -37,9 +37,9 @@ class ESS_ModelEnv(gym.Env):
         # action spaceの定義(上下限値を設定。actionは連続値。)
         # - 1time_step(ex.30 min)での充放電量(規格値[0,1])の上下限値を設定
         # - 本当はinverter_max_capとbattery_max_capを使って、上下限値を設定したい
-        self.action_space = gym.spaces.Box(low=-1.0, high=1.0)
+        self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # 状態(observation=SoC)の上限と下限の設定
-        self.observation_space  = gym.spaces.Box(low=0, high=1)
+        self.observation_space  = gym.spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # # Rewardの範囲(いらないかも)
         # self.reward_range = (-10000, math.inf) 
@@ -74,8 +74,6 @@ class ESS_ModelEnv(gym.Env):
         obs = self.obs_list[-1] + action
         # 各timestepでのobsをリストに追加
         self.obs_list.append(obs)
-        # モデルを保存する
-        self.model.save("ESS_model")
 
         # checking whether our episode (day) ends
         # - 1日(1 episode)が終わったら、done = Trueにする
@@ -90,24 +88,38 @@ class ESS_ModelEnv(gym.Env):
         
         return obs, reward, done, info
     
-    ## 状態の初期化
+    ## 状態の初期化: trainingで1episode(1日)終わると呼ばれる
     # - step関数において、done = Trueになると呼ばれる。任意のタイミングで呼ぶこともできる。
-    # - 1episode(1日)終わるとresetが呼ばれるので、次の日のデータをstateへ入れる
-    # - 現状ではQuantile 50%の予測を使っている -> 改良が必要。任意に選べる等
-    # MPI: MPIの予測値
-    # SSP: SSPの予測値
-    # wind: MPIの予測値
-    # PV: MPIの予測値
+    # - 1episode(1日)終わるとresetを呼ぶように実装してある(def step参照)ので、次の日のデータ(48コマ全て)をstateへ入れる
+    # - 現状ではdeterministicな予測を使っている -> 改良が必要。確率的になるべき。
+    # PVout: PV発電量の実績値
+    # price: 電力価格の実績値
+    # imablance: インバランス価格の実績値
     # SoC: 前日の最終SoC obs_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
-        state = [
-            df_manage.df_input(MIP_q50[1+48*(state_idx-1):48*state_idx]),   # MIP
-            df_manage.df_input(SSP_q50[1+48*(state_idx-1):48*state_idx]),   # SSP
-            df_manage.df_input(wind_q50[1+48*(state_idx-1):48*state_idx]),  # wind
-            df_manage.df_input(PV_q50[1+48*(state_idx-1):48*state_idx]),    # PV
+        obs_reset = [
+            df_manage.df_train(PVout[1+48*(state_idx-1):48*state_idx]),   # PVout
+            df_manage.df_train(price[1+48*(state_idx-1):48*state_idx]),   # price
+            df_manage.df_train(imbalance[1+48*(state_idx-1):48*state_idx]),  # imbalance
             self.obs_list[-1] # SoC
         ]
-        return state
+        return obs_reset
+
+    ## 状態の初期化：testを行うときに呼ばれる
+    # - RL_test.pyから呼ばれる。testを行うためにデータをリセットする。
+    # PV_predict: PV発電量の予測値
+    # energyprice_predict: 電力価格の予測値
+    # imablanceprice_predict: インバランス価格の予測値
+    # SoC: def __init__で定義された初期値が入るはず。要確認。
+    def reset_forTest(self):
+        obs_reset = [
+            df_manage.df_test(PV_predict[1+48*(state_idx-1):48*state_idx]),   # PV
+            df_manage.df_test(energyprice_predict[1+48*(state_idx-1):48*state_idx]),   # price
+            df_manage.df_test(imbalanceprice_predict[1+48*(state_idx-1):48*state_idx]),  # imbalance
+            self.obs_list[-1] # SoC 多分initで定義された初期値(0.5)が入っているはず
+        ]
+        return obs_reset
+
 
     # Envを描写する関数 -> 使っていない
     def render(self, mode='human', close=False):
@@ -126,11 +138,10 @@ class ESS_ModelEnv(gym.Env):
     def _get_reward(self, action, SoC):
         ## df.inputからstate_idx(当該time_step)部分のデータを抽出
         # Generation: 発電量
-        gen_predict = self.df_input.loc[self.state_idx, "q50"]  # q50: Quantile Regressionによる50%分位点の発電量[MWh]の予測結果。qいくつをとるかは検討の余地あり。
-        # gen_observed = self.df_input.loc[self.state_idx,"total_generation_MWh"] # 実績発電量
+        gen_predict = self.df_train.loc[self.state_idx, "PVout"] # PV発電実績値
 
-        # MIP: 電力価格 (market index price)
-        dap = self.df_input.loc[self.state_idx, "DA_price_q_0.5"] 
+        # 電力価格
+        price = self.df_train.loc[self.state_idx, "price"] # 電力価格実績値
 
         # Reward1: Energy Trasnfer（電力系統へ流す売電電力量）を計算する
         # bid_energyはaction + genと0の大きい方を採用する
@@ -139,7 +150,7 @@ class ESS_ModelEnv(gym.Env):
         #  action + gen < 0 →0
         bid_energy = max(action + gen_predict, 0)
         # rewardを計算
-        reward = bid_energy*dap
+        reward = bid_energy*price
 
         # Reward2: 制約条件
         # バッテリー充電が発電出力より高いならペナルティ
@@ -160,7 +171,7 @@ class ESS_ModelEnv(gym.Env):
 
         return reward
 
-    def _get_possible_schedule(action):
+    def _get_possible_schedule(self, action):
         # 入力データの設定
         self.PV_out_time = self.PVout[self.time]
         self.price_time = self.price[self.time]
@@ -206,3 +217,5 @@ class ESS_ModelEnv(gym.Env):
         # 充電の場合、PV発電量から充電量を差し引く
         if action_real < 0:
             self.PV_out_time = self.PV_out_time + action_real
+
+    
