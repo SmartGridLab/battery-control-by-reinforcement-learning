@@ -26,7 +26,8 @@ if len(model_list) == 0: # /RL_trainedModelsにファイルがあるかどうか
     # 学習済みモデルがない場合は、TrainModelクラス内のdispatch_trainを実行する
     print("-学習済みモデルがないため、強化学習モデルのTrainingを実行します-")
     trainModel.dispatch_train() # trainを実行
-
+    # 学習済みモデル(zip)の全ファイル名をリストで取得
+    model_list = os.listdir(path)
 else:
     # 学習済みモデルがある場合は、Trainingをスキップして、Testを実行する
     print("-学習済みモデルがあるため、強化学習モデルのTrainingをスキップします-") 
@@ -35,6 +36,9 @@ else:
 # model_listの中で最新のモデルを取得
 model_list.sort()
 latestModel_name = model_list[-1]
-testModel.dispatch_test(latestModel_name) # testを実行
+# フォルダのpathを結合, lastModel_nameの.zipを削除して、.zipを除いたファイル名を取得 
+latestModel_name = path + "/" + latestModel_name.replace(".zip", "") 
+# testを実行
+testModel.dispatch_test(latestModel_name) 
 
 

@@ -30,7 +30,6 @@ class TestModel:
             action, _ = self.model.predict(obs) # actionを得るためには、学習済みのLSTMモデルへobservationを入れるだけ。rewardが必要無いので、step関数は使わない
             obs, reward, done, _ = self.env.step(action)    # このstepの戻り値のrewardは使えない（_get_reward内で参照しているデータが数値がtrainingのものになってしまっているはずなので）
             obs = pd.Series(obs)
-            obs = torch.tensor(obs.values.astype(np.float64))
-                
+            obs = torch.tensor(obs.values.astype(np.float64))    
         # 環境のクローズ
-        env.close()
+        self.env.close()

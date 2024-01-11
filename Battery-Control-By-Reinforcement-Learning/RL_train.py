@@ -1,9 +1,9 @@
 # 外部モジュール
 import os
 import warnings
-from stable_baselines3 import PPO
 import datetime
-
+import pytz
+from stable_baselines3 import PPO
 #from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 # 内製モジュール
@@ -35,11 +35,12 @@ class TrainModel:
         print("-モデル学習終了-")
 
         # 学習済みモデルの保存
-        # - 保存ファイル名に現在日時(yyyy-mm-dd-hh-mm)を付与
+        # - 保存ファイル名にJSTでの現在日時(yyyy-mm-dd-hh-mm)を付与
         # - モデルの保存先は、/RL_trainedModels
-        now = datetime.datetime.now()
+        # - モデルの保存形式は、.zip
+        now = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
         model_name = now.strftime("%Y-%m-%d-%H-%M")
-        model.save(self.path + "/" + model_name)
+        model.save(self.path + "/" + model_name)    
                 
         # 環境のクローズ
         self.env.close()
