@@ -29,7 +29,8 @@ class TrainModel:
         model = PPO("MlpPolicy", self.env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
                     ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = N_STEPS, 
                     verbose=0, tensorboard_log="./PPO_tensorboard/") 
-        model.learn(total_timesteps= N_STEPS*N_EPISODES)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
+        model.learn(total_timesteps= 48)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
+        # model.learn(total_timesteps= N_STEPS*N_EPISODES)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
 
         print("-モデル学習終了-")
 
