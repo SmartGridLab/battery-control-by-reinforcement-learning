@@ -2,31 +2,22 @@
 import gym
 import warnings
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import torch
 import math
-import tkinter as tk
-from matplotlib.backends.backend_pdf import PdfPages
-from stable_baselines3 import PPO
-#from torch.utils.tensorboard import SummaryWriter # tensorBoardを起動して、学習状況を確認する
 
 # internal modules
 import RL_visualize as visual
-from RL_dataframe_manager import Dataframe_Manager as df_manage
+from RL_dataframe_manager import Dataframe_Manager
 
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
     def __init__(self):
-        ## データ読み込み
-        # 学習データの読み込み（予測日の前日までを学習データとして利用する）
-        self.df_train = df_manage.get_train_df
-        # テストデータの読み込み
-        self.df_test = df_manage.get_test_df
-        # 結果を格納するテーブルの読み込み
-        self.df_result = df_manage.get_result_df
+        # データ読込みクラスのインスタンス化
+        self.dfmanager = Dataframe_Manager()
+        # 学習用のデータ,testデータ、結果格納テーブルを取得
+        self.df_train = self.dfmanager.get_train_df()
+        self.df_test = self.dfmanager.get_test_df()
+        self.df_resultform = self.dfmanager.get_resultform_df()
 
         # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
@@ -39,7 +30,9 @@ class ESS_ModelEnv(gym.Env):
         # - 本当はinverter_max_capとbattery_max_capを使って、上下限値を設定したい
         self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # 状態(observation=SoC)の上限と下限の設定
-        self.observation_space  = gym.spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
+        # observation_spaceの定義(上下限値を設定。observationは連続値。)
+        # - 1time_step(ex.30 min)でのSoC(規格値[0,1])の上下限値を設定
+        self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
 
         # # Rewardの範囲(いらないかも)
         # self.reward_range = (-10000, math.inf) 
@@ -56,7 +49,7 @@ class ESS_ModelEnv(gym.Env):
     def step(self, action):
         # time_stepを一つ進める
         self.state_idx += 1
-
+        print("state_idx: ", self.state_idx)
         ## rewardの計算
         # - 各stepでのrewardをリストに追加
         # - actionは規格値[0,1]なので、battery_max_capをかけて、実際の充放電量[MhW or kWh]に変換する
@@ -71,9 +64,9 @@ class ESS_ModelEnv(gym.Env):
         self.reward_total += self.reward_list[-1]
         # SoC[0,1]をactionの分だけ更新する
         # - obs_listの最後の要素(前timestepのSoC)にactionを足す
-        obs = self.obs_list[-1] + action
+        observation = self.obs_list[-1] + action
         # 各timestepでのobsをリストに追加
-        self.obs_list.append(obs)
+        self.obs_list.append(observation)
 
         # checking whether our episode (day) ends
         # - 1日(1 episode)が終わったら、done = Trueにする
@@ -86,10 +79,11 @@ class ESS_ModelEnv(gym.Env):
         # 付随情報をinfoに入れる
         info = {}
         
-        return obs, reward, done, info
+        return observation, reward, done, info
     
     ## 状態の初期化: trainingで1episode(1日)終わると呼ばれる
-    # - step関数において、done = Trueになると呼ばれる。任意のタイミングで呼ぶこともできる。
+    # - PPOのlearn(RL_train.py内にある)を走らせるとまず呼ばれる。
+    # - RL_env.pyのstepメソッドにおいて、done = Trueになると呼ばれる。doneを制御することで任意のタイミングでresetを呼ぶことができる。
     # - 1episode(1日)終わるとresetを呼ぶように実装してある(def step参照)ので、次の日のデータ(48コマ全て)をstateへ入れる
     # - 現状ではdeterministicな予測を使っている -> 改良が必要。確率的になるべき。
     # PVout: PV発電量の実績値
@@ -97,13 +91,17 @@ class ESS_ModelEnv(gym.Env):
     # imablance: インバランス価格の実績値
     # SoC: 前日の最終SoC obs_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
-        obs_reset = [
-            df_manage.df_train(PVout[1+48*(state_idx-1):48*state_idx]),   # PVout
-            df_manage.df_train(price[1+48*(state_idx-1):48*state_idx]),   # price
-            df_manage.df_train(imbalance[1+48*(state_idx-1):48*state_idx]),  # imbalance
+        print("reset is called")
+        # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
+        # - 取得する行数はstate_idx(当該time_step)から48コマ分
+        # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
+        observation = [
+            # self.df_train["PVout"][self.state_idx:self.state_idx+48],
+            # self.df_train["price"][self.state_idx:self.state_idx+48],
+            # self.df_train["imbalance"][self.state_idx:self.state_idx+48],
             self.obs_list[-1] # SoC
         ]
-        return obs_reset
+        return observation
 
     ## 状態の初期化：testを行うときに呼ばれる
     # - RL_test.pyから呼ばれる。testを行うためにデータをリセットする。
@@ -112,24 +110,16 @@ class ESS_ModelEnv(gym.Env):
     # imablanceprice_predict: インバランス価格の予測値
     # SoC: def __init__で定義された初期値が入るはず。要確認。
     def reset_forTest(self):
+        # df_test内のPV_predict, energyprice_predict, imbalanceprice_predictの48コマ分のデータを取得
+        # - 取得する行数はstate_idx(当該time_step)から48コマ分
+        # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
         obs_reset = [
-            df_manage.df_test(PV_predict[1+48*(state_idx-1):48*state_idx]),   # PV
-            df_manage.df_test(energyprice_predict[1+48*(state_idx-1):48*state_idx]),   # price
-            df_manage.df_test(imbalanceprice_predict[1+48*(state_idx-1):48*state_idx]),  # imbalance
-            self.obs_list[-1] # SoC 多分initで定義された初期値(0.5)が入っているはず
-        ]
+            # self.df_test["PV_predict"][self.state_idx:self.state_idx+48],
+            # self.df_test["energyprice_predict"][self.state_idx:self.state_idx+48],
+            # self.df_test["imbalanceprice_predict"][self.state_idx:self.state_idx+48],
+            self.obs_list[-1] # SoC
+        ]       
         return obs_reset
-
-
-    # Envを描写する関数 -> 使っていない
-    def render(self, mode='human', close=False):
-        pass
-    # Envを開放する関数 -> 使ってないが、使いたい（メモリを節約するため）
-    def close(self): 
-        pass
-    # 乱数のシードを指定する関数 -> 使ってないが、使うべき？
-    def seed(self): 
-        pass
 
     # 現在の状態と行動に対するrewardを返す(1step分)
     # - rewardは1日(1 episode)ごとに合計される
@@ -171,51 +161,51 @@ class ESS_ModelEnv(gym.Env):
 
         return reward
 
-    def _get_possible_schedule(self, action):
-        # 入力データの設定
-        self.PV_out_time = self.PVout[self.time]
-        self.price_time = self.price[self.time]
-        self.imbalance_time = self.imbalance[self.time]
+    # def _get_possible_schedule(self, action):
+    #     # 入力データの設定
+    #     self.PV_out_time = self.PVout[self.time]
+    #     self.price_time = self.price[self.time]
+    #     self.imbalance_time = self.imbalance[self.time]
                 
-        #時刻self.timeに対応するデータを取得
-        self.input_price = self.price[48*(self.days - 1) + self.time]
-        self.input_PV = self.PVout[48*(self.days - 1) + self.time]
+    #     #時刻self.timeに対応するデータを取得
+    #     self.input_price = self.price[48*(self.days - 1) + self.time]
+    #     self.input_PV = self.PVout[48*(self.days - 1) + self.time]
 
-        #### actionを適正化(充電をPVの出力があるときのみに変更)
-        # PV発電量が0未満の場合、0に設定
-        if self.PV_out_time < 0:
-            self.PV_out_time = [0]
-        # 充電時、PV発電量<充電量 の場合、充電量をPV出力値へ調整
-        if self.PV_out_time < -action and action < 0:
-            action_real = -self.PV_out_time
-        # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
-        elif action > 0 and 0 < self.battery < action:
-            action_real = self.battery
-        # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
-        elif self.battery == self.battery_MAX and action < 0:
-            action_real = 0
-        # 放電時、蓄電池残量が0の場合、放電量を0へ調整
-        elif action > 0 and self.battery == 0:
-            action_real = 0
-        # 上記条件に当てはまらない場合、充放電量の調整は行わない
-        else:
-            action_real = action
-        # 実際の充放電量をリストに追加
-        self.all_action_real.append(action_real)
+    #     #### actionを適正化(充電をPVの出力があるときのみに変更)
+    #     # PV発電量が0未満の場合、0に設定
+    #     if self.PV_out_time < 0:
+    #         self.PV_out_time = [0]
+    #     # 充電時、PV発電量<充電量 の場合、充電量をPV出力値へ調整
+    #     if self.PV_out_time < -action and action < 0:
+    #         action_real = -self.PV_out_time
+    #     # 放電時、放電量>蓄電池残量の場合、放電量を蓄電池残量へ調整
+    #     elif action > 0 and 0 < self.battery < action:
+    #         action_real = self.battery
+    #     # 充電時、蓄電池残量が定格容量に達している場合、充電量を0へ調整
+    #     elif self.battery == self.battery_MAX and action < 0:
+    #         action_real = 0
+    #     # 放電時、蓄電池残量が0の場合、放電量を0へ調整
+    #     elif action > 0 and self.battery == 0:
+    #         action_real = 0
+    #     # 上記条件に当てはまらない場合、充放電量の調整は行わない
+    #     else:
+    #         action_real = action
+    #     # 実際の充放電量をリストに追加
+    #     self.all_action_real.append(action_real)
 
-        #### 蓄電池残量の更新
-        # 次のtimeにおける蓄電池残量を計算
-        next_battery = self.battery - action_real*0.5 #action_real*0.5とすることで[kWh]へ変換
+    #     #### 蓄電池残量の更新
+    #     # 次のtimeにおける蓄電池残量を計算
+    #     next_battery = self.battery - action_real*0.5 #action_real*0.5とすることで[kWh]へ変換
 
-        ### 蓄電池残量の挙動チェック
-        # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
-        if next_battery > self.battery_MAX:
-            next_battery = self.battery_MAX
-        # 次のtimeにおける蓄電池残量が0kwh未満の場合、0に制限
-        elif next_battery < 0:
-            next_battery = 0
-        # 充電の場合、PV発電量から充電量を差し引く
-        if action_real < 0:
-            self.PV_out_time = self.PV_out_time + action_real
+    #     ### 蓄電池残量の挙動チェック
+    #     # 次のtimeにおける蓄電池残量が定格容量を超える場合、定格容量に制限
+    #     if next_battery > self.battery_MAX:
+    #         next_battery = self.battery_MAX
+    #     # 次のtimeにおける蓄電池残量が0kwh未満の場合、0に制限
+    #     elif next_battery < 0:
+    #         next_battery = 0
+    #     # 充電の場合、PV発電量から充電量を差し引く
+    #     if action_real < 0:
+    #         self.PV_out_time = self.PV_out_time + action_real
 
     

@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-class Dataframe_Manager():
+class Dataframe_Manager(): 
     ## 強化学習の学習に使うテーブル(df_train)を作成
     def get_train_df(self):
         # CSVファイル(input_data2022.csv)から学習データを読み込む
@@ -30,7 +30,7 @@ class Dataframe_Manager():
 
 
     ## 強化学習の結果を入れるテーブル(df_result)を作成
-    def get_result_df(self):
+    def get_resultform_df(self):
         # 列名をリストとして定義
         col = [
             # 時系列関係

@@ -14,19 +14,22 @@ print("\n---充放電計画策定プログラム開始---\n")
 
 class TrainModel:
     def __init__(self):
-        self.env = Env() # 環境のインスタンス化
         # 現在のpathを取得して、モデルの保存先を指定
         self.path = os.getcwd() + "/RL_trainedModels"
 
     # モデルのトレーニング
     def dispatch_train(self):
+        # 環境のインスタンス化
+        self.env = Env()
+        N_STEPS = 48 # 1日のコマ数
+        N_EPISODES = 10 # 日数
         # n_steps: 1episode(1日)の中のコマ数。1コマ30分間なので、全部で48コマ。
         # total_timesteps: 学習全体での合計step数。n_steps * episode = total_timesteps
         print("-モデル学習開始-")
         model = PPO("MlpPolicy", self.env, gamma = 0.8, gae_lambda = 1, clip_range = 0.2, 
-                    ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = 48, 
+                    ent_coef = 0.005, vf_coef =0.5, learning_rate = 0.0001, n_steps = N_STEPS, 
                     verbose=0, tensorboard_log="./PPO_tensorboard/") 
-        model.learn(total_timesteps=20000)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
+        model.learn(total_timesteps= N_STEPS*N_EPISODES)  # これが大きすぎると、df_input等のデータが無い部分までenvの中でstate_idx参照してしまうのではないか？
 
         print("-モデル学習終了-")
 
