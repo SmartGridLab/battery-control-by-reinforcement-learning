@@ -39,6 +39,6 @@ latestModel_name = model_list[-1]
 # フォルダのpathを結合, lastModel_nameの.zipを削除して、.zipを除いたファイル名を取得 
 latestModel_name = path + "/" + latestModel_name.replace(".zip", "") 
 # testを実行
-testModel.dispatch_test(latestModel_name) 
+observation = testModel.dispatch_test(latestModel_name) 
 
 

@@ -33,3 +33,4 @@ class TestModel:
             obs = torch.tensor(obs.values.astype(np.float64))    
         # 環境のクローズ
         self.env.close()
+        return obs
