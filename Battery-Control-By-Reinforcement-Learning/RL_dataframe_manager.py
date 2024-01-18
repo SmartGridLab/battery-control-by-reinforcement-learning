@@ -93,4 +93,4 @@ class Dataframe_Manager():
         # 作成時間も同時に記入できるとよさそう？
         self.df_result.to_csv('./Battery-Control-By-Reinforcement-Learning/result_dataframe.csv', index=False)
 
-    def write_
+    
