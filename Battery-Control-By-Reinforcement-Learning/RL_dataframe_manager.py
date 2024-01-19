@@ -93,4 +93,14 @@ class Dataframe_Manager():
         # 作成時間も同時に記入できるとよさそう？
         self.df_result.to_csv('./Battery-Control-By-Reinforcement-Learning/result_dataframe.csv', index=False)
 
-    
+    def write_result_csv(self, data):
+        # result_dataframe.csvを読み込む
+        existing_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        # pandas dataframe形式であるdataを読み込んだのexisting_dataに追記する
+        # dataのヘッダーであるyear, month, day, hourが一致する行をexsiting_dataで探索し、その行に追記する
+        # 一致する行がなければ新規行を作成して追記する
+        updated_data = pd.concat([existing_data, data], ignore_index=True)
+        # updated dataをcsvファイルとして保存
+        updated_data.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
+        
+        
