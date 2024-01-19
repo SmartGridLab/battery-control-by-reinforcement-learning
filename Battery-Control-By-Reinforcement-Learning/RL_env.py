@@ -91,7 +91,6 @@ class ESS_ModelEnv(gym.Env):
     # imablance: インバランス価格の実績値
     # SoC: 前日の最終SoC obs_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
-        print("reset is called")
         # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
         # - 取得する行数はstate_idx(当該time_step)から48コマ分
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
@@ -118,7 +117,8 @@ class ESS_ModelEnv(gym.Env):
             # self.df_test["energyprice_predict"][self.state_idx:self.state_idx+48],
             # self.df_test["imbalanceprice_predict"][self.state_idx:self.state_idx+48],
             self.obs_list[-1] # SoC
-        ]       
+        ]
+        print("obs_reset: ", obs_reset)
         return obs_reset
 
     # 現在の状態と行動に対するrewardを返す(1step分)

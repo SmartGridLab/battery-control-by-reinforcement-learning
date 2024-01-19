@@ -19,7 +19,7 @@ trainModel = TrainModel() # 学習モデルのインスタンス化
 testModel = TestModel() # テストモデルのインスタンス化
 dfmanager = Dataframe_Manager() # データベースのインスタンス化
 
-## Training環境設定と実行
+### Training環境設定と実行
 # - もし、学習済みモデル(ex. 20240101.zip)がある場合は、Trainingをスキップして、Testを実行する
 # - 学習済みモデルがない場合は、Trainingを実行して、Testを実行する
 path = os.getcwd() + "/RL_trainedModels"   
@@ -39,20 +39,16 @@ else:
     # 学習済みモデルがある場合は、Trainingをスキップして、Testを実行する
     print("-学習済みモデルがあるため、強化学習モデルのTrainingをスキップします-") 
 
-## Test環境設定と実行 学習
+### Test環境設定と実行 学習
 # model_listの中で最新のモデルを取得
 model_list.sort()
 latestModel_name = model_list[-1]
 # フォルダのpathを結合, lastModel_nameの.zipを削除して、.zipを除いたファイル名を取得 
 latestModel_name = path + "/" + latestModel_name.replace(".zip", "") 
-# testを実行
-obs_list, action_list = testModel.dispatch_test(latestModel_name) 
-# obs_listとaction_listを書き込む
-# list形式のobs_list, action_listをpandasのDataFrame形式に変換し、結合する
-obs_list = pd.DataFrame(obs_list)
-action_list = pd.DataFrame(action_list)
-# 結合
-df_test = pd.concat([obs_list, action_list], axis=1)
-RL_dataframe_manager = dfmanager.write_result_csv(df_test)
+# testを実行 (SoCとcharge/dischargeが戻り値)
+df_test = testModel.dispatch_test(latestModel_name) 
+# csvへ書き込む
+RL_dataframe_manager = dfmanager.write_testresult_csv(df_test)
+
 
 

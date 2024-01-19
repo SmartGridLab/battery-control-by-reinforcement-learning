@@ -70,22 +70,37 @@ class BatteryControlDatabase:
 
     def update_data(self, data, dbname):
         # データベースに接続
-        # dbname = 'battery_control.db'
         conn = sqlite3.connect(dbname)
         cursor = conn.cursor()
-        # pandasのdataframe形式であるdataからyear, month, day, hourを取得
+
+        # pandasのDataFrame形式であるdataからyear, month, day, hourを取得
         year = int(data.loc[0, "year"])
         month = int(data.loc[0, "month"])
         day = int(data.loc[0, "day"])
         hour = int(data.loc[0, "hour"])
 
-        # データをデータベースに更新するSQL文を作成
-        update_sql = '''UPDATE battery_control
-                        SET column1 = ?, column2 = ?, ...
-                        WHERE year = ? AND month = ? AND day = ? AND hour = ?;'''
+        # 他の必要なカラムの値も取得
+        # 例：column1 = data.loc[0, "column1"], column2 = data.loc[0, "column2"], ...
 
-        # データを挿入
-        cursor.execute(insert_sql, data)
+        # データが既に存在するか確認する
+        cursor.execute("SELECT COUNT(*) FROM battery_control WHERE year = ? AND month = ? AND day = ? AND hour = ?", (year, month, day, hour))
+        exists = cursor.fetchone()[0]
+
+        if exists:
+            # データを更新するSQL文
+            update_sql = '''UPDATE battery_control
+                            SET column1 = ?, column2 = ?, ...
+                            WHERE year = ? AND month = ? AND day = ? AND hour = ?'''
+            # 更新する値のタプルを用意
+            update_values = (data.loc[0, "column1"], data.loc[0, "column2"], ..., year, month, day, hour)
+            cursor.execute(update_sql, update_values)
+        else:
+            # データを挿入するSQL文
+            insert_sql = '''INSERT INTO battery_control (year, month, day, hour, column1, column2, ...)
+                            VALUES (?, ?, ?, ?, ?, ?, ...);'''
+            # 挿入する値のタプルを用意
+            insert_values = (year, month, day, hour, data.loc[0, "column1"], data.loc[0, "column2"], ...)
+            cursor.execute(insert_sql, insert_values)
 
         # 変更をコミットし、接続を閉じる
         conn.commit()

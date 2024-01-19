@@ -3,10 +3,11 @@ import os
 import sys
 
 import datetime
-import pytz
 import pygrib
 import pandas as pd
 import numpy as np
+from RL_database_utils import BatteryControlDatabase as db
+
 
 def main():
 
@@ -289,13 +290,16 @@ def main():
     df = df.reset_index(drop=True)
     df.drop(48,inplace=True)   
 
-    # ファイル出力###############################################################
-    #保管用(realtimeとデータを分けておく用)
-    df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
-    #実行用(pv_predict.pyに用いる)
-    df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
-    print("--結果出力完了--")
-    #print(df)
+    # dbへ書き込む
+
+
+    # # ファイル出力###############################################################
+    # #保管用(realtimeとデータを分けておく用)
+    # df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
+    # #実行用(pv_predict.pyに用いる)
+    # df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
+    # print("--結果出力完了--")
+    # #print(df)
     print("\n\n---気象予報データ抽出プログラム終了---")
 
 

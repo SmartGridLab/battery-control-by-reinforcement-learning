@@ -8,16 +8,6 @@ print("-bidモード結果書き込み開始-")
 # result_data.csvを読み込む
 result_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_data.csv")
 
-# 列名の変更
-result_data.rename(columns={
-    "PVout": "PV_predict_bid",
-    "price": "energyprice_predict_bid",
-    "imbalance": "imbalanceprice_predict_bid",
-    "charge/discharge": "charge/discharge_bid",
-    "SoC": "SoC_bid",
-    "energy_transfer": "energytransfer_bid"
-}, inplace=True)
-
 # result_dataframe.csvを読み込む
 existing_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
 
