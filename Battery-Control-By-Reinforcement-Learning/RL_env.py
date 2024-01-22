@@ -125,27 +125,27 @@ class ESS_ModelEnv(gym.Env):
     # - action > 0 →放電  action < 0 →充電
     # - actionの単位は電力量[kWh or MWh]
     def _get_reward(self, action, SoC):
-        ## df.inputからstate_idx(当該time_step)部分のデータを抽出
-        # Generation: 発電量
-        gen_predict = self.df_train.loc[self.state_idx, "PVout"] # PV発電実績値
+        ## df.trainからstate_idx(当該time_step)部分のデータを抽出
+        # Generation: PV発電量(trainingの際は実績値、testの際は予測値)
+        pv_gen = self.df_train.loc[self.state_idx, "PVout"] # PV発電実績値
 
-        # 電力価格
+        # 電力価格(trainingの際は実績値、testの際は予測値)
         price = self.df_train.loc[self.state_idx, "price"] # 電力価格実績値
 
         # Reward1: Energy Trasnfer（電力系統へ流す売電電力量）を計算する
         # bid_energyはaction + genと0の大きい方を採用する
-        # PVの発電量が充電される場合はactionがマイナスになってgen_predictを相殺するので、action + gen_predictとする
+        # PVの発電量が充電される場合はactionがマイナスになってpv_genを相殺するので、action + pv_genとする
         #  action + gen > 0 →action + gen
         #  action + gen < 0 →0
-        bid_energy = max(action + gen_predict, 0)
+        bid_energy = max(action + pv_gen, 0)
         # rewardを計算
         reward = bid_energy*price
 
         # Reward2: 制約条件
         # バッテリー充電が発電出力より高いならペナルティ
         # 越えた量に対してexpのペナルティを与える
-        if action < 0 and gen_predict < abs(action): 
-            reward += -math.exp(abs(action) - gen_predict)
+        if action < 0 and pv_gen < abs(action): 
+            reward += -math.exp(abs(action) - pv_gen)
                 
         # Reward3: 制約条件
         # バッテリー放電がSoCより多いならペナルティ

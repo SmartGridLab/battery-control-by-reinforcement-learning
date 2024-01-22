@@ -7,8 +7,11 @@ class Dataframe_Manager():
     def get_train_df(self):
         # CSVファイル(input_data2022.csv)から学習データを読み込む
         # 読み込む行を列名で指定：year,month,day,hour, PVout, price, imbalance
-        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
+        # df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
+        #                               usecols=["year","month","day","hour","PVout","price","imbalance"])        
+        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022_all_0.csv",
                                       usecols=["year","month","day","hour","PVout","price","imbalance"])        
+
         return df_traindata
 
     def get_test_df(self):
