@@ -33,7 +33,6 @@ existing_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_da
 # 0行目のhourの値がexisting_dataのどの行に対応するかを探索
 x_row = existing_data[existing_data['hour'] == result_data['hour'].iloc[0]].index[0]
 
-
 # result_dataから必要な列を取得し、existing_dataの対応する行に格納
 existing_data.loc[x_row:47, 'PV_predict_realtime'] = result_data['PV_predict_realtime'].values
 existing_data.loc[x_row:47, 'energyprice_predict_realtime'] = result_data['energyprice_predict_realtime'].values

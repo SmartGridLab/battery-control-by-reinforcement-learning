@@ -30,16 +30,6 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
         # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
-    # dataframeの用意
-    if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_dataframe_manager.py'])
-
-    # 結果のdataframeへの書き込み
-    if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_writing_bid.py'])
-    elif mode == "realtime":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_writing_realtime.py'])
-
     # 充放電計画の性能評価のためのデータを集める
     # - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
     # - 実績値ベースでの売電による収益の計算を行う
@@ -57,8 +47,7 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
 
     # 1日の最終コマ(23.5)の動作終了後に、1日分の結果を集計する
-    if current_time == 23.5:
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
 
     #終了
     print("\n---プログラム終了---\n")

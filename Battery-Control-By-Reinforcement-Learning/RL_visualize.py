@@ -1,3 +1,5 @@
+# グラフを描写するための関数を定義
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_pdf import PdfPages
