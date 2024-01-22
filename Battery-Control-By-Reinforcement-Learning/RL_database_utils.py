@@ -1,3 +1,5 @@
+# databaseを操作するためのクラス。2024/1/22時点では実装途中で動作しない。
+
 import pandas as pd
 import sqlite3
 

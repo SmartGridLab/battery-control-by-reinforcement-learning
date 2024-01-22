@@ -59,8 +59,9 @@ class Dataframe_Manager():
         # energytransfer_actual_realtime: [実績値] 充放電実行結果の売電量(charge/discharge_actual_realtimeの制御実績による売電) [kWh]
         # energyprofit_bid: [計画値] 充放電計画策定時(charge/discharge_bid)のPVからの直接売電を含めた売電利益 [円]
         # energyprofit_realtime: [計画値] 実行30分前の充放電計画策定時(charge/discharge_realtime)のPVからの直接売電を含めた売電利益 [円]
-        # imbalancepenalty_bid: [予測値] 充放電計画策定時(charge/discharge_bid)のインバランスペナルティ予測値[円/kWh]
-        # imbalancepenalty_realtime: [予測値] 実行30分前の充放電計画策定時(charge/discharge_realtime)のインバランスペナルティ予測値[円/kWh]
+        # !!! imbalancepenalty_bid: [予測値] 充放電計画策定時(charge/discharge_bid)のインバランスペナルティ予測値[円]
+        # - imbalancepenalty_bidは存在しない（bidの段階ではimbalanceは発生しえない）
+        # imbalancepenalty_realtime: [予測値] 実行30分前の充放電計画策定時(charge/discharge_realtime)のインバランスペナルティ予測値[円]
         # imbalancepenalty_actual_bid: [実績値] 充放電実行結果のインバランスペナルティ(charge/discharge_actual_bidの制御実績によるインバランスペナルティ) [円]
         # imbalancepenalty_actual_realtime: [実績値] 充放電実行結果のインバランスペナルティ(charge/discharge_actual_realtimeの制御実績によるインバランスペナルティ) [円]
         # totalprofit_bid: [計画値] 充放電計画策定時(charge/discharge_bid)の売電利益とインバランスペナルティの合計 [円]
@@ -85,11 +86,13 @@ class Dataframe_Manager():
             # 売電量関連
             'energytransfer_bid', 'energytransfer_realtime', 'energytransfer_actual_bid','energytransfer_actual_realtime',
             # 売電利益関連
+            # - imbalancepenalty_bidは存在しない。bidの段階ではimbalanceは発生しないので。
+            # - imbalancepenalty_realtimeは存在しえる。realtimeでのスケジュール策定時にimbalanceが避けられない場合が想定されるので。
             'energyprofit_bid', 'energyprofit_realtime', 
-            'imbalancepenalty_bid', 'imbalancepenalty_realtime', 'imbalancepenalty_actual_bid', 'imbalancepenalty_actual_realtime', 
+            'imbalancepenalty_realtime', 'imbalancepenalty_actual_bid', 'imbalancepenalty_actual_realtime', 
             'totalprofit_bid', 'totalprofit_realtime', 'totalprofit_actual_bid', 'totalprofit_actual_realtime',
             # 動作モード：operateの条件分岐を見るためのもの。デバッグ用
-            'mode', 'mode_realtime'
+            'mode_bid', 'mode_realtime'
         ]
 
         # 空のDataframeを作成

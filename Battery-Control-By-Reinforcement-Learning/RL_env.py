@@ -49,7 +49,6 @@ class ESS_ModelEnv(gym.Env):
     def step(self, action):
         # time_stepを一つ進める
         self.state_idx += 1
-        print("state_idx: ", self.state_idx)
         ## rewardの計算
         # - 各stepでのrewardをリストに追加
         # - actionは規格値[0,1]なので、battery_max_capをかけて、実際の充放電量[MhW or kWh]に変換する
