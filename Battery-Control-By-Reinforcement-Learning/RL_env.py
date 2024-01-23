@@ -22,7 +22,7 @@ class ESS_ModelEnv(gym.Env):
         # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
         self.inverter_max_cap = 4 # インバーターの定格容量 ex.4kW
-        self.obs_list = [0.5] # SoC[0,1]の初期値 ex.0.5 (50%)
+        self.soc_list = [0.5] # SoC[0,1]の初期値 ex.0.5 (50%)
 
         ## PPOで使うパラメーターの設定
         # action spaceの定義(上下限値を設定。actionは連続値。)
@@ -32,7 +32,12 @@ class ESS_ModelEnv(gym.Env):
         # 状態(observation=SoC)の上限と下限の設定
         # observation_spaceの定義(上下限値を設定。observationは連続値。)
         # - 1time_step(ex.30 min)でのSoC(規格値[0,1])の上下限値を設定
-        self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32)
+        # - PVout, price, imbalance, SoCの4つの値を使っている
+        self.observation_space = gym.spaces.Box(
+            low=np.float32(np.array([-np.inf, -np.inf,-np.inf, 0])), 
+            high=np.float32(np.array([np.inf, np.inf,np.inf, 1])),
+            shape=(4,),
+            )
 
         # # Rewardの範囲(いらないかも)
         # self.reward_range = (-10000, math.inf) 
@@ -57,15 +62,20 @@ class ESS_ModelEnv(gym.Env):
         # Rewardは、時系列的に後ろの方になるほど係数で小さくする必要がある。1 episode内で後ろのsteoのrewardを小さくする実装を考える
         # _get_rewardからの戻りrewardにgammaとstate_idxをかければ良さそう。あとで　実装する。
         # ------------------------------------------------------------------------------------------------------------------
-        reward = self._get_reward(action*self.inverter_max_cap, self.obs_list[-1]*self.battery_max_cap)  
+        reward = self._get_reward(action*self.inverter_max_cap, self.soc_list[-1]*self.battery_max_cap)  
         self.reward_list.append(reward)
         # 全episodeでのrewardを計算
         self.reward_total += self.reward_list[-1]
-        # SoC[0,1]をactionの分だけ更新する
-        # - obs_listの最後の要素(前timestepのSoC)にactionを足す
-        observation = self.obs_list[-1] + action
-        # 各timestepでのobsをリストに追加
-        self.obs_list.append(observation)
+        # soc_listの最後の要素(前timestepのSoC)にactionを足す
+        observation = [
+            self.df_train["PVout"][self.state_idx], # PV発電量
+            self.df_train["price"][self.state_idx], # 電力価格
+            self.df_train["imbalance"][self.state_idx], # インバランス価格
+            self.soc_list[-1] + action, # SoC
+        ]
+
+        # 各timestepでのSoCをobsをリストに追加
+        self.soc_list.append(self.soc_list[-1] + action)
 
         # checking whether our episode (day) ends
         # - 1日(1 episode)が終わったら、done = Trueにする
@@ -88,7 +98,7 @@ class ESS_ModelEnv(gym.Env):
     # PVout: PV発電量の実績値
     # price: 電力価格の実績値
     # imablance: インバランス価格の実績値
-    # SoC: 前日の最終SoC obs_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
+    # SoC: 前日の最終SoC soc_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
         # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
         # - 取得する行数はstate_idx(当該time_step)から48コマ分
@@ -98,8 +108,11 @@ class ESS_ModelEnv(gym.Env):
             self.df_train["PVout"][self.state_idx],
             self.df_train["price"][self.state_idx],
             self.df_train["imbalance"][self.state_idx],
-            self.obs_list[-1] # SoC
+            self.soc_list[-1] # SoC
         ]
+        # observationをnumpy形式のarrayに変換する (stable_baselines3の仕様のため。詳しくは以下を参照
+        # https://stackoverflow.com/questions/73922332/dict-observation-space-for-stable-baselines3-not-working
+        observation = np.array(observation)
         return observation
 
     ## 状態の初期化：testを行うときに呼ばれる
@@ -109,16 +122,18 @@ class ESS_ModelEnv(gym.Env):
     # imablanceprice_predict: インバランス価格の予測値
     # SoC: def __init__で定義された初期値が入るはず。要確認。
     def reset_forTest(self):
-        # df_test内のPV_predict, energyprice_predict, imbalanceprice_predictの48コマ分のデータを取得
-        # - 取得する行数はstate_idx(当該time_step)から48コマ分
+        # df_test内のPV_predict_bid, energyprice_predict_bid, imbalanceprice_predict_bidの最初のデータを取得
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
         obs_reset = [
             self.df_test["PV_predict_bid"][0], # テストが複数日に渡る場合は[0]だとまずい。[self.state_idx]にすべき。
             self.df_test["energyprice_predict_bid"][0],
             self.df_test["imbalanceprice_predict_bid"][0],
-            self.obs_list[-1] # SoC
+            self.soc_list[-1] # SoC
         ]
-        print("obs_reset: ", obs_reset)
+        # obs_reset (stable_baselines3の仕様のため。詳しくは以下を参照
+        # https://stackoverflow.com/questions/73922332/dict-observation-space-for-stable-baselines3-not-working
+        obs_reset = np.array(obs_reset)                        
+        print("obs_resetfortest: ", obs_reset)
         return obs_reset
 
     # 現在の状態と行動に対するrewardを返す(1step分)
