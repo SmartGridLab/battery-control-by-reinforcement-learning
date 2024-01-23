@@ -113,6 +113,8 @@ class ESS_ModelEnv(gym.Env):
         # observationをnumpy形式のarrayに変換する (stable_baselines3の仕様のため。詳しくは以下を参照
         # https://stackoverflow.com/questions/73922332/dict-observation-space-for-stable-baselines3-not-working
         observation = np.array(observation)
+        # observationの最初の５行を表示
+        print("observation: ", observation)
         return observation
 
     ## 状態の初期化：testを行うときに呼ばれる
