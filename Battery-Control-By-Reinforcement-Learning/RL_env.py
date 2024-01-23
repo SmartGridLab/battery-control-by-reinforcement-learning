@@ -93,10 +93,11 @@ class ESS_ModelEnv(gym.Env):
         # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
         # - 取得する行数はstate_idx(当該time_step)から48コマ分
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
+        print('state_idx in rest method: ', self.state_idx)
         observation = [
-            # self.df_train["PVout"][self.state_idx:self.state_idx+48],
-            # self.df_train["price"][self.state_idx:self.state_idx+48],
-            # self.df_train["imbalance"][self.state_idx:self.state_idx+48],
+            self.df_train["PVout"][self.state_idx],
+            self.df_train["price"][self.state_idx],
+            self.df_train["imbalance"][self.state_idx],
             self.obs_list[-1] # SoC
         ]
         return observation
@@ -112,9 +113,9 @@ class ESS_ModelEnv(gym.Env):
         # - 取得する行数はstate_idx(当該time_step)から48コマ分
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
         obs_reset = [
-            # self.df_test["PV_predict"][self.state_idx:self.state_idx+48],
-            # self.df_test["energyprice_predict"][self.state_idx:self.state_idx+48],
-            # self.df_test["imbalanceprice_predict"][self.state_idx:self.state_idx+48],
+            self.df_test["PV_predict_bid"][0], # テストが複数日に渡る場合は[0]だとまずい。[self.state_idx]にすべき。
+            self.df_test["energyprice_predict_bid"][0],
+            self.df_test["imbalanceprice_predict_bid"][0],
             self.obs_list[-1] # SoC
         ]
         print("obs_reset: ", obs_reset)
