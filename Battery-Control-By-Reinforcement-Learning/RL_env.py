@@ -67,15 +67,16 @@ class ESS_ModelEnv(gym.Env):
         # 全episodeでのrewardを計算
         self.reward_total += self.reward_list[-1]
         # soc_listの最後の要素(前timestepのSoC)にactionを足す
+        # actionをnp.float32型からfloat型に変換してから足す。stable_baselines3のobservatuionの仕様のため。
         observation = [
             self.df_train["PVout"][self.state_idx], # PV発電量
             self.df_train["price"][self.state_idx], # 電力価格
             self.df_train["imbalance"][self.state_idx], # インバランス価格
-            self.soc_list[-1] + action, # SoC
+            self.soc_list[-1] + float(action), # SoC
         ]
 
         # 各timestepでのSoCをobsをリストに追加
-        self.soc_list.append(self.soc_list[-1] + action)
+        self.soc_list.append(self.soc_list[-1] + float(action))
 
         # checking whether our episode (day) ends
         # - 1日(1 episode)が終わったら、done = Trueにする
@@ -110,10 +111,6 @@ class ESS_ModelEnv(gym.Env):
             self.df_train["imbalance"][self.state_idx],
             self.soc_list[-1] # SoC
         ]
-        # observationをnumpy形式のarrayに変換する (stable_baselines3の仕様のため。詳しくは以下を参照
-        # https://stackoverflow.com/questions/73922332/dict-observation-space-for-stable-baselines3-not-working
-        observation = np.array(observation)
-        # observationの最初の５行を表示
         print("observation: ", observation)
         return observation
 
@@ -124,18 +121,20 @@ class ESS_ModelEnv(gym.Env):
     # imablanceprice_predict: インバランス価格の予測値
     # SoC: def __init__で定義された初期値が入るはず。要確認。
     def reset_forTest(self):
-        # df_test内のPV_predict_bid, energyprice_predict_bid, imbalanceprice_predict_bidの最初のデータを取得
+        # df_test内のPV_predict_bid, energyprice_predict_bid, imbalanceprice_predict_bidの48コマ分のデータを取得
+        # - 取得する行数はstate_idx(当該time_step)から48コマ分
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
+        print('state_idx in restForTest method: ', self.state_idx)
+        # 要素が47個ですべて-1であるリストを作成, SoCの最新版だけくっつける
+        # NaNlist = [-1 for i in range(48)]
         obs_reset = [
-            self.df_test["PV_predict_bid"][0], # テストが複数日に渡る場合は[0]だとまずい。[self.state_idx]にすべき。
-            self.df_test["energyprice_predict_bid"][0],
-            self.df_test["imbalanceprice_predict_bid"][0],
+            self.df_test["PV_predict_bid"][self.state_idx:self.state_idx+47],
+            self.df_test["energyprice_predict_bid"][self.state_idx:self.state_idx+47],
+            self.df_test["imbalanceprice_predict_bid"][self.state_idx:self.state_idx+47],
             self.soc_list[-1] # SoC
+            # [NaNlist, self.soc_list[-1]] # SoC
         ]
-        # obs_reset (stable_baselines3の仕様のため。詳しくは以下を参照
-        # https://stackoverflow.com/questions/73922332/dict-observation-space-for-stable-baselines3-not-working
-        obs_reset = np.array(obs_reset)                        
-        print("obs_resetfortest: ", obs_reset)
+        # print("obs_resetfortest: ", obs_reset[1][self.state_idx])
         return obs_reset
 
     # 現在の状態と行動に対するrewardを返す(1step分)
