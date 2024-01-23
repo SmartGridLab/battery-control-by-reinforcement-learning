@@ -114,29 +114,6 @@ class ESS_ModelEnv(gym.Env):
         print("observation: ", observation)
         return observation
 
-    ## 状態の初期化：testを行うときに呼ばれる
-    # - RL_test.pyから呼ばれる。testを行うためにデータをリセットする。
-    # PV_predict: PV発電量の予測値
-    # energyprice_predict: 電力価格の予測値
-    # imablanceprice_predict: インバランス価格の予測値
-    # SoC: def __init__で定義された初期値が入るはず。要確認。
-    def reset_forTest(self):
-        # df_test内のPV_predict_bid, energyprice_predict_bid, imbalanceprice_predict_bidの48コマ分のデータを取得
-        # - 取得する行数はstate_idx(当該time_step)から48コマ分
-        # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
-        print('state_idx in restForTest method: ', self.state_idx)
-        # 要素が47個ですべて-1であるリストを作成, SoCの最新版だけくっつける
-        # NaNlist = [-1 for i in range(48)]
-        obs_reset = [
-            self.df_test["PV_predict_bid"][self.state_idx:self.state_idx+47],
-            self.df_test["energyprice_predict_bid"][self.state_idx:self.state_idx+47],
-            self.df_test["imbalanceprice_predict_bid"][self.state_idx:self.state_idx+47],
-            self.soc_list[-1] # SoC
-            # [NaNlist, self.soc_list[-1]] # SoC
-        ]
-        # print("obs_resetfortest: ", obs_reset[1][self.state_idx])
-        return obs_reset
-
     # 現在の状態と行動に対するrewardを返す(1step分)
     # - rewardは1日(1 episode)ごとに合計される
     # - action > 0 →放電  action < 0 →充電
