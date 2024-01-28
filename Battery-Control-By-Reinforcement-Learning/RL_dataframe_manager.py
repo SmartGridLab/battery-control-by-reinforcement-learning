@@ -29,6 +29,10 @@ class Dataframe_Manager():
         pv_predict = pv_predict.rename(columns={'PVout': 'PV_predict_bid'})
         # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
         df_testdata = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
+        # "SoC_bid", "charge/discharge_bid"を列名として追加。行数はdf_testdataの行数と同じで、全て-999を入れる
+        # -999は、欠損値を表す（NaNと同じ）
+        df_testdata["SoC_bid"] = [-999 for i in range(len(df_testdata))]
+        df_testdata["charge/discharge_bid"] = [-999 for i in range(len(df_testdata))]
         return df_testdata
 
 

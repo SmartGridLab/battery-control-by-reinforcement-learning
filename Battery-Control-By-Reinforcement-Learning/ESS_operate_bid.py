@@ -4,26 +4,14 @@ import pandas as pd
 battery_MAX = 4
 
 # result_dataframe.csvを読み込む
-dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+df_result = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
 
 print("-bidモード機器動作開始-")
 
-# 繰り返し文(同時に計算したい時間幅に調整->リアルタイム制御時にも使えるように)
-for i in range(0,48):
-    # 複数日対応のための部分らしいが、実際今も必要
-    # - energytransfer_actualに値がある最後の行を探索(次の行から書き込みするため)
-    #   (実際の動作量を決めた最後のコマを取得)
-    last_data_row = dataframe['energytransfer_actual_bid'].last_valid_index()
-    # - energytransfer_actualに全くデータがないとき：0行目から格納する
-    if last_data_row == None:
-        last_data_row = -1
-    j = last_data_row + 1   # 最初の行から格納するときは-1+1=0行目から格納する
+# PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
+delta_PV = df_result["PV_actual"] - df_result["PV_predict_bid"]
 
-    # データ自体の最後の行を探索
-    last_csv_row = dataframe['year'].last_valid_index()
-
-    # PVの予測値と実測値の差を計算
-    delta_PV = dataframe.at[j, 'PV_actual'] - dataframe.at[j, 'PV_predict_bid']
+for i in range(len(df_result):
 
     # PVが計画よりも多い場合
     if delta_PV >= 0:
