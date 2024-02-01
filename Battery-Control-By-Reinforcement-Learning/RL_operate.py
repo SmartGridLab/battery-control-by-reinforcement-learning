@@ -15,7 +15,10 @@ def __init__(self):
     # PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
     self.delta_PV = self.df_result["PV_actual"] - self.df_result["PV_predict_bid"]
 
-def battery_operation(self):
+    # len(self.df_result)の値を出力
+    print("len(self.df_result):", len(self.df_result))
+
+def operate_bid(self):
     for j in range(len(self.df_result)):
         # PVが計画よりも多い場合
         if self.delta_PV >= 0:
@@ -105,7 +108,7 @@ def battery_operation(self):
             self.df_result.at[j, 'mode'] = -999
 
 
-    # result_self.df_result.csvを上書き保存
+    # self.df_resultをdf_result.csvへ上書き保存
     self.df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_self.df_result.csv", index=False)
-
+    
     print("-bidモード機器動作終了-")

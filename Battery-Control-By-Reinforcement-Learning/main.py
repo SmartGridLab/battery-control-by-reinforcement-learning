@@ -1,8 +1,14 @@
 #メインプログラム
 import subprocess
 import datetime
+import RL_operate_bid as Operate_bid
 
 def main():
+    # クラスのインスタンス化
+    self.operate_bid = Operate_bid()
+
+
+
     print("\n---プログラム起動---\n")
 
     #時刻表示
@@ -42,7 +48,7 @@ def main():
     # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する-> charge/discharge_actual_bid
     # - realtime_mode：直前のコマの充放電計画(energytransfer_realtime)に寄せて現実的な充放電を策定する -> charge/discharge_actual_realtime
     if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_bid.py'])
+        self.operate_bid.operate_bid()
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
 

@@ -5,7 +5,6 @@ import numpy as np
 import math
 
 # internal modules
-import RL_visualize as visual
 from RL_dataframe_manager import Dataframe_Manager
 
 warnings.simplefilter('ignore')
