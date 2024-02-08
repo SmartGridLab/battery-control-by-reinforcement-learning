@@ -103,14 +103,12 @@ class ESS_ModelEnv(gym.Env):
         # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
         # - 取得する行数はstate_idx(当該time_step)から48コマ分
         # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
-        # print('state_idx in rest method: ', self.state_idx)
         observation = [
             self.df_train["PVout"][self.state_idx],
             self.df_train["price"][self.state_idx],
             self.df_train["imbalance"][self.state_idx],
             self.soc_list[-1] # SoC
         ]
-        # print("observation: ", observation)
         return observation
 
     # 現在の状態と行動に対するrewardを返す(1step分)
@@ -153,6 +151,7 @@ class ESS_ModelEnv(gym.Env):
 
         return reward
 
+    ## 報酬を決定する前に、手動で実現可能なactionへ修正する場合はこのメソッドを使う（改変中）
     # def _get_possible_schedule(self, action):
     #     # 入力データの設定
     #     self.PV_out_time = self.PVout[self.time]

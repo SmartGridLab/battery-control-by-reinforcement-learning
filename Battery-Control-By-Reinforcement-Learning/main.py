@@ -1,13 +1,9 @@
 #メインプログラム
 import subprocess
 import datetime
-import RL_operate_bid as Operate_bid
+import RL_operate
 
 def main():
-    # クラスのインスタンス化
-    self.operate_bid = Operate_bid()
-
-
 
     print("\n---プログラム起動---\n")
 
@@ -47,10 +43,10 @@ def main():
     # - だけど、PVの予測値が外れたり、SoCの値がrealtime通りにならなかったりする
     # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する-> charge/discharge_actual_bid
     # - realtime_mode：直前のコマの充放電計画(energytransfer_realtime)に寄せて現実的な充放電を策定する -> charge/discharge_actual_realtime
-    if mode == "bid":
-        self.operate_bid.operate_bid()
-    elif mode == "realtime":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/ESS_operate_realtime.py'])
+    # Battery_operateをインスタンス化
+    operate = RL_operate.Battery_operate()
+    # RL_operate_bid.pyを実行する
+    operate.operate_bid()
 
     # 1日の最終コマ(23.5)の動作終了後に、1日分の結果を集計する
     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
