@@ -37,8 +37,8 @@ def main():
         i = -1
     # i+1行目からi+48行目に実績データを挿入
     dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('PV_actual[kW]')] = PV_actual
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('energyprice_actual[Yen]')] = energyprice_actual * 0.5
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('imbalanceprice_actual[Yen]')] = imbalanceprice_actual * 0.5
+    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('energyprice_actual[Yen/kWh]')] = energyprice_actual * 0.5
+    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('imbalanceprice_actual[Yen/kWh]')] = imbalanceprice_actual * 0.5
    
     # result_dataframe.csvを上書き保存
     dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
