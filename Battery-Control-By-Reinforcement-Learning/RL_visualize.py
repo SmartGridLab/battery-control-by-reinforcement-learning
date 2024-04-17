@@ -1,24 +1,27 @@
+# グラフを描写するための関数を定義
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_pdf import PdfPages
 
+def __init__(self):
+    self.steps = steps  # envからもらってくる
+    self.all_rewards = all_rewards # envからもらってくる
 
-#### timeごとのrewardの計算 > グラフ作成
-def evalution(self, pdf_name):
+if __name__ == "__main__" :
     pp = PdfPages(pdf_name) # PDFの作成
-    if self.mode == "train":
-        graph_1 = self.graph(self.all_rewards)
-        pp.savefig(graph_1)
-    graph_2 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 0)
-    graph_3 = self.schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 1)
+    graph_1 = self.descr_reward(self.steps, self.all_rewards)
+    graph_2 = self.descr_schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 0)
+    graph_3 = self.descr_schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 1)
 
+    pp.savefig(graph_1)
     pp.savefig(graph_2)
     pp.savefig(graph_3)
 
     pp.close()
 
-#### timeごとのrewardの計算 > グラフ作成 > 充放電計画のデータ出力(名前変える)
-def schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後のactionを引き渡す
+# 充放電計画のグラフの描写
+def descr_schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後のactionを引き渡す
     ## test時のtime_stampを取得
     #入力データから取得
     predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
@@ -34,7 +37,6 @@ def schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後の
     
     # 時系列として統合
     time_stamp = pd.to_datetime({'year': year_stamp, 'month': month_stamp, 'day': day_stamp, 'hour': hour_stamp_, 'minute': minute_stamp})
-
 
     fig = plt.figure(figsize=(22, 12), dpi=80)
     ax1 = fig.add_subplot(111)
@@ -126,10 +128,10 @@ def schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後の
 
     return fig
 
-# timeごとのrewardの計算 > グラフ作成 > rewardの推移のグラフ出力
-def graph(self, y):
+# rewardのグラフの描写
+def descr_reward(self, steps, reward):
     fig = plt.figure(figsize=(24, 14), dpi=80)
-    plt.plot(np.arange(self.episode), y, label = "Reward")
+    plt.plot(np.arange(steps), reward, label = "Reward")
     plt.legend(prop={"size": 35})
     plt.xlabel("Episode", fontsize = 35)
     plt.ylabel("Reward", fontsize = 35)

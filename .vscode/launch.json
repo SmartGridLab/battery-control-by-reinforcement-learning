@@ -5,15 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Pyramid Application",
+            "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "module": "pyramid.scripts.pserve",
-            "args": [
-                "${workspaceFolder}/development.ini"
-            ],
-            "pyramid": true,
-            "jinja": true,
+            "program": "${file}",
+            "console": "integratedTerminal",
             "justMyCode": true
         }
     ]
