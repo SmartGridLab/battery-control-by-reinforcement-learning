@@ -1,6 +1,20 @@
 import pandas as pd
 import parameters
 
+
+'''
+Battery_operationクラス
+- 蓄電池を実際に動作させる日の充放電量を決定するmethodを集めたclass。
+- input:result_dataframe.csv
+- output:result_dataframe.csv
+
+各methodの内容
+- operation_bid: 
+    実際の充放電を行う時は、PVの発電量が予測とずれる。そのため、売電量やSoCが予測時(energytransfer_bidを計画した時)
+    と異なり、計画通りのenergytransfer_bidが実行できない。そのため、実際の動作を可能な限り計画値(energytransfer_bid)に近づけるように動作する。
+    そのため、PVの発電量('PV_actual')と予測値('PV_predict_bid')の差を計算し、その差分によって充放電量を調整する。
+'''
+
 class Battery_operate():
     def __init__(self):
         # パラメータクラスのインスタンス化
@@ -14,7 +28,7 @@ class Battery_operate():
 
         # PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
         self.delta_PV = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_bid[kW]"]
-
+   
     def operate_bid(self):
         for j in range(len(self.df_result)):
             # PVが計画よりも多い場合
@@ -109,5 +123,3 @@ class Battery_operate():
 
         # self.df_resultをdf_result.csvへ上書き保存
         self.df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
-        
-        print("-bidモード機器動作終了-")
