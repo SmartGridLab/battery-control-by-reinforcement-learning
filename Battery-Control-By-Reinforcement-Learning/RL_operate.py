@@ -1,7 +1,6 @@
 import pandas as pd
 import parameters
 
-
 '''
 Battery_operationクラス
 - 蓄電池を実際に動作させる日の充放電量を決定するmethodを集めたclass。
