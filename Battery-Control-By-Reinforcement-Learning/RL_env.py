@@ -3,9 +3,11 @@ import gym
 import warnings
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 # internal modules
 from RL_dataframe_manager import Dataframe_Manager
+
 
 warnings.simplefilter('ignore')
 
@@ -45,12 +47,14 @@ class ESS_ModelEnv(gym.Env):
         self.state_idx = 0 # time_steps in all episodes (all episodes is a sum of time frames in train/test days 48*days)
         self.reward_total = 0 # 全episodeでの合計のreward
         self.reward_list = [] # 各stepでのreward
+        self.episode_rewards = []  # 各エピソードの報酬合計を保存するリスト
 
         # # Mode選択
         # self.mode = train    # train or test
 
     #### time_stepごとのactionの決定とrewardの計算を行う
     def step(self, action):
+
         # time_stepを一つ進める
         self.state_idx += 1
         ## rewardの計算
@@ -82,11 +86,17 @@ class ESS_ModelEnv(gym.Env):
         # state_idxは48コマ(1日)で割った余りが0になると、1日終了とする
         if self.state_idx % 48 == 0:
             done = True # Trueだと勝手にresetが走る
+            # 直近48コマの報酬の合計を計算しリストに追加
+            recent_reward = sum(self.reward_list[-48:])
+            self.episode_rewards.append(recent_reward)
+            info = {'episode_reward': recent_reward}  # 情報にエピソードの合計報酬を追加
+
         else:
-            done = False         
-        
-        # 付随情報をinfoに入れる
-        info = {}
+            done = False    
+             # 付随情報をinfoに入れる
+            info = {}     
+    
+       
         
         return observation, reward, done, info
     
