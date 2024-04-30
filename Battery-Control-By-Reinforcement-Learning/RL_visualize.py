@@ -3,25 +3,14 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_pdf import PdfPages
+import numpy as np
 
+from RL_env import ESS_ModelEnv
 
-
-Class RL_visualize:
-    def __init__(self):
-        self.steps = steps  # envからもらってくる
+class RL_visualize:
+    def __init__(self, episode, all_rewards):
+        self.steps = episode  # envからもらってくる
         self.all_rewards = all_rewards # envからもらってくる
-
-    if __name__ == "__main__" :
-        pp = PdfPages(pdf_name) # PDFの作成
-        graph_1 = self.descr_reward(self.steps, self.all_rewards)
-        graph_2 = self.descr_schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 0)
-        graph_3 = self.descr_schedule(self.all_action_real, self.all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 1)
-
-        pp.savefig(graph_1)
-        pp.savefig(graph_2)
-        pp.savefig(graph_3)
-
-        pp.close()
 
     # 充放電計画のグラフの描写
     def descr_schedule(self, action, PVout, energy_transfer, soc, mode):     #修正後のactionを引き渡す
@@ -132,13 +121,31 @@ Class RL_visualize:
         return fig
 
     # rewardのグラフの描写
-    def descr_reward(self, steps, reward):
+    def descr_reward(self, episode, reward):
         fig = plt.figure(figsize=(24, 14), dpi=80)
-        plt.plot(np.arange(steps), reward, label = "Reward")
+        plt.plot(np.arange(episode), reward, label = "Reward")
         plt.legend(prop={"size": 35})
         plt.xlabel("Episode", fontsize = 35)
         plt.ylabel("Reward", fontsize = 35)
         plt.tick_params(labelsize=35)
-        plt.close()
         
         return fig
+
+if __name__ == "__main__" :
+        env = ESS_ModelEnv()
+
+        all_rewards=env.episode_rewards
+        episode=len(all_rewards)
+        # クラスのインスタンス化
+        visualizer = RL_visualize(episode, all_rewards)
+        pp = PdfPages('RL_visualize.pdf') # PDFの作成
+        # グラフの描画
+        graph_1 = visualizer.descr_reward(episode, all_rewards)
+        graph_2 = visualizer.descr_schedule(all_action_real, all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 0)
+        graph_3 = visualizer.descr_schedule(all_action_real, all_PV_out_time, self.all_energy_transfer, self.all_soc, mode = 1)
+
+        pp.savefig(graph_1)
+        pp.savefig(graph_2)
+        pp.savefig(graph_3)
+
+        pp.close()
