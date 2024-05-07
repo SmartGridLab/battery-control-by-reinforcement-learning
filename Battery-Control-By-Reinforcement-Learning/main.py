@@ -62,7 +62,7 @@ def process_operations(mode, data_to_send):
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
- # 機器動作を策定する
+    # 機器動作を策定する
     # - 強化学習で作られたcharge/discharge_realtime通りの充放電を実行しようとしてみる
     # - だけど、PVの予測値が外れたり、SoCの値がrealtime通りにならなかったりする
     # - bid_mode：入札したときの充放電計画(energytransfer_bid)に寄せて現実的な充放電を策定する-> charge/discharge_actual_bid
@@ -77,7 +77,6 @@ def process_operations(mode, data_to_send):
 # メインプログラム
 def main():
     print("\n---プログラム起動---\n")
-
 
     # # #天気予報データ取得(GPVデータ取得)
     # if mode == "bid":
