@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
+import pandas as pd
 
 from RL_env import ESS_ModelEnv
 
@@ -129,6 +130,31 @@ class RL_visualize:
         plt.ylabel("Reward", fontsize = 35)
         plt.tick_params(labelsize=35)
         
+        return fig
+    
+    def descr_price():
+        # 価格の予測値と実績値の比較
+        predict_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv")
+        actual_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        # 要素の取得
+        x_hour = predict_data["hour"]
+        y_energy_predict = predict_data["price"]
+        y_imbalance_predict = predict_data["imbalance"]
+        y_energy_actual = actual_data["energyprice_actual[Yen/kWh]"]
+        y_imbalance_actual = actual_data["imbalanceprice_actual[Yen/kWh]"]
+        # グラフの描写
+        fig = plt.figure(figsize=(24, 14), dpi=80)
+        plt.plot(x_hour, y_energy_predict, "-", color = "blue", label = "energyprice_predict")
+        plt.plot(x_hour, y_energy_actual, "--", color = "blue", label = "energyprice_actual")
+        plt.plot(x_hour, y_imbalance_predict, "-", color = "orange", label = "imbalanceprice_predict")
+        plt.plot(x_hour, y_imbalance_actual, "--", color = "orange", label = "imbalanceprice_actual")
+        plt.xlabel("Time [h]", fontsize = 35)
+        plt.ylabel("Price [JPY/kWh]", fontsize = 35)
+        plt.title("Price Prediction and Actual Price", fontsize = 35)
+        plt.legend(prop={"size": 35})
+        plt.grid()
+        plt.savefig('descr_price.pdf')
+
         return fig
 
 if __name__ == "__main__" :

@@ -3,6 +3,7 @@ import subprocess
 import datetime
 from tracemalloc import start
 import RL_operate
+import RL_visualize
 import pandas as pd
 
 def perform_daily_operations(current_date, end_date):
@@ -144,4 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+    fig = RL_visualize.RL_visualize.descr_price()
