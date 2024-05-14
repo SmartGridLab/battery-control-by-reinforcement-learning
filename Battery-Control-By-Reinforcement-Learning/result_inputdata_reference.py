@@ -17,13 +17,14 @@ def main():
     dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
     
     # 学習データから指定した日付のPV, price, imbalance実績値を取得
-    data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022_all_0.csv")
+    data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
     PV_actual = data[(data["year"] == year) & (data["month"] == month) & (data["day"] == day)][["PVout"]]
     energyprice_actual = data[(data["year"] == year) & (data["month"] == month) & (data["day"] == day)][["price",]]
     imbalanceprice_actual = data[(data["year"] == year) & (data["month"] == month) & (data["day"] == day)][["imbalance"]]
 
     # pd -> numpy変換
     PV_actual = PV_actual.values.flatten()
+
     energyprice_actual = energyprice_actual.values.flatten()
     imbalanceprice_actual = imbalanceprice_actual.values.flatten()
 
@@ -36,9 +37,9 @@ def main():
     if i == None:
         i = -1
     # i+1行目からi+48行目に実績データを挿入
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('PV_actual[kW]')] = PV_actual
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('energyprice_actual[Yen/kWh]')] = energyprice_actual * 0.5
-    dataframe.iloc[i+1:i+49, dataframe.columns.get_loc('imbalanceprice_actual[Yen/kWh]')] = imbalanceprice_actual * 0.5
+    dataframe.iloc[0:48, dataframe.columns.get_loc('PV_actual[kW]')] = PV_actual
+    dataframe.iloc[0:48, dataframe.columns.get_loc('energyprice_actual[Yen/kWh]')] = energyprice_actual * 0.5
+    dataframe.iloc[0:48, dataframe.columns.get_loc('imbalanceprice_actual[Yen/kWh]')] = imbalanceprice_actual * 0.5
    
     # result_dataframe.csvを上書き保存
     dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
