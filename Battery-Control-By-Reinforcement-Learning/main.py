@@ -6,6 +6,8 @@ import RL_operate
 import pandas as pd
 
 def perform_daily_operations(current_date, end_date):
+    # 日付データを保持するためのリスト
+    current_data_records = []
     current_time = 0
     while current_date <= end_date:
         print("日付：" + current_date.strftime("%Y/%m/%d"))
@@ -20,8 +22,9 @@ def perform_daily_operations(current_date, end_date):
                 yesterday_date = current_date - datetime.timedelta(days=1)
                 data_time = 0
                  # GPVデータの所得のために時刻を生成
-                data_to_send = {'year': yesterday_date.year, 'month': yesterday_date.month, 'day': yesterday_date.day, 'hour': current_time}
-                print(data_to_send)
+                yesterday_data_to_send = {'year': yesterday_date.year, 'month': yesterday_date.month, 'day': yesterday_date.day, 'hour': current_time}
+                current_data_to_send = {'year': current_date.year, 'month': current_date.month, 'day': current_date.day, 'hour': current_time}
+                print(current_data_to_send)
 
 
                 ## realtime modeを一時的に実行しないようにする (Jan 1st, 2024)-----------------------------------------------------------------------
@@ -44,13 +47,25 @@ def perform_daily_operations(current_date, end_date):
             #     print(data_to_send)
             #     main()
             ## --------------------------------------------------------------------------------------------------------------------------------
-            # １コマ分時間を進める
+            
 
-                process_operations(mode, data_to_send)
+
+                current_data_records.append(current_data_to_send)
+                # pandas DataFrame を作成
+                df = pd.DataFrame(current_data_records)
+                # current_data_to_send を CSV ファイルに保存
+                df.to_csv('Battery-Control-By-Reinforcement-Learning/current_data.csv', index=False)
+                print("Data saved to 'current_data.csv'")
+
+                 # 操作を実行
+                process_operations(mode)
+            # １コマ分時間を進める
             current_time += 0.5
         current_date += datetime.timedelta(days=1)
 
-def process_operations(mode, data_to_send):
+        
+
+def process_operations(mode):
     # 複雑な操作をここに実装
 
     # 充放電計画の性能評価のためのデータを集める
@@ -96,7 +111,7 @@ def main():
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.date(2022, 8, 8)
-        end_date = datetime.date(2022, 8, 9)
+        end_date = datetime.date(2022, 8, 31)
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date)
         print("\n---プログラム終了---\n")
