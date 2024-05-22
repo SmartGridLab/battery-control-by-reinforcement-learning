@@ -1,5 +1,6 @@
 # csvからのデータの読み込みを行うクラス
 
+from email import header
 import pandas as pd
 
 class Dataframe_Manager(): 
@@ -15,6 +16,16 @@ class Dataframe_Manager():
         return df_traindata
 
     def get_test_df(self):
+
+        data_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_data.csv")
+        # date_infoは {'year': year, 'month': month, 'day': day} の形式
+        data_info['date'] = pd.to_datetime(data_info[['year', 'month', 'day']])
+        latest_date = data_info['date'].max()
+
+        year = latest_date.year
+        month = latest_date.month
+        day = latest_date.day
+
         # - 前提：PV発電予測と価格予測の結果のcsvがあること
         # - CSVファイルから予測結果のデータを読み込む
         # 電力価格データからyear, month, day,hour,price, imbalanceを読み込む
@@ -22,6 +33,11 @@ class Dataframe_Manager():
         #                             usecols=["year","month","day","hour","price","imbalance"])
         price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict_all_0.csv", 
                                     usecols=["year","month","day","hour","price","imbalance"])
+        
+        # 日付でフィルタリング
+        price_predict = price_predict[(price_predict['year'] == year) & 
+                                      (price_predict['month'] == month) & 
+                                      (price_predict['day'] == day) ]
 
 
         # 列名を変更する
@@ -32,6 +48,12 @@ class Dataframe_Manager():
         # PV予測結果データからyear, month, day,hour, PVoutを読み込む
         pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict_all_0.csv",
                                     usecols=["year","month","day","hour","PVout"])
+        
+# 日付でフィルタリング
+        pv_predict = pv_predict[(pv_predict['year'] == year) & 
+                                (pv_predict['month'] == month) & 
+                                (pv_predict['day'] == day) ]
+
         # 列名を変更する
         pv_predict = pv_predict.rename(columns={'PVout': 'PV_predict_bid[kW]'})
         # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
@@ -120,13 +142,12 @@ class Dataframe_Manager():
     def write_testresult_csv(self, data):
         # result_dataframe.csvを読み込む
         # もしresult_dataframe.csvがなければ、get_resultform_df()で作成する
-        try:
-            df_result = pd.read_csv('./Battery-Control-By-Reinforcement-Learning/result_dataframe.csv')
-        except:
-            df_result = self.get_resultform_df()
+
+        df_result = self.get_resultform_df()
         
         # dataの'SoC_bid'をdf_resultの'SoC_bid'に追加
         df_result['SoC_bid[%]'] = data['SoC_bid[%]']
         df_result['charge/discharge_bid[kWh]'] = data['charge/discharge_bid[kWh]']
-        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)        
+        # df_resultを上書きしない形でcsvに書き込む
+        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", mode = 'a', index=False, header=False)      
         
