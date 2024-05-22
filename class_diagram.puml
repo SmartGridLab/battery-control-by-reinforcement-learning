@@ -1,4 +1,4 @@
-@startuml Battery-Control-By-Reinfoecement-Learning_Class_Diagram
+@startuml Class_Diagram
 'main.py
 package "main"{
   class None {
@@ -209,3 +209,4 @@ RL_train ...> PPO : <<import>>
 RL_test ...> ESS_ModelEnv : <<import>>
 RL_test ...> Dataframe_Manager : <<import>>
 @enduml
+
