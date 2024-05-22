@@ -169,6 +169,7 @@ package "weather_data_realtime"{
   class None {
     --
     +main()
+    +data_acquisition()
   }
 }
 'pv_predict.py
@@ -188,7 +189,93 @@ package "price_predict"{
     --
   }
 }
+'PV_actual.py
+package "PV_actual"{
+  class None {
+    --
+    +calculate_solar_power(input_file?: csv)
+  }
+}
 
+'price_predict.py
+package "price_predict"{
+  class None {
+    --
+    +None
+  }
+}
+
+'result_graph.py
+package "result_graph"{
+  class None {
+    --
+    +None
+  }
+}
+
+'RL_database_utils.py
+package "RL_database_utils"{
+  class BatteryControlDatabase {
+    --
+    +__init__()
+    +updata_data()
+  }
+}
+
+'weather_data_bid_independent.py
+package "weather_data_bid_independent"{
+  class None {
+    --
+    +data_acquisition()
+  }
+}
+
+'weather_data.csv
+package "weather_dataCSV"{
+  class CSV {
+    --
+  }
+}
+'weather_data_bid_multi-period.py
+package "weather_data_bid_multi_period"{
+  class None {
+    --
+    +data_acquisition()
+    +cycle_oneday()
+  }
+}
+
+'weather_data_bid.csv
+package "weather_data_bidCSV"{
+  class CSV {
+    --
+  }
+}
+
+'weather_data_bid.py
+package "weather_data_bid"{
+  class None {
+    --
+    +main()
+    +data_acquisition()
+  }
+}
+
+'weather_data_realtime_independent.py
+package "weather_data_realtime_independent"{
+  class None {
+    --
+    +data_acquisition()
+  }
+}
+
+'weather_data_realtime.csv
+package "weather_data_realtimeCSV"{
+  class CSV {
+    --
+  }
+}
+'main関連
 main ..> RL_visualize :<<import>>
 main ..> RL_operate : <<import>>
 main ..> RL_main : <<use>>
@@ -208,5 +295,17 @@ RL_train ...> ESS_ModelEnv : <<import>>
 RL_train ...> PPO : <<import>>
 RL_test ...> ESS_ModelEnv : <<import>>
 RL_test ...> Dataframe_Manager : <<import>>
+
+'その他
+weather_data_bid_independent ..> weather_data_bidCSV : <<create>>
+weather_data_bid_independent ..> weather_dataCSV : <<create>>
+weather_data_bid_multi_period ..> weather_data_bidCSV : <<create>>
+weather_data_bid ..> weather_data_bidCSV : <<create>>
+weather_data_bid ..> weather_dataCSV : <<create>>
+weather_data_bid ..> BatteryControlDatabase : <<import>>
+weather_data_realtime_independent ..> weather_data_realtimeCSV : <<create>>
+weather_data_realtime_independent ..> weather_dataCSV : <<create>>
+weather_data_realtime ..> weather_data_realtimeCSV : <<create>>
+weather_data_realtime ..> weather_dataCSV : <<create>>
 @enduml
 
