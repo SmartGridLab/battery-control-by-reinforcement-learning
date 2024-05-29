@@ -1,4 +1,5 @@
 @startuml Class_Diagram
+scale 0.85
 'main.py
 package "main"{
   class None {
@@ -8,16 +9,127 @@ package "main"{
     +main()
   }
 }
+'descr_price.pdf
+package "descr_price" #IndianRed{
+  class PDF {
+    --
+  }
+}
 ' RL_visualize.py
-package "RL_visualize"{
+package "RL_visualizePy"{
   class RL_visualize {
   -steps: int
   -all_rewards: list
   --
-  +__init__(episode: int, all_rewards: list): void
-  +descr_schedule(action: list, PVout: list, energy_transfer: list, soc: list, mode: int): Figure
-  +descr_reward(episode: int, reward: list): Figure
-  +descr_price(): Figure
+  +__init__()
+  +descr_schedule()
+  +descr_reward()
+  +descr_price()
+  }
+}
+' RL_main.py
+package "RL_main"{
+  class None {
+    -trainModel: Dataframe
+    -testModel: Dataframe
+    -dfmanager: Dataframe
+    -RL_dataframe_manager: Dataframe
+  }
+}
+' RL_operate.py
+package "RL_operate"{
+  class Battery_operate {
+      -BATTERY_CAPACITY: int
+      -INITIAL_SOC: float
+      -df_result: DataFrame
+      -delta_PV: Series
+      --
+      +__init__()
+      +operate_bid()
+  }
+}
+'result_evaluation.py
+package "result_evaluation"{
+  class None {
+    -dataframe: Dataframe(result_dataframe.csv)
+    -data: Dataframe(input_data2022.csv)
+    --
+  }
+}
+'package gym {
+  'class Env
+'}
+' RL_dataframe_manager.py
+package "RL_dataframe_manager"{
+  class Dataframe_Manager {
+    +df_traindata: Dataframe
+    -price_predict: Dataframe
+    -pv_predict: Dataframe
+    +df_testdata: Dataframe
+    -col: list
+    -dfmanager: Dataframe_Manager()
+    +dataframe: Dataframe
+    -df_result
+    --
+    +get_train_df(): Dataframe
+    +get_test_df(): Dataframe
+    +get_resultform_df(): Dataframe
+    -write_testresult_csv(data: Dataframe): void
+  }
+}
+' parameters.py
+package "parameters"{
+  class Parameters {
+    +ALPHA: float
+    +SOFTEN_: int
+    +N_LAMBDA: int
+    +BETA: float
+    +EPOCHS : int
+    +LR: float
+    +SEED: int
+    +DAYS: int
+    +N_VERIFICATION: int
+    +LOWER_ALPHA: float
+    +UPPER_ALPHA: float
+    +LR: float
+    +M_TR: int
+    +M_LE: int
+    +N_E: int
+    +SEED_QR: int
+    +NUMBER_OF_FEATURES: int
+    +BATTERY_CAPACITY: int
+    +INITIAL_SOC: float
+    }
+}
+' PPO
+'package "stable_baseline3" {
+  'class PPO {
+  '}
+'}
+' RL_test.py
+package "RL_test" {
+  class TestModel {
+    -env: ESS_ModelEnv
+    -dfmanager: Dataframe_Manager
+    -df_test: DataFrame
+    -soc_list: List
+    -action_list: List
+    -obs_list: List
+    -model: PPO
+    -df_testresult: DataFrame
+    --
+    +__init__()
+    +dispatch_test(model_name: str): DataFrame
+  }
+}
+' RL_train.py
+package "RL_train" {
+  class TrainModel {
+    -path: str
+    -env: ESS_ModelEnv 
+    --
+    +__init__()
+    +dispatch_train()
   }
 }
 ' RL_env.py
@@ -52,124 +164,11 @@ package "RL_env" {
     -_get_reward(action: list, SoC: float): float
   }
 }
-package gym {
-  class Env
-}
-' RL_dataframe_manager.py
-package "RL_dataframe_manager"{
-  class Dataframe_Manager {
-    +df_traindata: Dataframe
-    -price_predict: Dataframe
-    -pv_predict: Dataframe
-    +df_testdata: Dataframe
-    -col: list
-    -dfmanager: Dataframe_Manager()
-    +dataframe: Dataframe
-    -df_result
-    --
-    +get_train_df(): Dataframe
-    +get_test_df(): Dataframe
-    +get_resultform_df(): Dataframe
-    -write_testresult_csv(data: Dataframe): void
-  }
-}
-' RL_operate.py
-package "RL_operate"{
-  class Battery_operate {
-      -BATTERY_CAPACITY: int
-      -INITIAL_SOC: float
-      -df_result: DataFrame
-      -delta_PV: Series
-      --
-      +__init__()
-      +operate_bid()
-  }
-}
-' parameters.py
-package "parameters"{
-  class Parameters {
-    +ALPHA: float
-    +SOFTEN_: int
-    +N_LAMBDA: int
-    +BETA: float
-    +EPOCHS : int
-    +LR: float
-    +SEED: int
-    +DAYS: int
-    +N_VERIFICATION: int
-    +LOWER_ALPHA: float
-    +UPPER_ALPHA: float
-    +LR: float
-    +M_TR: int
-    +M_LE: int
-    +N_E: int
-    +SEED_QR: int
-    +NUMBER_OF_FEATURES: int
-    +BATTERY_CAPACITY: int
-    +INITIAL_SOC: float
-    }
-}
-' RL_main.py
-package "RL_main"{
-  class None {
-    -trainModel: Dataframe
-    -testModel: Dataframe
-    -dfmanager: Dataframe
-    -RL_dataframe_manager: Dataframe
-  }
-}
-' RL_train.py
-package "RL_train" {
-  class TrainModel {
-    -path: str
-    -env: ESS_ModelEnv 
-    --
-    +__init__()
-    +dispatch_train()
-  }
-}
-' PPO
-package "stable_baseline3" {
-  class PPO {
-  }
-}
-' RL_test.py
-package "RL_test" {
-  class TestModel {
-    -env: ESS_ModelEnv
-    -dfmanager: Dataframe_Manager
-    -df_test: DataFrame
-    -soc_list: List
-    -action_list: List
-    -obs_list: List
-    -model: PPO
-    -df_testresult: DataFrame
-    --
-    +__init__()
-    +dispatch_test(model_name: str): DataFrame
-  }
-}
 'result_inputdata_reference.py
 package "result_inputdata_reference"{
   class None {
     -df: Dataframe(result_dataframe.csv)
     --
-  }
-}
-'result_evaluation.py
-package "result_evaluation"{
-  class None {
-    -dataframe: Dataframe(result_dataframe.csv)
-    -data: Dataframe(input_data2022.csv)
-    --
-  }
-}
-'weather_data_realtime.py
-package "weather_data_realtime"{
-  class None {
-    --
-    +main()
-    +data_acquisition()
   }
 }
 'pv_predict.py
@@ -183,9 +182,24 @@ package "pv_predict"{
     +get_LUBE()
   }
 }
+'weather_data_realtime.py
+package "weather_data_realtime"{
+  class None {
+    --
+    +main()
+    +data_acquisition()
+  }
+}
+
 'price_predict.py
 package "price_predict"{
   class None {
+    --
+  }
+}
+'price_predict.csv
+package "price_predictCSV" #lightgreen{
+  class CSV {
     --
   }
 }
@@ -196,15 +210,6 @@ package "PV_actual"{
     +calculate_solar_power(input_file?: csv)
   }
 }
-
-'price_predict.py
-package "price_predict"{
-  class None {
-    --
-    +None
-  }
-}
-
 'result_graph.py
 package "result_graph"{
   class None {
@@ -212,7 +217,6 @@ package "result_graph"{
     +None
   }
 }
-
 'RL_database_utils.py
 package "RL_database_utils"{
   class BatteryControlDatabase {
@@ -221,7 +225,6 @@ package "RL_database_utils"{
     +updata_data()
   }
 }
-
 'weather_data_bid_independent.py
 package "weather_data_bid_independent"{
   class None {
@@ -229,9 +232,8 @@ package "weather_data_bid_independent"{
     +data_acquisition()
   }
 }
-
 'weather_data.csv
-package "weather_dataCSV"{
+package "weather_dataCSV" #lightgreen{
   class CSV {
     --
   }
@@ -244,14 +246,6 @@ package "weather_data_bid_multi_period"{
     +cycle_oneday()
   }
 }
-
-'weather_data_bid.csv
-package "weather_data_bidCSV"{
-  class CSV {
-    --
-  }
-}
-
 'weather_data_bid.py
 package "weather_data_bid"{
   class None {
@@ -260,7 +254,12 @@ package "weather_data_bid"{
     +data_acquisition()
   }
 }
-
+'weather_data_bid.csv
+package "weather_data_bidCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
 'weather_data_realtime_independent.py
 package "weather_data_realtime_independent"{
   class None {
@@ -268,44 +267,131 @@ package "weather_data_realtime_independent"{
     +data_acquisition()
   }
 }
-
 'weather_data_realtime.csv
-package "weather_data_realtimeCSV"{
+package "weather_data_realtimeCSV" #lightgreen{
   class CSV {
     --
   }
 }
-'main関連
-main ..> RL_visualize :<<import>>
-main ..> RL_operate : <<import>>
-main ..> RL_main : <<use>>
-main ..> result_inputdata_reference : <<use>>
-main ..> result_evaluation : <<use>>
-main ..> weather_data_realtime : <<use>>
-main ..> pv_predict : <<use>>
-main ..> price_predict : <<use>>
-RL_visualize ...> ESS_ModelEnv : <<import>>
-RL_env ...|> gym.Env : <<import>>
-RL_env ...> Dataframe_Manager : <<import>>
-RL_operate ...> Parameters : <<import>>
-RL_main ...> RL_train : <<import>>
-RL_main ...> RL_test : <<import>>
-RL_main ...> RL_dataframe_manager : <<import>>
-RL_train ...> ESS_ModelEnv : <<import>>
-RL_train ...> PPO : <<import>>
-RL_test ...> ESS_ModelEnv : <<import>>
-RL_test ...> Dataframe_Manager : <<import>>
+'featureGainResult.csv
+package "featureGainResultCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'pv_predict.csv
+package "pv_predictCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'pv_predict_all_0.csv
+package "pv_predict_all_0CSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'result_dataframe.csv
+package "result_dataframeCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'current_data.csv
+package "current_dataCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'input_data2022_all_0.csv
+package "input_data2022_all_0CSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'input_data2022.csv
+package "input_data2022CSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'price_predict_all_0.csv
+package "price_predict_all_0CSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'train_and_test_data.csv
+package "train_and_test_dataCSV" #lightgreen{
+  class CSV {
+    --
+  }
+}
+'result_graph.pdf
+package "result_graphPDF" #IndianRed{
+  class PDF {
+    --
+  }
+}
+main -[#blue]> descr_price #blue;text:blue : <<create>>
+main --> RL_visualizePy : <<import>>
+main --> RL_operate : <<import>>
+main --> RL_main : <<use>>
+main --> result_inputdata_reference : <<use>>
+main --> result_evaluation : <<use>>
+main --> weather_data_realtime : <<use>>
+main --> pv_predict : <<use>>
+main --> price_predict : <<use>>
+RL_visualize ---> ESS_ModelEnv : <<import>>
+'RL_env --> Env : <<import>>
+RL_env --> Dataframe_Manager : <<import>>
+RL_operate ---> parameters : <<import>>
+RL_main --> RL_train : <<import>>
+RL_main --> RL_test : <<import>>
+RL_main --> RL_dataframe_manager : <<import>>
+RL_train --> ESS_ModelEnv : <<import>>
+'RL_train --> PPO : <<import>>
+RL_test --> ESS_ModelEnv : <<import>>
+RL_test --> Dataframe_Manager : <<import>>
+weather_data_bid --> BatteryControlDatabase : <<import>>
 
-'その他
-weather_data_bid_independent ..> weather_data_bidCSV : <<create>>
-weather_data_bid_independent ..> weather_dataCSV : <<create>>
-weather_data_bid_multi_period ..> weather_data_bidCSV : <<create>>
-weather_data_bid ..> weather_data_bidCSV : <<create>>
-weather_data_bid ..> weather_dataCSV : <<create>>
-weather_data_bid ..> BatteryControlDatabase : <<import>>
-weather_data_realtime_independent ..> weather_data_realtimeCSV : <<create>>
-weather_data_realtime_independent ..> weather_dataCSV : <<create>>
-weather_data_realtime ..> weather_data_realtimeCSV : <<create>>
-weather_data_realtime ..> weather_dataCSV : <<create>>
+
+weather_data_bid_independent -[#blue]-> weather_data_bidCSV #blue;text:blue : <<create>>
+weather_data_bid_independent -[#blue]--> weather_dataCSV #blue;text:blue : <<create>>
+weather_data_bid_multi_period -[#blue]-> weather_data_bidCSV #blue;text:blue : <<create>>
+weather_data_bid -[#blue]-> weather_data_bidCSV #blue;text:blue : <<create>>
+weather_data_bid -[#blue]--> weather_dataCSV #blue;text:blue : <<create>>
+weather_data_realtime_independent -[#blue]-> weather_data_realtimeCSV #blue;text:blue : <<create>>
+weather_data_realtime_independent -[#blue]--> weather_dataCSV #blue;text:blue : <<create>>
+weather_data_realtime -[#blue]-> weather_data_realtimeCSV #blue;text:blue : <<create>>
+weather_data_realtime -[#blue]--> weather_dataCSV #blue;text:blue : <<create>>
+price_predict -[#blue]-> price_predictCSV #blue;text:blue : <<create>>
+pv_predict -[#blue]-> featureGainResultCSV #blue;text:blue : <<create>>
+pv_predict -[#blue]-> pv_predictCSV #blue;text:blue : <<create>>
+result_evaluation -[#blue]----> result_dataframeCSV #blue;text:blue : <<create>>
+result_inputdata_reference -[#blue]-> result_dataframeCSV #blue;text:blue : <<create>>
+RL_dataframe_manager -[#blue]-> result_dataframeCSV #blue;text:blue : <<create>>
+RL_operate -[#blue]----> result_dataframeCSV #blue;text:blue : <<create>>
+RL_visualize -[#blue]----> result_dataframeCSV #blue;text:blue : <<create label name>>
+
+
+price_predict -[#green]--> input_data2022CSV #green;text:green : <<read>>
+price_predict -[#green]-> pv_predictCSV #green;text:green : <<read>>
+pv_predict -[#green]--> input_data2022CSV #green;text:green : <<read>>
+pv_predict -[#green]--> weather_dataCSV #green;text:green : <<read>>
+pv_predict -[#green]-> price_predictCSV #green;text:green : <<read>>
+pv_predict -[#green]-> result_dataframeCSV #green;text:green : <<read>>
+result_evaluation -[#green]-> result_dataframeCSV #green;text:green : <<read>>
+result_graph -[#green]-> result_dataframeCSV #green;text:green : <<read>>
+result_inputdata_reference -[#green]-> result_dataframeCSV #green;text:green : <<read>>
+result_inputdata_reference -[#green]--> input_data2022CSV #green;text:green : <<read>>
+RL_dataframe_manager -[#green]-> input_data2022_all_0CSV #green;text:green : <<read>>
+RL_dataframe_manager -[#green]-> current_dataCSV #green;text:green : <<read>>
+RL_dataframe_manager -[#green]-> price_predict_all_0CSV #green;text:green : <<read>>
+RL_dataframe_manager -[#green]-> pv_predict_all_0CSV #green;text:green : <<read>>
+RL_operate -[#green]-> result_dataframeCSV #green;text:green : <<read>>
+
+
+result_graph -[#blue]-> result_graphPDF #blue;text:blue : <<create>>
 @enduml
 
