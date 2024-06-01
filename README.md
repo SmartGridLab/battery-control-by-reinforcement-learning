@@ -28,10 +28,18 @@ Project Organization / プロジェクトの構成
     ├── .gihub             <- gothub関連ファイル
     │      └── workflows   <- pullreqされると走るもの
     │
+    ├── .vscode            <- VScodeでの実行環境設定ファイル 
+    │
     ├── Battery-Control-By-Reinforcement-Learning   <- Source code for use in this project.
     │       ├── __init__.py    <- Makes source codes a Python module
     │       │── main.py
     │       └── paramaters.py   <- 機械学習の調整パラメータを記述
+    │
+    ├── PPO_tensorboard <- PPOの学習統計ログ。tensorboardで可視化されている。
+    │
+    ├── RL_trainedModels <- PPOの学習済みモデルのデータ。 
+    │
+    ├── out/class_diagram <- 生成されたクラス図
     │
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
