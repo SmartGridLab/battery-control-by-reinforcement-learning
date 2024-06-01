@@ -44,35 +44,37 @@ Project Organization / プロジェクトの構成
 
 ### Information for the code / コードの図解
 
-クラス図
-クラス図第4版として作成しました。
+**クラス図：第4版**  
+クラス図でわかること：pyファイル一つに1クラスが対応。クラス間の依存関係がわかる。
+![Class_Diagram](https://github.com/SmartGridLab/battery-control-by-reinforcement-learning/assets/43132698/a31ae2c7-c4e2-4a38-b5e8-99effb74261f)
 
-Battery-Control-By-Reinforcement-Learning/Class_Diagram.pumlに記述しています
-Battery-Control-By-Reinforcement-Learning/out/class_diagram/Class_Diagram.pngで見れるようになっています
-.pyファイルを全て列挙
-.csvファイルを全て列挙
-ファイル関係をラベルと色で記述
-　- import(ラベル：import)、subprocess(ラベル：use)→黒色
-　- read_csv(ラベル：read)→緑色
-　- to_csv(ラベル：create)→青色
-pyファイルは白黒、csvファイルは緑、pdfファイルは赤です
+- Battery-Control-By-Reinforcement-Learning/Class_Diagram.pumlに記述しています
+- Battery-Control-By-Reinforcement-Learning/out/class_diagram/Class_Diagram.pngで見れるようになっています
+- 機能：
+　.pyファイルを全て列挙
+　.csvファイルを全て列挙
+　ファイル関係をラベルと色で記述
+　　- import(ラベル：import)、subprocess(ラベル：use)→黒色
+　　- read_csv(ラベル：read)→緑色
+　　- to_csv(ラベル：create)→青色
+　　- pyファイルは白黒、csvファイルは緑、pdfファイルは赤
+
 今後はファイルを追加したらその都度変更できるようにしたいですが、毎回
-
-javaのインストール
-graphvizのインストール
-PlantUMLのインストール
+ javaのインストール
+ graphvizのインストール
+ PlantUMLのインストール
 が必要となります
 
-プログラム構成
+**プログラム構成**  
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/d9158e4d-da82-469f-afc9-2c56ad89a311)
 
-ファイル名対応表
+**ファイル名対応表**  
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/973445c6-0a90-44ee-b8ce-6ee51c32daae)
 
-スポット市場締切までの時系列
+**スポット市場締切までの時系列**  
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/9c10e329-46ea-4e74-b875-e27ef819efff)
 
-リアルタイム制御時の時間帯ごとに使用するGPVファイル対応表
+**リアルタイム制御時の時間帯ごとに使用するGPVファイル対応表**  
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/19ef0bce-2628-477c-8490-72c2d2f1248d)
 
 
