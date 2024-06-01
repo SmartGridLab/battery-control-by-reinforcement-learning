@@ -19,6 +19,7 @@ https://cookiecutter.readthedocs.io/en/latest/index.html
 
 Project Organization / プロジェクトの構成  
 ------------  
+
     ├── .devcontainer      <- docker関連ファイル
     │       ├── Dockerfile
     │       └── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
@@ -43,6 +44,7 @@ Project Organization / プロジェクトの構成
     
 
 ### Information for the code / コードの図解
+------------  
 
 **クラス図：第4版**  
 クラス図でわかること：pyファイル一つに1クラスが対応。クラス間の依存関係がわかる。
