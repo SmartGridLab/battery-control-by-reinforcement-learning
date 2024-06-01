@@ -51,19 +51,18 @@ Project Organization / プロジェクトの構成
 - Battery-Control-By-Reinforcement-Learning/Class_Diagram.pumlに記述しています
 - Battery-Control-By-Reinforcement-Learning/out/class_diagram/Class_Diagram.pngで見れるようになっています
 - 機能：
-　.pyファイルを全て列挙
-　.csvファイルを全て列挙
-　ファイル関係をラベルと色で記述
-　　- import(ラベル：import)、subprocess(ラベル：use)→黒色
-　　- read_csv(ラベル：read)→緑色
-　　- to_csv(ラベル：create)→青色
-　　- pyファイルは白黒、csvファイルは緑、pdfファイルは赤
+　.pyファイルを全て列挙  
+　.csvファイルを全て列挙  
+　ファイル関係をラベルと色で記述  
+　　- import(ラベル：import)、subprocess(ラベル：use)→黒色  
+　　- read_csv(ラベル：read)→緑色  
+　　- to_csv(ラベル：create)→青色  
+　　- pyファイルは白黒、csvファイルは緑、pdfファイルは赤  
 
-今後はファイルを追加したらその都度変更できるようにしたいですが、毎回
- javaのインストール
- graphvizのインストール
- PlantUMLのインストール
-が必要となります
+今後はファイルを追加したらその都度変更できるようにしたいですが、毎回以下の設定が必要      
+ javaのインストール  
+ graphvizのインストール  
+ PlantUMLのインストール  
 
 **プログラム構成**  
 ![image](https://github.com/Takuya510634/Battery-Control-by-Reinforcement-Learning-1/assets/105347514/d9158e4d-da82-469f-afc9-2c56ad89a311)
