@@ -43,6 +43,7 @@ class TestModel:
                 self.soc_list[-1] # SoC
             ]
             # actionを得るためには、学習済みのLSTMモデルへobservationを入れるだけ。rewardが必要無いので、step関数は使わない
+
             action, _ = self.model.predict(obs)    
             obs, reward, done, _ = self.env.step(float(action))    # このstepの戻り値のrewardは使えない（_get_reward内で参照しているデータが数値がtrainingのものになってしまっているはずなので）
             # obsをself.obs_listに追加

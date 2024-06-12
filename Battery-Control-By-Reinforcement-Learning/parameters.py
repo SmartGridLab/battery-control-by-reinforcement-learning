@@ -55,3 +55,5 @@ class Parameters():
     BATTERY_CAPACITY = 4 # [kWh]
     INITIAL_SOC = 0.5 # [0,1]で設定。[0,100]に対応
 
+    
+

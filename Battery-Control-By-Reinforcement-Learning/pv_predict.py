@@ -18,12 +18,13 @@ from keras.optimizers import Adam
 import keras
 import tensorflow as tf
 import properscoring as prscore
+# Locally developed modules
+from parameters import Parameters as p
 
 #スタート
 print("\n---PV出力予測プログラム開始---\n")
 
-# Locally developed modules
-import parameters as p
+
 
 # ignore warinings
 warnings.simplefilter('ignore')
@@ -53,7 +54,27 @@ def get_feature_gain():
     return feature_gain
 
 
-df_w = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data.csv")
+df_w_all = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data_AUG2022.csv")
+
+# current_data.csvの日付データを読み込む
+date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+
+date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
+latest_date = date_info['date'].max()
+
+year = latest_date.year
+month = latest_date.month
+day = latest_date.day
+
+# 該当する日付部分を抽出
+df_w = df_w_all[(df_w_all['year'] == year) &
+                (df_w_all['month'] == month) &
+                (df_w_all['day'] == day)]
+
+# Reset the index
+df_w = df_w.reset_index(drop=True)
+# 抽出結果を表示
+print(df_w)
 
 #時系列のsin, cosを追加
 yearSin = np.sin(df_w["year"]/8760*(ma.pi))
@@ -75,7 +96,7 @@ df_w = pd.concat([df_w, time_data], axis=1)
 
 
 # Split into training and test data
-def train_test(day,use_col):
+def train_test(days,use_col):
     # Load data from given csv file
     df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
     
@@ -148,8 +169,8 @@ feature_gain = get_feature_gain()
 # Prepare spaces to be stored the results
 result = pd.DataFrame(columns=["number_of_features","day","Loss","PICP","MPIW"])
 pred = pd.DataFrame(columns=["number_of_features","day","upper","lower"])
-pv_predict = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature",
-                                   "total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"])
+#pv_predict = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature",
+#                                   "total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"])
 
 
 
@@ -161,8 +182,8 @@ time_cos = np.cos(time*2*np.pi/24)
 
 # 
 for i in range(p.N_VERIFICATION):
-    for day in range(1,p.DAYS):
-        #print(day, i)
+    for days in range(1,p.DAYS):
+        print(days, i)
 
         # Prepare the space to store the predicted value
         pred_ = pd.DataFrame(columns=["number_of_features","day","upper","lower"])
@@ -170,7 +191,7 @@ for i in range(p.N_VERIFICATION):
         use_col = feature_gain.index[:p.NUMBER_OF_FEATURES]
         # Get traing and test data
 
-        X_train,X_test,y_train,y_test = train_test(day,use_col)
+        X_train,X_test,y_train,y_test = train_test(days,use_col)
         # coefficients n and λ
         n_= y_train.shape[0]
         lambda_ = p.N_LAMBDA*1/n_ 
@@ -181,12 +202,13 @@ for i in range(p.N_VERIFICATION):
         
         # organize forecast results
         pred_[["upper","lower"]] = y_pred
-        pred_[["number_of_features","day"]] = p.NUMBER_OF_FEATURES,day
+        pred_[["number_of_features","day"]] = p.NUMBER_OF_FEATURES,days
         pred_["verification"] = i
         pred = pd.concat([pred,pred_],axis=0)
     
         pv_predict_ = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","upper","lower","PVout","radiation flux","temperature",
                                             "total precipitation", "u-component of wind", "v-component of wind", "pressure", "relative humidity"])
+
         if i == (p.N_VERIFICATION-1):
             pv_predict_[["upper","lower"]] = y_pred
             pv_predict_[["year","month","day"]] = df_w[["year","month","day"]]
@@ -212,11 +234,11 @@ for i in range(p.N_VERIFICATION):
 
             #delete dummy data
             #pv_predict_.pop('dummy1')
-            pv_predict = pd.concat([pv_predict,pv_predict_],axis=0)
+            #pv_predict = pd.concat([pv_predict,pv_predict_],axis=0)
     
     print(str(i+1)+"/"+str(p.N_VERIFICATION)+"完了")
 
-pv_predict.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv')
+pv_predict_.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv', index=False)
 
 #終了
 print("\n---PV出力予測プログラム終了---\n")
