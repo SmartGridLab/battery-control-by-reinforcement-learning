@@ -1,4 +1,5 @@
 # インポート：外部モジュール
+from cgi import test
 import gym
 import warnings
 import numpy as np
@@ -53,6 +54,7 @@ class ESS_ModelEnv(gym.Env):
         # self.mode = train    # train or test
 
     #### time_stepごとのactionの決定とrewardの計算を行う
+    # - trainのときに使う。testのときはstep_for_testを使う
     def step(self, action):
 
         # time_stepを一つ進める
@@ -72,9 +74,9 @@ class ESS_ModelEnv(gym.Env):
         # soc_listの最後の要素(前timestepのSoC)にactionを足す
         # actionをnp.float32型からfloat型に変換してから足す。stable_baselines3のobservatuionの仕様のため。
         observation = [
-            self.df_train["PVout"][self.state_idx], # PV発電量
-            self.df_train["price"][self.state_idx], # 電力価格
-            self.df_train["imbalance"][self.state_idx], # インバランス価格
+            self.df_train["PVout"][self.state_idx], # PV発電量実績値
+            self.df_train["price"][self.state_idx], # 電力価格実績値
+            self.df_train["imbalance"][self.state_idx], # インバランス価格実績値
             self.soc_list[-1] + float(action), # SoC
         ]
 
@@ -90,16 +92,15 @@ class ESS_ModelEnv(gym.Env):
             recent_reward = sum(self.reward_list[-48:])
             self.episode_rewards.append(recent_reward)
             info = {'episode_reward': recent_reward}  # 情報にエピソードの合計報酬を追加
-
         else:
             done = False    
              # 付随情報をinfoに入れる
-            info = {}     
-    
-       
+            info = {}          
         
         return observation, reward, done, info
     
+    
+    ## def reset(self)
     ## 状態の初期化: trainingで1episode(1日)終わると呼ばれる
     # - PPOのlearn(RL_train.py内にある)を走らせるとまず呼ばれる。
     # - RL_env.pyのstepメソッドにおいて、done = Trueになると呼ばれる。doneを制御することで任意のタイミングでresetを呼ぶことができる。
@@ -121,16 +122,18 @@ class ESS_ModelEnv(gym.Env):
         ]
         return observation
 
-    # 現在の状態と行動に対するrewardを返す(1step分)
+    ## _get_reward(self, action, SoC, trainOrTest)
+    ## 現在の状態と行動に対するrewardを返す(1step分)
     # - rewardは1日(1 episode)ごとに合計される
+    # - rewardは学習(train)の場合でしか使わない（testでは使わない）
     # - action > 0 →放電  action < 0 →充電
     # - actionの単位は電力量[kWh or MWh]
     def _get_reward(self, action, SoC):
         ## df.trainからstate_idx(当該time_step)部分のデータを抽出
-        # Generation: PV発電量(trainingの際は実績値、testの際は予測値)
+        # Generation: PV発電量(実績値)
         pv_gen = self.df_train.loc[self.state_idx, "PVout"] # PV発電実績値
 
-        # 電力価格(trainingの際は実績値、testの際は予測値)
+        # 電力価格(trainingは実績値)
         price = self.df_train.loc[self.state_idx, "price"] # 電力価格実績値
 
         # Reward1: Energy Trasnfer（電力系統へ流す売電電力量）を計算する
@@ -160,6 +163,7 @@ class ESS_ModelEnv(gym.Env):
             reward += -math.exp(SoC-self.battery_max_cap)
 
         return reward
+
 
     ## 報酬を決定する前に、手動で実現可能なactionへ修正する場合はこのメソッドを使う（改変中）
     # def _get_possible_schedule(self, action):

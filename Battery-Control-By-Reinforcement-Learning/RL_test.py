@@ -40,15 +40,20 @@ class TestModel:
                 self.df_test["PV_predict_bid[kW]"][idx_state].astype(float),
                 self.df_test["energyprice_predict_bid[Yen/kWh]"][idx_state].astype(float),
                 self.df_test["imbalanceprice_predict_bid[Yen/kWh]"][idx_state].astype(float),
-                self.soc_list[-1] # SoC
+                self.soc_list[-1] # SoCの最新のもの[-1]を使う
             ]
             # actionを得るためには、学習済みのLSTMモデルへobservationを入れるだけ。rewardが必要無いので、step関数は使わない
 
+            # actionを得るためには、学習済みのLSTMモデルへtestデータのobservationを入れるだけ。rewardが必要無いので、step関数は使わない
             action, _ = self.model.predict(obs)    
-            obs, reward, done, _ = self.env.step(float(action))    # このstepの戻り値のrewardは使えない（_get_reward内で参照しているデータが数値がtrainingのものになってしまっているはずなので）
-            # obsをself.obs_listに追加
+            # actionによって得られる次のコマのobservationとrewardを計算する。
+            # step関数を使う。ただし、stepはtest用のデータを使うのでmethodが別で用意されている。
+            # SoCを更新してリストへ追加
+            self.soc_list.append(self.soc_list[-1] + action[0])
+            # obs,actionをそれぞれリストに追加
             self.obs_list.append(obs)
             self.action_list.append(action)
+            
         # 環境のクローズ
         self.env.close()
 
