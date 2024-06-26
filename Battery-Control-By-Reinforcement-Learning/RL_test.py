@@ -42,6 +42,8 @@ class TestModel:
                 self.df_test["imbalanceprice_predict_bid[Yen/kWh]"][idx_state].astype(float),
                 self.soc_list[-1] # SoCの最新のもの[-1]を使う
             ]
+            # actionを得るためには、学習済みのLSTMモデルへobservationを入れるだけ。rewardが必要無いので、step関数は使わない
+
             # actionを得るためには、学習済みのLSTMモデルへtestデータのobservationを入れるだけ。rewardが必要無いので、step関数は使わない
             action, _ = self.model.predict(obs)    
             # actionによって得られる次のコマのobservationとrewardを計算する。

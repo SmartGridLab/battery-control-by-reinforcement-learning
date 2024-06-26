@@ -8,7 +8,7 @@ import pandas as pd
 
 def perform_daily_operations(current_date, end_date):
     # 日付データを保持するためのリスト
-    current_data_records = []
+    current_date_records = []
     current_time = 0
     while current_date <= end_date:
         print("日付：" + current_date.strftime("%Y/%m/%d"))
@@ -24,8 +24,8 @@ def perform_daily_operations(current_date, end_date):
                 data_time = 0
                  # GPVデータの所得のために時刻を生成
                 yesterday_data_to_send = {'year': yesterday_date.year, 'month': yesterday_date.month, 'day': yesterday_date.day, 'hour': current_time}
-                current_data_to_send = {'year': current_date.year, 'month': current_date.month, 'day': current_date.day, 'hour': current_time}
-                print(current_data_to_send)
+                current_date_to_send = {'year': current_date.year, 'month': current_date.month, 'day': current_date.day, 'hour': current_time}
+                print(current_date_to_send)
 
 
                 ## realtime modeを一時的に実行しないようにする (Jan 1st, 2024)-----------------------------------------------------------------------
@@ -51,12 +51,12 @@ def perform_daily_operations(current_date, end_date):
             
 
 
-                current_data_records.append(current_data_to_send)
+                current_date_records.append(current_date_to_send)
                 # pandas DataFrame を作成
-                df = pd.DataFrame(current_data_records)
-                # current_data_to_send を CSV ファイルに保存
-                df.to_csv('Battery-Control-By-Reinforcement-Learning/current_data.csv', index=False)
-                print("Data saved to 'current_data.csv'")
+                df = pd.DataFrame(current_date_records)
+                # current_date_to_send を CSV ファイルに保存
+                df.to_csv('Battery-Control-By-Reinforcement-Learning/current_date.csv', index=False)
+                print("Data saved to 'current_date.csv'")
 
                  # 操作を実行
                 process_operations(mode)
@@ -73,8 +73,14 @@ def process_operations(mode):
     # - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
     # - 実績値ベースでの売電による収益の計算を行う
     if mode == "bid":
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
+        print("price_predict success")
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
+        print("pv_predict success'")
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
+        print("RL_main success'")
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
+        print("result_inputdata_reference success'")
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
@@ -110,7 +116,7 @@ def main():
     if simDuration == "MultipleDays":
         # 動作開始日と動作終了日の指定
         # JST
-        start_date = datetime.date(2022, 8, 8)
+        start_date = datetime.date(2022, 8, 1)
         end_date = datetime.date(2022, 8, 31)
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date)

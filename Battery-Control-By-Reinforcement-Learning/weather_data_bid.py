@@ -13,8 +13,6 @@ def main():
 
     print("---気象予報データ抽出プログラム開始---\n")
 
-    # コマンドライン引数からデータを取得
-    data_received = eval(sys.argv[1])
 
     # 指定された日時取得(東京)########################################################
     ########### 外部から呼び出されるとき
@@ -28,9 +26,9 @@ def main():
     ###### subprocess.run(['python', '***.py', str(data_to_send)])
     ################################
 
-    year = data_received['year']   #YYYY
-    month = data_received['month']    #M
-    day = data_received['day']    #D
+    year = 2022   #YYYY
+    month = 8   #M
+    day = 1    #D
 
     ########### ここで指定するとき
     #year = 2022   #YYYY
@@ -296,10 +294,19 @@ def main():
     # # ファイル出力###############################################################
     # #保管用(realtimeとデータを分けておく用)
     # df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv')
-    # #実行用(pv_predict.pyに用いる)
-    # df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
-    # print("--結果出力完了--")
-    # #print(df)
+    #実行用(pv_predict.pyに用いる)
+    #df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
+    # ファイルのパスを指定
+    file_path = 'Battery-Control-By-Reinforcement-Learning/weather_data_AUG2022.csv'
+
+    # 既存のデータを読み込む
+    existing_data = pd.read_csv(file_path)
+    # 新しいデータを既存のデータに追加
+    combined_data = pd.concat([existing_data, df], ignore_index=True)
+    # データフレームをCSVファイルとして保存
+    combined_data.to_csv(file_path, index=False)
+    print("--結果出力完了--")
+    print(df)
     print("\n\n---気象予報データ抽出プログラム終了---")
 
 

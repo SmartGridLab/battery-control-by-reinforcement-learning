@@ -17,10 +17,10 @@ class Dataframe_Manager():
 
     def get_test_df(self):
 
-        data_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_data.csv")
+        date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
         # date_infoは {'year': year, 'month': month, 'day': day} の形式
-        data_info['date'] = pd.to_datetime(data_info[['year', 'month', 'day']])
-        latest_date = data_info['date'].max()
+        date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
+        latest_date = date_info['date'].max()
 
         year = latest_date.year
         month = latest_date.month
@@ -31,7 +31,7 @@ class Dataframe_Manager():
         # 電力価格データからyear, month, day,hour,price, imbalanceを読み込む
         # price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
         #                             usecols=["year","month","day","hour","price","imbalance"])
-        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict_all_0.csv", 
+        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
                                     usecols=["year","month","day","hour","price","imbalance"])
         
         # 日付でフィルタリング
@@ -46,7 +46,7 @@ class Dataframe_Manager():
         # pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
         #                             usecols=["year","month","day","hour","PVout"])
         # PV予測結果データからyear, month, day,hour, PVoutを読み込む
-        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict_all_0.csv",
+        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
                                     usecols=["year","month","day","hour","PVout"])
         
 # 日付でフィルタリング
