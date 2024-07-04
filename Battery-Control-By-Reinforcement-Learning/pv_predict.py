@@ -54,7 +54,7 @@ def get_feature_gain():
     return feature_gain
 
 
-df_w_all = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data_AUG2022.csv")
+df_w_all = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv")
 
 # current_data.csvの日付データを読み込む
 date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
@@ -73,8 +73,7 @@ df_w = df_w_all[(df_w_all['year'] == year) &
 
 # Reset the index
 df_w = df_w.reset_index(drop=True)
-# 抽出結果を表示
-print(df_w)
+
 
 #時系列のsin, cosを追加
 yearSin = np.sin(df_w["year"]/8760*(ma.pi))

@@ -27,7 +27,6 @@ day = latest_date.day
 price_predict = input_data[(input_data['year'] == year) & 
                             (input_data['month'] == month) & 
                             (input_data['day'] == day) ]
-print("price_predict: ", price_predict)
 
 # 使用するパラメータ
 #parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',

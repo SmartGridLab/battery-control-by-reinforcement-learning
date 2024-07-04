@@ -17,6 +17,8 @@ class TestModel:
         self.dfmanager = Dfmanager() # データ読込みクラスのインスタンス化
         # testデータの読込み
         self.df_test = self.dfmanager.get_test_df()
+        print("self.df_test: ", self.df_test)
+
         # soc_list,action_listを初期化
         self.soc_list = [0.5] # SoCの初期値
         self.action_list = []
@@ -62,6 +64,34 @@ class TestModel:
         # - self.obs_listは、self.action_listより1つ多いので、最初の要素を削除する
         self.obs_list.pop(0)
         df_testresult = pd.DataFrame(self.obs_list, columns=["PV_predict_bid[kW]", "energyprice_predict_bid[Yen/kWh]", "imbalanceprice_predict_bid[Yen/kWh]", "SoC_bid[%]"])
-        df_testresult["charge/discharge_bid[kWh]"] = pd.DataFrame(self.action_list)        
+        df_testresult["charge/discharge_bid[kWh]"] = pd.DataFrame(self.action_list)    
+
+        date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+            # date_infoは {'year': year, 'month': month, 'day': day} の形式
+        date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
+        latest_date = date_info['date'].max()
+
+        year = latest_date.year
+        month = latest_date.month
+        day = latest_date.day
+
+        # RLの結果を書き込んだファイル(result_dataframe.csv)を読み込む
+        df_original_result = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        # 最新日付のデータをフィルタリング(indexを0から再配置)
+        df_result = df_original_result[(df_original_result['year'] == year) & 
+                                     (df_original_result['month'] == month) & 
+                                      (df_original_result['day'] == day)].reset_index(drop=True)
+        # df_resultの列を保持しつつ、行数をdf_testresultに一致させる
+        df_result = pd.DataFrame(index=range(len(df_testresult)), columns=df_original_result.columns)
+        
+        self.df_test.update(df_testresult)
+        df_result.update(self.df_test)
+        print(df_testresult)
+        print(self.df_test)
+        print("test結果: ", df_result)
+
+        # df_testをresult_dataframeに統合
+        # result_dataframe.csvを保存
+        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", mode='a', header=False, index=False)
         
         return df_testresult
