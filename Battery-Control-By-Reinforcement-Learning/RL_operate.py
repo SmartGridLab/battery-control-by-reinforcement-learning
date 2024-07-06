@@ -22,8 +22,25 @@ class Battery_operate():
         self.BATTERY_CAPACITY = param.BATTERY_CAPACITY
         self.INITIAL_SOC = param.INITIAL_SOC
 
+        date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+            # date_infoは {'year': year, 'month': month, 'day': day} の形式
+        date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
+        latest_date = date_info['date'].max()
+
+        year = latest_date.year
+        month = latest_date.month
+        day = latest_date.day
+
         # RLの結果を書き込んだファイル(result_dataframe.csv)を読み込む
-        self.df_result = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        self.df_original_result = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        # 最新日付のデータをフィルタリング(indexを0から再配置)
+        self.df_result = self.df_original_result[(self.df_original_result['year'] == year) & 
+                                     (self.df_original_result['month'] == month) & 
+                                      (self.df_original_result['day'] == day)].reset_index(drop=True)
+        # フィルタリングした部分のデータを元データから消す
+        self.df_original_result_erase = self.df_original_result[~((self.df_original_result['year'] == year) & 
+                             (self.df_original_result['month'] == month) & 
+                             (self.df_original_result['day'] == day))]
 
         # PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
         self.delta_PV = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_bid[kW]"]
@@ -120,5 +137,12 @@ class Battery_operate():
             # 'SoC_actual_bid'へsocを代入
             self.df_result.at[j, 'SoC_actual_bid[%]'] = soc
 
+        
+        # 元のデータフレームを更新
+        self.df_original_result_concat = pd.concat([self.df_original_result_erase, self.df_result], axis=0)
+        print(self.df_original_result_concat)
+        print(self.df_original_result_erase)
+        print(self.df_result)
+
         # self.df_resultをdf_result.csvへ上書き保存
-        self.df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
+        self.df_original_result_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)

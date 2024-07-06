@@ -26,9 +26,17 @@ def main():
     ###### subprocess.run(['python', '***.py', str(data_to_send)])
     ################################
 
-    year = 2022   #YYYY
-    month = 8   #M
-    day = 1    #D
+    #日付の取得
+    date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+        # date_infoは {'year': year, 'month': month, 'day': day} の形式
+    date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
+    latest_date = date_info['date'].max()
+    # 最新から一日前の日付を計算
+    previous_date = latest_date - pd.Timedelta(days=1)
+
+    year = previous_date.year
+    month = previous_date.month
+    day = previous_date.day
 
     ########### ここで指定するとき
     #year = 2022   #YYYY
@@ -297,16 +305,11 @@ def main():
     #実行用(pv_predict.pyに用いる)
     #df.to_csv('Battery-Control-By-Reinforcement-Learning/weather_data.csv')
     # ファイルのパスを指定
-    file_path = 'Battery-Control-By-Reinforcement-Learning/weather_data_AUG2022.csv'
+    file_path = 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.csv'
 
-    # 既存のデータを読み込む
-    existing_data = pd.read_csv(file_path)
-    # 新しいデータを既存のデータに追加
-    combined_data = pd.concat([existing_data, df], ignore_index=True)
     # データフレームをCSVファイルとして保存
-    combined_data.to_csv(file_path, index=False)
+    df.to_csv(file_path, index=False)
     print("--結果出力完了--")
-    print(df)
     print("\n\n---気象予報データ抽出プログラム終了---")
 
 

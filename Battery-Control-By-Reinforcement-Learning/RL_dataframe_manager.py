@@ -2,6 +2,7 @@
 
 from email import header
 import pandas as pd
+import os
 
 class Dataframe_Manager(): 
     ## 強化学習の学習に使うテーブル(df_train)を作成
@@ -139,15 +140,4 @@ class Dataframe_Manager():
 
         return dataframe
 
-    def write_testresult_csv(self, data):
-        # result_dataframe.csvを読み込む
-        # もしresult_dataframe.csvがなければ、get_resultform_df()で作成する
-
-        df_result = self.get_resultform_df()
-        
-        # dataの'SoC_bid'をdf_resultの'SoC_bid'に追加
-        df_result['SoC_bid[%]'] = data['SoC_bid[%]']
-        df_result['charge/discharge_bid[kWh]'] = data['charge/discharge_bid[kWh]']
-        # df_resultを上書きしない形でcsvに書き込む
-        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", mode = 'a', index=False, header=False)      
         
