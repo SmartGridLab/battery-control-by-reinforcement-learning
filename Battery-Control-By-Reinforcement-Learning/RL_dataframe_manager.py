@@ -50,7 +50,7 @@ class Dataframe_Manager():
         pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
                                     usecols=["year","month","day","hour","PVout"])
         
-# 日付でフィルタリング
+        # 日付でフィルタリング
         pv_predict = pv_predict[(pv_predict['year'] == year) & 
                                 (pv_predict['month'] == month) & 
                                 (pv_predict['day'] == day) ]

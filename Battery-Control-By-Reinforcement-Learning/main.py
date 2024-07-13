@@ -39,7 +39,6 @@ def perform_daily_operations(current_date, end_date):
     #     main()
     ## --------------------------------------------------------------------------------------------------------------------------------
 
-
         # 操作を実行
         process_operations(mode)
         current_date += datetime.timedelta(days=1)
