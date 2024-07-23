@@ -74,6 +74,9 @@ def process_operations(mode):
         #　充放電計画の性能評価を行う
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
         print("result_evaluration success'")
+        #収益を棒グラフで可視化して比較
+        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
+        print("RL_visualize_bargraph success'")
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
@@ -104,7 +107,7 @@ def main():
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.date(2022, 9, 1)
-        end_date = datetime.date(2022, 9, 31)
+        end_date = datetime.date(2022, 9, 3)
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date)
         print("\n---プログラム終了---\n")
