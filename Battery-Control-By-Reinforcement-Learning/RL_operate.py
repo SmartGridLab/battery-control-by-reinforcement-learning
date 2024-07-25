@@ -41,19 +41,18 @@ class Battery_operate():
         self.df_original_result_erase = self.df_original_result[~((self.df_original_result['year'] == year) & 
                              (self.df_original_result['month'] == month) & 
                              (self.df_original_result['day'] == day))]
-
-        # PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
-        self.delta_PV = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_bid[kW]"]
    
     def operate_bid(self):
+        # PVの予測値('PV_actual[kW]')と実測値('PV_predict_bid[kW]')の差を計算
+        delta_PV_bid = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_bid[kW]"]
         for j in range(len(self.df_result)):
             # PVが計画よりも多い場合
-            if self.delta_PV[j] >= 0:
+            if delta_PV_bid[j] >= 0:
                 # caseを記録
                 self.df_result.at[j, 'operation_case'] = 1 #Case1: 充電量増加(放電量抑制)・売電量変化なし
 
                 # 充電量増加(放電量抑制)・売電量変化なし
-                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] - abs(self.delta_PV[j]) #充電量は負の値なので、値を負の方向へ
+                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] - abs(delta_PV_bid[j]) #充電量は負の値なので、値を負の方向へ
                 self.df_result.at[j, 'energytransfer_actual_bid[kWh]'] = self.df_result.at[j, 'energytransfer_bid[kWh]']
             
                 ## SoCのチェック
@@ -87,14 +86,13 @@ class Battery_operate():
                     self.df_result.at[j, 'energytransfer_actual_bid[kWh]'] -= soc_over_enegy
                     self.df_result.at[j, 'mode'] = 5 # Case5:
                         
-
             # PVが計画よりも少ない場合
             else:
                 # caseを記録
                 self.df_result.at[j, 'mode'] = -1
 
                 # 充電量抑制(放電量増加)・売電量変化なし
-                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] + abs(self.delta_PV[j])    #充電量は負の値なので、値を正の方向へ
+                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] + abs(delta_PV_bid[j])    #充電量は負の値なので、値を正の方向へ
                 self.df_result.at[j, 'energytransfer_actual_bid[kWh]'] = self.df_result.at[j, 'energytransfer_bid[kWh]']
             
                 # SoCの計算
@@ -136,13 +134,112 @@ class Battery_operate():
 
             # 'SoC_actual_bid'へsocを代入
             self.df_result.at[j, 'SoC_actual_bid[%]'] = soc
+        return self.df_result
 
-        
+    def operate_realtime(self):
+        # PVの予測値('PV_actual[kW]')と実測値('PV_predict_realtime[kW]')の差を計算
+        delta_PV_realtime = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_realtime[kW]"]
+        for j in range(len(self.df_result)):
+            # PVが計画よりも多い場合
+            if delta_PV_realtime[j] >= 0:
+                # caseを記録
+                self.df_result.at[j, 'operation_case'] = 1 #Case1: 充電量増加(放電量抑制)・売電量変化なし
+
+                # 充電量増加(放電量抑制)・売電量変化なし
+                self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] = self.df_result.at[j, 'charge/discharge_realtime[kWh]'] - abs(delta_PV_realtime[j]) #充電量は負の値なので、値を負の方向へ
+                self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] = self.df_result.at[j, 'energytransfer_realtime[kWh]']
+            
+                ## SoCのチェック
+                # SoCの計算
+                if j == 0:
+                    previous_soc = self.INITIAL_SOC ### この実装で良いかは要検討
+                else:
+                    previous_soc = self.df_result.at[j-1, 'SoC_actual_realtime[%]']
+                # 出力[kW]を30分あたりの電力量[kWh]に変換、定格容量[kWh]で割って[%]変換
+                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]']*0.5)*100/self.BATTERY_CAPACITY
+
+                # SoCが100[%]に到達した場合
+                if soc > 100:
+                    self.df_result.at[j, 'mode'] = 3 # Case3: 
+                    # 充電できないPV発電量の計算
+                    soc_over_enegy = (soc-100)*0.01*self.BATTERY_CAPACITY / 0.5    #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+                    # 充電量はSoC100までの量
+                    self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] += soc_over_enegy #充電量は負の値のため、正方向が減少
+                    soc = 100
+                    # 差分は売電量を増加させる
+                    self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] += soc_over_enegy
+                
+                # SoCが0に到達
+                if soc < 0:
+                    # オーバーした出力
+                    soc_over_enegy = (0-soc)*0.01*self.BATTERY_CAPACITY / 0.5 #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+                    # 放電量はSoCが0[%]になるまでの量
+                    self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] -= soc_over_enegy
+                    soc = 0
+                    # 差分だけ売電量減少
+                    self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] -= soc_over_enegy
+                    self.df_result.at[j, 'mode'] = 5 # Case5:
+                        
+            # PVが計画よりも少ない場合
+            else:
+                # caseを記録
+                self.df_result.at[j, 'mode'] = -1
+
+                # 充電量抑制(放電量増加)・売電量変化なし
+                self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] = self.df_result.at[j, 'charge/discharge_realtime[kWh]'] + abs(delta_PV_realtime[j])    #充電量は負の値なので、値を正の方向へ
+                self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] = self.df_result.at[j, 'energytransfer_realtime[kWh]']
+            
+                # SoCの計算
+                if j == 0:
+                    previous_soc = self.INITIAL_SOC  # この実装で良いかは要検討
+                else:
+                    previous_soc = self.df_result.at[j-1, 'SoC_actual_realtime[%]']
+                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]']*0.5)*100/self.BATTERY_CAPACITY
+
+                # SoCが100に到達した場合
+                if soc > 100:
+                    # caseを記録
+                    self.df_result.at[j, 'mode'] = -3
+                    # オーバーした入力
+                    soc_over_enegy = (soc-100)*0.01*self.BATTERY_CAPACITY / 0.5    #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+                    # 充電量はSoC100までの量
+                    self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] += soc_over_enegy #充電量は負の値のため、正方向が減少
+                    soc = 100
+                    # 差分は売電量を増加させる
+                    self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] += soc_over_enegy
+
+                # if:SoCが0に到達
+                if soc < 0:
+                    # caseを記録
+                    self.df_result.at[j, 'mode'] = -5
+                    # オーバーした出力
+                    soc_over_enegy = (0-soc)*0.01*self.BATTERY_CAPACITY / 0.5 #オーバーしたSoC[%] -> 30分あたりの電力量[kWh] -> 出力[kW]
+                    # 放電量はSoC0までの量
+                    self.df_result.at[j, 'charge/discharge_actual_realtime[kWh]'] -= soc_over_enegy
+                    soc = 0
+                    # 差分だけ売電量減少
+                    self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] -= soc_over_enegy
+
+            # energytransfer_actual_bidの修正
+            if self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] < 0:
+                self.df_result.at[j, 'energytransfer_actual_realtime[kWh]'] = 0
+                ## デバッグ用。energytransfer_actual_bidが負の値になっていたらおかしいので-999を入れておく
+                self.df_result.at[j, 'mode'] = -999
+
+            # 'SoC_actual_bid'へsocを代入
+            self.df_result.at[j, 'SoC_actual_realtime[%]'] = soc
+        return self.df_result
+
+    def mode_dependent_operate(self, mode):
+        if mode == "bid":
+            df_result = self.operate_bid()
+        elif mode == "realtime":
+            df_result = self.operate_realtime()
+
         # 元のデータフレームを更新
-        self.df_original_result_concat = pd.concat([self.df_original_result_erase, self.df_result], axis=0)
-        print(self.df_original_result_concat)
+        df_original_result_concat = pd.concat([self.df_original_result_erase, df_result], axis=0)
+        print(df_original_result_concat)
         print(self.df_original_result_erase)
-        print(self.df_result)
-
+        print(df_result)
         # self.df_resultをdf_result.csvへ上書き保存
-        self.df_original_result_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
+        df_original_result_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
