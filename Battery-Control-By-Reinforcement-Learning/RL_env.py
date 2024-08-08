@@ -13,13 +13,16 @@ from RL_dataframe_manager import Dataframe_Manager
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, mode):
         # データ読込みクラスのインスタンス化
         self.dfmanager = Dataframe_Manager()
         # 学習用のデータ,testデータ、結果格納テーブルを取得
         self.df_train = self.dfmanager.get_train_df()
-        self.df_test = self.dfmanager.get_test_df()
-        self.df_resultform = self.dfmanager.get_resultform_df()
+        if mode == "bid":
+            self.df_test = self.dfmanager.get_test_df_bid()
+        elif mode == "realtime":
+            self.df_test = self.dfmanager.get_test_df_realtime()
+        # self.df_resultform = self.dfmanager.get_resultform_df()
 
         # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
@@ -212,5 +215,3 @@ class ESS_ModelEnv(gym.Env):
     #     # 充電の場合、PV発電量から充電量を差し引く
     #     if action_real < 0:
     #         self.PV_out_time = self.PV_out_time + action_real
-
-    
