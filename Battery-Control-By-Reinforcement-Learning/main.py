@@ -11,8 +11,8 @@ import pandas as pd
 
 def perform_daily_operations(current_date, end_date):
     while current_date <= end_date:
-        mode = "bid"
-        # mode = "realtime"
+        # mode = "bid"
+        mode = "realtime"
         print(mode)
         print("current_date: ", current_date)
         # current_date.csvに保存するための時刻データを作成
@@ -108,7 +108,7 @@ def main():
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.datetime(2022, 9, 1, 0, 30)
-        end_date = datetime.datetime(2022, 9, 3, 23, 30)
+        end_date = datetime.datetime(2022, 9, 2, 23, 30)
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date)
         print("\n---プログラム終了---\n")

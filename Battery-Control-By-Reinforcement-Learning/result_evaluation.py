@@ -3,20 +3,23 @@ import pandas as pd
 
 class ResultEvaluation:
     def __init__(self):
+        # 全てのデータを読み込み
+        self.df_original = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
         self.date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
         # date_infoは {'year': year, 'month': month, 'day': day} の形式
         self.date_info['date'] = pd.to_datetime(self.date_info[['year', 'month', 'day']])
         self.latest_date = self.date_info['date'].max()
-
+        # 現在日付を取得
         self.year = self.latest_date.year
         self.month = self.latest_date.month
         self.day = self.latest_date.day
-        # 全てのデータを読み込み
-        self.original_df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
         # 最新日付のデータをフィルタリング
-        self.df = self.original_df[(self.original_df['year'] == self.year) & 
-                        (self.original_df['month'] == self.month) & 
-                        (self.original_df['day'] == self.day)]
+        self.df = self.df_original[(self.df_original['year'] == self.year) & 
+                                   (self.df_original['month'] == self.month) & 
+                                   (self.df_original['day'] == self.day)]
+        # year, month, day, hourのをindexとして設定
+        self.df_original.set_index(['year', 'month', 'day', 'hour'], inplace = True)
+        self.df.set_index(['year', 'month', 'day', 'hour'], inplace = True)
 
     def evaluation_bid_result(self):
         # 'energy_transfer'列を計算
@@ -43,7 +46,7 @@ class ResultEvaluation:
 
         # "total_profit" 列を計算
         # totalprofit_realtime: realtimeの場合は、imbalancepenalty_realtimeが存在している可能性がある。要検討。
-        self.df["total_profit_realtime[Yen]"] = self.df["energyprofit_realtime[Yen]"] + self.df["imbalancepenalty_realtime[Yen]"]
+        self.df["totalprofit_realtime[Yen]"] = self.df["energyprofit_realtime[Yen]"] + self.df["imbalancepenalty_realtime[Yen]"]
         self.df["totalprofit_actual_realtime[Yen]"] = self.df["energyprofit_realtime[Yen]"] + self.df["imbalancepenalty_actual_realtime[Yen]"]
 
     def evaluation_result_save(self,mode):
@@ -53,15 +56,9 @@ class ResultEvaluation:
         elif mode == "realtime":
             self.evaluation_realtime_result()
 
-         # フィルタリングした部分のデータを元データから消す
-        original_df_erase = self.original_df[~((self.original_df['year'] == self.year) & 
-                                (self.original_df['month'] == self.month) & 
-                                (self.original_df['day'] == self.day))]
-        # 元のデータフレームに追加
-        original_df_concat = pd.concat([original_df_erase, self.df], axis=0)
-        print(self.df)
-        print(original_df_erase)
-        print(original_df_concat)
-        # 計算結果をCSVファイルに上書き保存
-        original_df_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
+        self.df_original.update(self.df)
+        # indexを振りなおす
+        self.df_original.reset_index(inplace = True)
+        self.df.reset_index(inplace = True)
+        self.df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", header = True, index=False)
         print("---実動作結果評価終了---")
