@@ -54,7 +54,7 @@ class Dataframe_Manager():
     def get_test_df_realtime(self):
         # 列名を変更する
         price_predict = self.price_predict.rename(columns={'price': 'energyprice_predict_realtime[Yen/kWh]', 'imbalance': 'imbalanceprice_predict_realtime[Yen/kWh]'})
-        pv_predict = self.pv_predict.rename(columns={'PVout': 'PV_predict_realtime[kW]'}) # PVout -> PV_predict_realtime[kW]
+        pv_predict = self.pv_predict.rename(columns={'PVout': 'PV_predict_realtime[kW]'})
         # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
         df_testdata = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
         # "SoC_realtime", "charge/discharge_realtime"を列名として追加。行数はdf_testdataの行数と同じで、全て-999を入れる
@@ -65,7 +65,7 @@ class Dataframe_Manager():
 
 
     ## 強化学習の結果を入れるテーブル(df_result)を作成
-    def get_resultform_df(self, mode):
+    def get_resultform_df(self):
         # 列名をリストとして定義
         # year: 2020, 2021
         # month: 
@@ -132,10 +132,11 @@ class Dataframe_Manager():
 
         # 空のDataframeを作成
         dataframe = pd.DataFrame(columns = col)
+        dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", header = True, index=False)
         # 空のDataframeにget_test_df()の結果を追加
-        if mode == "bid":
-            dataframe = dataframe.append(self.get_test_df_bid(), ignore_index=True)
-        elif mode == "realtime":
-            dataframe = dataframe.append(self.get_test_df_realtime(), ignore_index=True)
+        # if mode == "bid":
+        #     dataframe = dataframe.append(self.get_test_df_bid(), ignore_index=True)
+        # elif mode == "realtime":
+        #     dataframe = dataframe.append(self.get_test_df_realtime(), ignore_index=True)
 
-        return dataframe
+        # return dataframe

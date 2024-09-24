@@ -212,7 +212,7 @@ class PV_Predict:
 
                     #lower, upper中央値算出
                     pv_predict_["PVout"] = (pv_predict_["upper"] + pv_predict_["lower"]) / 2
-                    print(pv_predict_["PVout"])
+                    #print(pv_predict_["PVout"])
 
                     #delete dummy data
                     #pv_predict_.pop('dummy1')
