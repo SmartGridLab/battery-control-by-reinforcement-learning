@@ -9,10 +9,8 @@ from pv_predict import PV_Predict
 import RL_visualize
 import pandas as pd
 
-def perform_daily_operations(current_date, end_date):
+def perform_daily_operations(current_date, end_date, mode):
     while current_date <= end_date:
-        # mode = "bid"
-        mode = "realtime"
         print(mode)
         print("current_date: ", current_date)
         # current_date.csvに保存するための時刻データを作成
@@ -103,15 +101,31 @@ def main():
     # #電力価格を予測する
     # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
-    simDuration = "MultipleDays"
-    if simDuration == "MultipleDays":
+    simDuration = "MultipleDays_FullMode" # "MultipleDays_SingleMode" = 単一のモード、"MultipleDays_FullMode" = 2つのモード
+    if simDuration == "MultipleDays_SingleMode":
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.datetime(2022, 9, 1, 0, 30)
         end_date = datetime.datetime(2022, 9, 2, 23, 30)
         # 期間分の動作を実行
-        perform_daily_operations(start_date, end_date)
-        print("\n---プログラム終了---\n")
+        # modeを指定して実行
+        # mode = "bid"
+        mode = "realtime"
+        perform_daily_operations(start_date, end_date, mode)
+        print(f"\n---{mode} プログラム終了---\n")
+        print("\n---Single Mode プログラム終了---\n")
+
+    if simDuration == "MultipleDays_FullMode":
+        # 動作開始日と動作終了日の指定
+        # JST
+        start_date = datetime.datetime(2022, 9, 1, 0, 30)
+        end_date = datetime.datetime(2022, 9, 2, 23, 30)
+        # 期間分の動作を実行
+        perform_daily_operations(start_date, end_date, "bid")
+        print("\n---Bid プログラム終了---\n")
+        perform_daily_operations(start_date, end_date, "realtime")
+        print("\n---Realtime プログラム終了---\n")
+        print("\n---Full Mode プログラム終了---\n")
 
     # OneTimeStepモード
     if simDuration == "OneTimeStep":

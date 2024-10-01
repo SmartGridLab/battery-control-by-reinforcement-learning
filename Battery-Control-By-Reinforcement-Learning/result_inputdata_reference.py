@@ -16,7 +16,6 @@ def main():
     day = latest_date.day
     # 全てのデータを読み込み
     df_original = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
-    print(df_original.head())
     # 現在日付のデータをフィルタリング
     df = df_original[(df_original['year'] == year) & 
                      (df_original['month'] == month) & 
