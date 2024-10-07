@@ -101,8 +101,12 @@ def main():
     # #電力価格を予測する
     # subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
-    simDuration = "MultipleDays_FullMode" # "MultipleDays_SingleMode" = 単一のモード、"MultipleDays_FullMode" = 2つのモード
+    ##-------------------------------------------------------------------------------------------------------------------------##
+    simDuration = "MultipleDays_FullMode" # "MultipleDays_SingleMode" = 単一実行モード、"MultipleDays_FullMode" = 連続実行モード
+    ##-------------------------------------------------------------------------------------------------------------------------##
+
     if simDuration == "MultipleDays_SingleMode":
+        print("\n---Single Mode プログラム開始---\n")
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.datetime(2022, 9, 1, 0, 30)
@@ -116,6 +120,7 @@ def main():
         print("\n---Single Mode プログラム終了---\n")
 
     if simDuration == "MultipleDays_FullMode":
+        print("\n---Full Mode プログラム開始---\n")
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.datetime(2022, 9, 1, 0, 30)
