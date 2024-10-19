@@ -11,7 +11,7 @@ class Dataframe_Manager():
         # 読み込む行を列名で指定：year,month,day,hour, PVout, price, imbalance
         # df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
         #                               usecols=["year","month","day","hour","PVout","price","imbalance"])        
-        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022_all_0.csv",
+        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
                                       usecols=["year","month","day","hour","PVout","price","imbalance"])        
         
         return df_traindata

@@ -41,6 +41,8 @@ def main():
     # df["total_profit_realtime"] = df["energyprofit_realtime"] + df["imbalancepenalty_realtime"]
     # df["totalprofit_actual_realtime"] = df["energyprofit_realtime"] + df["imbalancepenalty_actual_realtime"]
 
+    # 新しい列の追加
+    df["totalprofit_base[Yen]"] = df["PV_actual[kW]"] * 0.5 * df["energyprice_actual[Yen/kWh]"]
 
     # フィルタリングした部分のデータを元データから消す
     original_df_erase = original_df[~((original_df['year'] == year) & 
@@ -50,9 +52,6 @@ def main():
     # 元のデータフレームに追加
     original_df_concat = pd.concat([original_df_erase, df], axis=0)
 
-    print(df)
-    print(original_df_erase)
-    print(original_df_concat)
     # 計算結果をCSVファイルに上書き保存
     original_df_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)
 

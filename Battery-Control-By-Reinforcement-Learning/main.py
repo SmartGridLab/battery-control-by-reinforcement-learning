@@ -1,4 +1,5 @@
 #メインプログラム
+from re import sub
 import subprocess
 import datetime
 from tracemalloc import start
@@ -39,10 +40,20 @@ def perform_daily_operations(current_date, end_date):
     #     main()
     ## --------------------------------------------------------------------------------------------------------------------------------
 
-
         # 操作を実行
         process_operations(mode)
-        current_date += datetime.timedelta(days=1)
+
+        # 次の日付を計算
+        next_date = current_date + datetime.timedelta(days=1)
+
+        # 「月の終わり」か、シミュレーションの「最終日」かどうかを判定
+        if next_date.month != current_date.month or next_date > end_date:
+            # 収益を棒グラフで可視化して比較
+            subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
+            print("RL_visualize_bargraph success'")
+
+        # 日付を次の日に進める
+        current_date = next_date
 
         
 
@@ -57,27 +68,31 @@ def process_operations(mode):
         #　気象データを取得
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
         print("weather_data_bid success")
+
         #　電力価格を予測
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
         print("price_predict success")
+
         #　PV出力を予測
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
         print("pv_predict success'")
+
         #　強化学習による充放電スケジュールを作成
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
         print("RL_main success'")
+
         #　充放電計画の性能評価のためのデータを集める
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
         print("result_inputdata_reference success'")
+
         battery_operate = Battery_operate() # RL_operateのインスタンス化
         battery_operate.operate_bid() # 充放電調整を実行
         print("RL_operate success'")
+
         #　充放電計画の性能評価を行う
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_evaluration.py'])
         print("result_evaluration success'")
-        #収益を棒グラフで可視化して比較
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
-        print("RL_visualize_bargraph success'")
+        
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
@@ -108,7 +123,7 @@ def main():
         # 動作開始日と動作終了日の指定
         # JST
         start_date = datetime.date(2022, 9, 1)
-        end_date = datetime.date(2022, 9, 3)
+        end_date = datetime.date(2022, 9, 30)
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date)
         print("\n---プログラム終了---\n")
@@ -157,4 +172,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    fig = RL_visualize.RL_visualize.descr_price()

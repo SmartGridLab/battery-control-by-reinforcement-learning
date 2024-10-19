@@ -43,7 +43,8 @@ class Battery_operate():
                              (self.df_original_result['day'] == day))]
 
         # PVの予測値('PV_actual')と実測値('PV_predict_bid')の差を計算
-        self.delta_PV = self.df_result["PV_actual[kW]"] - self.df_result["PV_predict_bid[kW]"]
+        # 30分ごとの電力量[kWh]に変換するために0.5を掛ける
+        self.delta_PV = self.df_result["PV_actual[kW]"]*0.5 - self.df_result["PV_predict_bid[kW]"]*0.5
    
     def operate_bid(self):
         for j in range(len(self.df_result)):
@@ -59,11 +60,12 @@ class Battery_operate():
                 ## SoCのチェック
                 # SoCの計算
                 if j == 0:
-                    previous_soc = self.INITIAL_SOC ### この実装で良いかは要検討
+                    # INITIAL_SOC = 0.5なので[%]に変換
+                    previous_soc = self.INITIAL_SOC *100  ### この実装で良いかは要検討
                 else:
                     previous_soc = self.df_result.at[j-1, 'SoC_actual_bid[%]']
-                # 出力[kW]を30分あたりの電力量[kWh]に変換、定格容量[kWh]で割って[%]変換
-                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]']*0.5)*100/self.BATTERY_CAPACITY
+                # 定格容量[kWh]で割って[%]変換（charge/discharge_actual_bidは元々[kWh]）
+                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'])*100/self.BATTERY_CAPACITY
 
                 # SoCが100[%]に到達した場合
                 if soc > 100:
@@ -94,15 +96,17 @@ class Battery_operate():
                 self.df_result.at[j, 'mode'] = -1
 
                 # 充電量抑制(放電量増加)・売電量変化なし
-                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] + abs(self.delta_PV[j])    #充電量は負の値なので、値を正の方向へ
+                # self.delta_PV[j]は負の値なので、引き算することで放電量を増加させる
+                self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'] = self.df_result.at[j, 'charge/discharge_bid[kWh]'] - abs(self.delta_PV[j])    #充電量は負の値なので、値を正の方向へ
                 self.df_result.at[j, 'energytransfer_actual_bid[kWh]'] = self.df_result.at[j, 'energytransfer_bid[kWh]']
             
                 # SoCの計算
                 if j == 0:
-                    previous_soc = self.INITIAL_SOC  # この実装で良いかは要検討
+                    # INITIAL_SOC = 0.5なので[%]に変換
+                    previous_soc = self.INITIAL_SOC *100  # この実装で良いかは要検討
                 else:
                     previous_soc = self.df_result.at[j-1, 'SoC_actual_bid[%]']
-                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]']*0.5)*100/self.BATTERY_CAPACITY
+                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'])*100/self.BATTERY_CAPACITY
 
                 # SoCが100に到達した場合
                 if soc > 100:
@@ -140,9 +144,6 @@ class Battery_operate():
         
         # 元のデータフレームを更新
         self.df_original_result_concat = pd.concat([self.df_original_result_erase, self.df_result], axis=0)
-        print(self.df_original_result_concat)
-        print(self.df_original_result_erase)
-        print(self.df_result)
 
         # self.df_resultをdf_result.csvへ上書き保存
         self.df_original_result_concat.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", index=False)

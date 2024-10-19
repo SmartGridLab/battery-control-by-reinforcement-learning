@@ -45,6 +45,8 @@ def main():
     latestModel_name = model_list[-1]
     # フォルダのpathを結合, lastModel_nameの.zipを削除して、.zipを除いたファイル名を取得 
     latestModel_name = path + "/" + latestModel_name.replace(".zip", "") 
+    # フォルダ名を表示
+    print(f"最新のモデル: {latestModel_name}")
     # testを実行 (SoCとcharge/dischargeが戻り値)
     testModel.dispatch_test(latestModel_name) 
 

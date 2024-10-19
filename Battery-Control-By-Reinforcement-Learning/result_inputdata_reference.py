@@ -24,7 +24,8 @@ def main():
     df = original_df[(original_df['year'] == year) & 
                      (original_df['month'] == month) & 
                      (original_df['day'] == day)]
-    
+    # デバッグ用：フィルタリング後の行数を出力
+    print(f"Filtered rows for date {year}-{month}-{day}: {len(df)}")
 
     
     # 現在日付のPV, price, imbalance実績値を取得
