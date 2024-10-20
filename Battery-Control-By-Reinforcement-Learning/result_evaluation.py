@@ -29,7 +29,7 @@ class ResultEvaluation:
         self.df["energytransfer_bid[kWh]"] = self.df["PV_predict_bid[kW]"] * 0.5 + self.df["charge/discharge_bid[kWh]"]
         self.df["energytransfer_actual_bid[kWh]"] = self.df["PV_actual[kW]"] * 0.5 + self.df["charge/discharge_actual_bid[kWh]"]
         # "energy_profit" 列を計算
-        self.df["energyprofit_bid[Yen]"] = self.df["energyprice_actual[Yen/kWh]"] * self.df["energytransfer_actual_bid[kWh]"]
+        self.df["energyprofit_bid[Yen]"] = self.df["energyprice_predict_bid[Yen/kWh]"] * self.df["energytransfer_bid[kWh]"]
         # imbalancepenalty_actual_bid = | bid(１日前)で計画した売電計画量 - bidで予測した売電計画量で実行したときの売電量 | * (-1)実際のインバランス料金
         self.df["imbalancepenalty_actual_bid[Yen]"] = abs(self.df["energytransfer_bid[kWh]"] - self.df["energytransfer_actual_bid[kWh]"]) * self.df["imbalanceprice_actual[Yen/kWh]"] * (-1)
         # "total_profit" 列を計算
@@ -45,7 +45,7 @@ class ResultEvaluation:
         self.df["energytransfer_realtime[kWh]"] = self.df["PV_predict_realtime[kW]"] * 0.5 + self.df["charge/discharge_realtime[kWh]"]
         self.df["energytransfer_actual_realtime[kWh]"] = self.df["PV_actual[kW]"] * 0.5 + self.df["charge/discharge_actual_realtime[kWh]"]
         # "energy_profit" 列を計算
-        self.df["energyprofit_realtime[Yen]"] = self.df["energyprice_actual[Yen/kWh]"] * self.df["energytransfer_actual_realtime[kWh]"]
+        self.df["energyprofit_realtime[Yen]"] = self.df["energyprice_predict_realtime[Yen/kWh]"] * self.df["energytransfer_realtime[kWh]"]
         # imbalancepenalty_actual_realtime = | bid(１日前)で計画した売電量 - realtimeで予測した売電計画量で実行したときの実際売電量 | * (-1)実際のインバランス料金
         self.df["imbalancepenalty_actual_realtime[Yen]"] = abs(self.df["energytransfer_bid[kWh]"] - self.df["energytransfer_actual_realtime[kWh]"]) * self.df["imbalanceprice_actual[Yen/kWh]"] * (-1)
         # imbalancepenalty_realtime = | bid(1日前)で計画した売電量 - realtime(30分前)で計画した売電量 |* (-1) realtimeで予測したインバランス料金

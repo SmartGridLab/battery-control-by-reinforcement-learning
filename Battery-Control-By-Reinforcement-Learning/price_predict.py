@@ -77,6 +77,11 @@ pred_df["hourCos"] = price_predict["hourCos"].values
 #pred_df["upper"] = price_predict["upper"].values
 #pred_df["lower"] = price_predict["lower"].values
 pred_df["PVout"] = price_predict["PVout"].values
+#----------------------test----------------------#
+pred_df["PVout"] = 0
+pred_df["price"] = 0
+pred_df["imbalance"] = 0
+#----------------------test----------------------#
 pred_df.to_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", index=False)
 
 # グラフの描画
