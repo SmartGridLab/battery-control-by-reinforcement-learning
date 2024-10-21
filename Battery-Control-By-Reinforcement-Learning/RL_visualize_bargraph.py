@@ -21,9 +21,11 @@ def main():
     plt.xlabel('Date')
     plt.ylabel('Total Profit (Yen)')
     plt.title('Total Daily Profit')
-    plt.legend(title='Profit Type')
+    plt.legend(loc = "lower left", title='Profit Type')
      # Save the plot as a PDF file
-    plt.savefig("Battery-Control-By-Reinforcement-Learning/total_daily_profit.pdf")
+    plt.savefig("Battery-Control-By-Reinforcement-Learning/total_daily_profit.png")
+    # Save the plot as a PNG file
+    plt.savefig("Battery-Control-By-Reinforcement-Learning/total_daily_profit.png")
     plt.show()
 
 if __name__ == "__main__":
