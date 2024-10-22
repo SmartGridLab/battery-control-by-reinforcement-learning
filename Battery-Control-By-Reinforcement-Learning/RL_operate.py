@@ -58,9 +58,9 @@ class Battery_operate():
                     # INITIAL_SOC = 0.5なので[%]に変換
                     previous_soc = self.INITIAL_SOC *100  ### この実装で良いかは要検討
                 else:
-                    previous_soc = self.df_result.at[j-1, 'SoC_actual_bid[%]']
+                    previous_soc = df_result.at[j-1, 'SoC_actual_bid[%]']
                 # 定格容量[kWh]で割って[%]変換（charge/discharge_actual_bidは元々[kWh]）
-                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'])*100/self.BATTERY_CAPACITY
+                soc = previous_soc - (df_result.at[j, 'charge/discharge_actual_bid[kWh]'])*100/self.BATTERY_CAPACITY
 
                 # SoCが100[%]に到達した場合
                 if soc > 100:
@@ -241,12 +241,23 @@ class Battery_operate():
             df_result, df_original = self.operate_bid()
         elif mode == "realtime":
             df_result, df_original = self.operate_realtime()
+            # df_resultを新しいcsvファイルに保存
+        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc1.csv", header = True, index = True)
+        # df_originalを新しいcsvファイルに保存
+        df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc2.csv", header = True, index = True)
         # year, month, day, hourをindexとして設定
         df_result.set_index(['year', 'month', 'day', 'hour'], inplace = True)
         df_original.set_index(['year', 'month', 'day', 'hour'], inplace = True)
+        # df_resultを新しいcsvファイルに保存(追記)
+        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc1.csv", header = True, index = True, mode = 'a')
+        # df_originalを新しいcsvファイルに保存
+        df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc2.csv", header = True, index = True, mode = 'a')
         # 該当日付を更新
         df_original.update(df_result)
         # indexを振り直す
         df_original.reset_index(inplace = True)
         # df_resultをdf_result.csvへ上書き保存
         df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", header = True, index=False)
+
+if __name__ == "__main__":
+    Battery_operate().mode_dependent_operate("bid")

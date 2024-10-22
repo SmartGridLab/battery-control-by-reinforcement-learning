@@ -39,7 +39,7 @@ class TrainModel:
     # モデルのトレーニング
     def dispatch_train(self):
         # 環境のインスタンス化
-        self.env = Env()
+        self.env = Env(mode="bid")
         N_STEPS = 48  # 1日のコマ数（=1エピソード内のステップ数）
         N_EPISODES = 30000  # 学習する日数（エピソード数）
         total_timesteps = N_STEPS * N_EPISODES  # エピソード数に基づいた総ステップ数

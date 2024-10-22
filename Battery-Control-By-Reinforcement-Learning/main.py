@@ -65,7 +65,7 @@ def process_operations(mode):
     #　それぞれのファイルでcurrent_date.csvの日付データに基づいてデータを取得
     #　気象データを取得
     if mode == "bid":
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
+       subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
         print("weather_data_bid success")
