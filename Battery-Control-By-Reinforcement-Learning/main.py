@@ -3,6 +3,7 @@ from re import sub
 import subprocess
 import datetime
 from tracemalloc import start
+from RL_dataframe_manager import Dataframe_Manager
 from RL_operate import Battery_operate
 from RL_main import ChargeDischargePlan
 from result_evaluation import ResultEvaluation
@@ -98,6 +99,8 @@ def process_operations(mode):
 # メインプログラム
 def main():
     print("\n---プログラム起動---\n")
+    # result_dataframe.csv1の初期化
+    Dataframe_Manager().initialize_resultform_df()
 
     # # #天気予報データ取得(GPVデータ取得)
     # if mode == "bid":
@@ -123,8 +126,8 @@ def main():
         end_date = datetime.datetime(2022, 9, 2, 23, 30)
         # 期間分の動作を実行
         # modeを指定して実行
-        # mode = "bid"
-        mode = "realtime"
+        mode = "bid"
+        # mode = "realtime"
         perform_daily_operations(start_date, end_date, mode)
         print(f"\n---{mode} プログラム終了---\n")
         print("\n---Single Mode プログラム終了---\n")
