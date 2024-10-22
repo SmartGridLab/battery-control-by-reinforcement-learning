@@ -1,10 +1,12 @@
 # インポート：外部モジュール
 from cgi import test
+from turtle import pos
 import gym
 import warnings
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from gym import spaces
 
 # internal modules
 from RL_dataframe_manager import Dataframe_Manager
@@ -24,6 +26,9 @@ class ESS_ModelEnv(gym.Env):
             self.df_test = self.dfmanager.get_test_df_realtime()
         # self.df_resultform = self.dfmanager.get_resultform_df()
 
+        # データフレームが正しく読み込まれているか確認
+        print(f"Training Data: {self.df_train.head()}")
+
         # Batteryのパラメーター
         self.battery_max_cap = 4 # 蓄電池の最大容量 ex.4kWh
         self.inverter_max_cap = 4 # インバーターの定格容量 ex.4kW
@@ -33,16 +38,31 @@ class ESS_ModelEnv(gym.Env):
         # action spaceの定義(上下限値を設定。actionは連続値。)
         # - 1time_step(ex.30 min)での充放電量(規格値[0,1])の上下限値を設定
         # - 本当はinverter_max_capとbattery_max_capを使って、上下限値を設定したい
-        self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # 状態(observation=SoC)の上限と下限の設定
         # observation_spaceの定義(上下限値を設定。observationは連続値。)
         # - 1time_step(ex.30 min)でのSoC(規格値[0,1])の上下限値を設定
         # - PVout, price, imbalance, SoCの4つの値を使っている
-        self.observation_space = gym.spaces.Box(
-            low=np.float32(np.array([-np.inf, -np.inf,-np.inf, 0])), 
-            high=np.float32(np.array([np.inf, np.inf,np.inf, 1])),
-            shape=(4,),
-            )
+        # 1日のステップ数（例：30分間隔で48ステップ）
+        self.day_steps = 48
+
+        # 観測空間の次元数を計算（既存の4つ + sin_time + cos_time）
+        obs_dim = 4 + 2  # PVout, price, imbalance, SoC, sin_time, cos_time
+
+        # 観測空間の下限と上限を設定
+        low = np.array([-np.inf] * obs_dim)
+        high = np.array([np.inf] * obs_dim)
+
+        # SoCの範囲を設定（0から1）
+        low[3] = 0.0
+        high[3] = 1.0
+
+        # sin_timeとcos_timeの範囲を設定（-1から1）
+        low[4:6] = -1.0
+        high[4:6] = 1.0
+
+        # 観測空間を定義
+        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
         # # Rewardの範囲(いらないかも)
         # self.reward_range = (-10000, math.inf) 
@@ -53,12 +73,35 @@ class ESS_ModelEnv(gym.Env):
         self.reward_list = [] # 各stepでのreward
         self.episode_rewards = []  # 各エピソードの報酬合計を保存するリスト
 
+           # 特徴量の正規化をここで行います
+        # 特徴量の最大値と最小値を取得
+        self.pvout_max = self.df_train['PVout'].max()
+        self.pvout_min = self.df_train['PVout'].min()
+        self.price_max = self.df_train['price'].max()
+        self.price_min = self.df_train['price'].min()
+        self.imbalance_max = self.df_train['imbalance'].max()
+        self.imbalance_min = self.df_train['imbalance'].min()
+
+        # データフレーム内で正規化
+        self.df_train['PVout'] = (self.df_train['PVout'] - self.pvout_min) / (self.pvout_max - self.pvout_min)
+        self.df_train['price'] = (self.df_train['price'] - self.price_min) / (self.price_max - self.price_min)
+        self.df_train['imbalance'] = (self.df_train['imbalance'] - self.imbalance_min) / (self.imbalance_max - self.imbalance_min)
+
         # # Mode選択
         # self.mode = train    # train or test
 
     #### time_stepごとのactionの決定とrewardの計算を行う
     # - trainのときに使う。testのときはstep_for_testを使う
     def step(self, action):
+        # 現在のステップ数を表示
+        #print(f"Current step (state_idx): {self.state_idx}")
+        
+        # actionの値を表示
+        #print(f"Step called with action: {action}")
+
+         #actionをリストに保存し、csv形式で保存
+        with open("Battery-Control-By-Reinforcement-Learning/RL_action.csv", "a") as f:
+            f.write(str(action[0]) + "\n")
 
         # time_stepを一つ進める
         self.state_idx += 1
@@ -70,21 +113,46 @@ class ESS_ModelEnv(gym.Env):
         # Rewardは、時系列的に後ろの方になるほど係数で小さくする必要がある。1 episode内で後ろのsteoのrewardを小さくする実装を考える
         # _get_rewardからの戻りrewardにgammaとstate_idxをかければ良さそう。あとで　実装する。
         # ------------------------------------------------------------------------------------------------------------------
-        reward = self._get_reward(action*self.inverter_max_cap, self.soc_list[-1]*self.battery_max_cap)  
+        # actionのスケーリング [kWh]（-1.0〜1.0 の範囲を -inverter_max_cap〜inverter_max_cap に変換）
+        action_value = action * self.inverter_max_cap * 0.5  # スケール調整
+
+        # 新しいSoCを計算
+        new_soc = self.soc_list[-1] - (action_value / self.battery_max_cap)  # SoCは0〜1の範囲
+        #new_soc = np.clip(new_soc, 0, 1) # SoCが0~1の範囲内に収まるようにするか、ペナルティを与えるか
+         # 各timestepでのSoCをobsをリストに追加
+        self.soc_list.append(new_soc)
+
+
+        reward = self._get_reward(action_value, self.soc_list[-1])              
         self.reward_list.append(reward)
+        #print(f"Reward list: {self.reward_list}")
         # 全episodeでのrewardを計算
         self.reward_total += self.reward_list[-1]
+
+            # 時間情報の計算
+        day_steps = 48
+        time_of_day = self.state_idx % day_steps
+        theta = 2 * np.pi * time_of_day / day_steps
+        sin_time = np.sin(theta)
+        cos_time = np.cos(theta)
+
+
+       
+
         # soc_listの最後の要素(前timestepのSoC)にactionを足す
         # actionをnp.float32型からfloat型に変換してから足す。stable_baselines3のobservatuionの仕様のため。
         observation = [
             self.df_train["PVout"][self.state_idx], # PV発電量実績値
             self.df_train["price"][self.state_idx], # 電力価格実績値
             self.df_train["imbalance"][self.state_idx], # インバランス価格実績値
-            self.soc_list[-1] + float(action), # SoC
+            new_soc, # 新しいSoC
+            sin_time,
+            cos_time
         ]
 
-        # 各timestepでのSoCをobsをリストに追加
-        self.soc_list.append(self.soc_list[-1] + float(action))
+        #print(f"Observation: {observation}")
+
+       
 
         # checking whether our episode (day) ends
         # - 1日(1 episode)が終わったら、done = Trueにする
@@ -114,14 +182,37 @@ class ESS_ModelEnv(gym.Env):
     # imablance: インバランス価格の実績値
     # SoC: 前日の最終SoC soc_listの最後の要素(前episodeの最終timestep)を新しいepisodeでの初期SoCとして使う
     def reset(self):
-        # df_train内のPVout, price, imbalanceの48コマ分のデータを取得
-        # - 取得する行数はstate_idx(当該time_step)から48コマ分
-        # - SoCは最新のものを読み込む（すでに１日立っていれば、前日の最終SoCを使うことになる）
+        # データセット内の総日数を計算
+        total_days = len(self.df_train) // self.day_steps - 1
+
+        # ランダムに日付を選択
+        random_day = np.random.randint(0, total_days)
+
+        # state_idxをランダムな日の開始インデックスに設定
+        self.state_idx = random_day * self.day_steps
+
+        # 報酬やその他の変数をリセット
+        self.reward_total = 0
+        self.reward_list = []
+
+        # オプションで、ランダムな初期SoCから始める
+        initial_soc = np.random.uniform(0, 1)
+        self.soc_list = [initial_soc]
+
+        # 時間情報の計算
+        time_of_day = self.state_idx % self.day_steps
+        theta = 2 * np.pi * time_of_day / self.day_steps
+        sin_time = np.sin(theta)
+        cos_time = np.cos(theta)
+
+        # 初期状態の観測値を取得
         observation = [
             self.df_train["PVout"][self.state_idx],
             self.df_train["price"][self.state_idx],
             self.df_train["imbalance"][self.state_idx],
-            self.soc_list[-1] # SoC
+            initial_soc,
+            sin_time,
+            cos_time
         ]
         return observation
 
@@ -133,37 +224,70 @@ class ESS_ModelEnv(gym.Env):
     # - actionの単位は電力量[kWh or MWh]
     def _get_reward(self, action, SoC):
         ## df.trainからstate_idx(当該time_step)部分のデータを抽出
-        # Generation: PV発電量(実績値)
-        pv_gen = self.df_train.loc[self.state_idx, "PVout"] # PV発電実績値
+        # Generation: PV発電量(正規化済み)
+        pv_gen_normalized= self.df_train.loc[self.state_idx, "PVout"]  # PV発電実績値（正規化済み）
+         # 元のスケールに戻す
+        pv_gen = pv_gen_normalized * (self.pvout_max - self.pvout_min) + self.pvout_min
 
-        # 電力価格(trainingは実績値)
-        price = self.df_train.loc[self.state_idx, "price"] # 電力価格実績値
+        # 電力価格（正規化済み）
+        price_normalized = self.df_train.loc[self.state_idx, "price"]  # 電力価格実績値（正規化済み）
+        price = price_normalized * (self.price_max - self.price_min) + self.price_min
+
+        # **インバランス価格を取得して非正規化**
+        imbalance_price_normalized = self.df_train.loc[self.state_idx, "imbalance"]
+        imbalance_price = imbalance_price_normalized * (self.imbalance_max - self.imbalance_min) + self.imbalance_min
 
         # Reward1: Energy Trasnfer（電力系統へ流す売電電力量）を計算する
         # bid_energyはaction + genと0の大きい方を採用する
         # PVの発電量が充電される場合はactionがマイナスになってpv_genを相殺するので、action + pv_genとする
         #  action + gen > 0 →action + gen
         #  action + gen < 0 →0
-        bid_energy = max(action + pv_gen, 0)
-        # rewardを計算
-        reward = bid_energy*price
+        #  action,pv_gen,bid_energyは[kWh]であることに注意
 
-        # Reward2: 制約条件
-        # バッテリー充電が発電出力より高いならペナルティ
-        # 越えた量に対してexpのペナルティを与える
-        if action < 0 and pv_gen < abs(action): 
-            reward += -math.exp(abs(action) - pv_gen)
-                
-        # Reward3: 制約条件
-        # バッテリー放電がSoCより多いならペナルティ
-        # 越えた量に対してexpのペナルティを与える
-        if SoC < action: 
-            reward += -math.exp(action-SoC)
+         # **予測誤差を考慮する**
+        # 予測誤差をシミュレーション（平均0、標準偏差sigmaの正規分布からサンプリング）
+        sigma = 0.1  # 予測誤差の標準偏差を適切に設定
+        forecast_error = np.random.normal(0, sigma)
 
-        # Reward4: 制約条件
-        # SoCが100％以上でペナルティ
-        if self.battery_max_cap < SoC: 
-            reward += -math.exp(SoC-self.battery_max_cap)
+        # PV発電量の予測値を計算
+        pv_gen_forecast = pv_gen + forecast_error
+
+        # 予定していたエネルギー供給量（入札量）を計算
+        scheduled_energy = max(action + pv_gen_forecast, 0)
+
+        # 実際のエネルギー供給量を計算
+        actual_energy_delivered = max(action + pv_gen, 0)
+
+        # インバランスエネルギーの計算（絶対値を取る）
+        imbalance_energy = abs(scheduled_energy - actual_energy_delivered)
+
+        # Reward1: Energy Transfer（電力系統へ流す売電電力量）を計算する
+        # 実際の売電電力量を使用
+        bid_energy = actual_energy_delivered
+        positive_reward = bid_energy * price
+
+        # **インバランスコストを計算**(インバランスエネルギー×インバランス価格)
+        imbalance_cost = imbalance_energy * imbalance_price
+
+       # 制約条件のペナルティを追加
+        penalty = 0
+        penalty_weight = 100  # ペナルティの重み
+        # Reward2: バッテリー充電がPV発電量を超える場合のペナルティ
+        if action < 0 and abs(action) > pv_gen:
+            penalty -= penalty_weight * (abs(action) - pv_gen)  # 超過量に比例したペナルティ
+        # Reward3: バッテリー放電がSoCを超える場合のペナルティ
+        if action > 0 and action > SoC:
+            penalty -= penalty_weight * (action - SoC)  # 超過量に比例したペナルティ  
+        # Reward4: SoCが0〜1の範囲外になる場合のペナルティ
+        if SoC < 0:
+            penalty -= penalty_weight * abs(SoC)  # SoCが0未満の場合のペナルティ
+        elif SoC > 1:
+            penalty -= penalty_weight * (SoC - 4)  # SoCが1を超えた場合のペナルティ
+
+        # **インバランスコストを考慮した最終報酬**
+        reward = positive_reward - imbalance_cost + penalty
+        
+        
 
         return reward
 

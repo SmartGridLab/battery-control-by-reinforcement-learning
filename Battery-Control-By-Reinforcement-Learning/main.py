@@ -1,4 +1,5 @@
 #メインプログラム
+from re import sub
 import subprocess
 import datetime
 from tracemalloc import start
@@ -42,7 +43,18 @@ def perform_daily_operations(current_date, end_date, mode):
 
         # 操作を実行
         process_operations(mode)
-        current_date += datetime.timedelta(days=1)
+
+        # 次の日付を計算
+        next_date = current_date + datetime.timedelta(days=1)
+
+        # 「月の終わり」か、シミュレーションの「最終日」かどうかを判定
+        if next_date.month != current_date.month or next_date > end_date:
+            # 収益を棒グラフで可視化して比較
+            subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
+            print("RL_visualize_bargraph success'")
+
+        # 日付を次の日に進める
+        current_date = next_date
 
 def process_operations(mode):
     # 種々のプログラム実行
@@ -75,9 +87,7 @@ def process_operations(mode):
     # 充放電計画の性能評価を行う
     ResultEvaluation().evaluation_result_save(mode)
     print("result_evaluation success'")
-    # 収益を棒グラフで可視化して比較
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
-    print("RL_visualize_bargraph success'")
+
 
     # 機器動作を策定する
     # - 強化学習で作られたcharge/discharge_realtime通りの充放電を実行しようとしてみる

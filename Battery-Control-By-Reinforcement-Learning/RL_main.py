@@ -30,15 +30,11 @@ class ChargeDischargePlan():
         # 学習済みモデル(zip)の全ファイル名をリストで取得
         model_list = os.listdir(self.path)
 
+
         if len(model_list) == 0: # /RL_trainedModelsにファイルがあるかどうかの確認
-            # 学習済みモデルがない場合は、TrainModelクラス内のdispatch_trainを実行する
-            print("-学習済みモデルがないため、強化学習モデルのTrainingを実行します-")
-            self.trainModel.dispatch_train() # trainを実行
-            # 学習済みモデル(zip)の全ファイル名をリストで取得
-            model_list = os.listdir(self.path)
-        else:
-            # 学習済みモデルがある場合は、Trainingをスキップして、Testを実行する
-            print("-学習済みモデルがあるため、強化学習モデルのTrainingをスキップします-") 
+                    # 学習済みモデルがない場合は、TrainModelクラス内のdispatch_trainを実行する
+                    print("-学習済みモデルがあるため、強化学習モデルのTrainingをスキップします-") 
+
 
         ### Test環境設定と実行&学習
         # model_listの中で最新のモデルを取得
@@ -48,3 +44,7 @@ class ChargeDischargePlan():
         latestModel_name = self.path + "/" + latestModel_name.replace(".zip", "")
         # testを実行 (SoCとcharge/dischargeがリストに格納される)
         self.testModel.mode_dependent_test(latestModel_name, mode)
+
+
+if __name__ == "__main__":
+    main()

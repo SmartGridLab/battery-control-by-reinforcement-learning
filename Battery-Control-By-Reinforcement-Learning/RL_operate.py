@@ -40,8 +40,8 @@ class Battery_operate():
         df_result = df_original[(df_original['year'] == year) & 
                                 (df_original['month'] == month) & 
                                 (df_original['day'] == day)].reset_index(drop = True)
-        # PVの予測値('PV_actual[kW]')と実測値('PV_predict_bid[kW]')の差を計算
-        delta_PV_bid = df_result["PV_actual[kW]"] - df_result["PV_predict_bid[kW]"]
+        # PVの予測値('PV_actual[kW]')と実測値('PV_predict_bid[kW]')の差を計算(0.5をかけて[kWh]に変換)
+        delta_PV_bid = df_result["PV_actual[kW]"]*0.5 - df_result["PV_predict_bid[kW]"]*0.5
         for j in range(len(df_result)):
             # PVが計画よりも多い場合
             if delta_PV_bid[j] >= 0:
@@ -55,11 +55,12 @@ class Battery_operate():
                 ## SoCのチェック
                 # SoCの計算
                 if j == 0:
-                    previous_soc = self.INITIAL_SOC ### この実装で良いかは要検討
+                    # INITIAL_SOC = 0.5なので[%]に変換
+                    previous_soc = self.INITIAL_SOC *100  ### この実装で良いかは要検討
                 else:
-                    previous_soc = df_result.at[j-1, 'SoC_actual_bid[%]']
-                # 出力[kW]を30分あたりの電力量[kWh]に変換、定格容量[kWh]で割って[%]変換
-                soc = previous_soc - (df_result.at[j, 'charge/discharge_actual_bid[kWh]']*0.5)*100/self.BATTERY_CAPACITY
+                    previous_soc = self.df_result.at[j-1, 'SoC_actual_bid[%]']
+                # 定格容量[kWh]で割って[%]変換（charge/discharge_actual_bidは元々[kWh]）
+                soc = previous_soc - (self.df_result.at[j, 'charge/discharge_actual_bid[kWh]'])*100/self.BATTERY_CAPACITY
 
                 # SoCが100[%]に到達した場合
                 if soc > 100:
@@ -195,7 +196,8 @@ class Battery_operate():
             
                 # SoCの計算
                 if j == 0:
-                    previous_soc = self.INITIAL_SOC  # この実装で良いかは要検討
+                    # INITIAL_SOC = 0.5なので[%]に変換
+                    previous_soc = self.INITIAL_SOC *100  # この実装で良いかは要検討
                 else:
                     previous_soc = df_result.at[j-1, 'SoC_actual_realtime[%]']
                 soc = previous_soc - (df_result.at[j, 'charge/discharge_actual_realtime[kWh]']*0.5)*100/self.BATTERY_CAPACITY
