@@ -38,7 +38,7 @@ class ResultEvaluation:
         self.df["totalprofit_actual_bid[Yen]"] = self.df["energyprofit_bid[Yen]"] + self.df["imbalancepenalty_actual_bid[Yen]"]
 
         # 新しい列の追加
-        self.df["totalprofit_base[Yen]"] = df["PV_actual[kW]"] * 0.5 * df["energyprice_actual[Yen/kWh]"]
+        self.df["totalprofit_base[Yen]"] = self.df["PV_actual[kW]"] * 0.5 * self.df["energyprice_actual[Yen/kWh]"]
         
     def evaluation_realtime_result(self):
         # _actual = 計画したものを実際に実行した場合の数値

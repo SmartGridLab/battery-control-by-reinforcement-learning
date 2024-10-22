@@ -49,6 +49,7 @@ class Dataframe_Manager():
         # -999は、欠損値を表す（NaNと同じ）
         df_testdata["SoC_bid[%]"] = [-999 for i in range(len(df_testdata))]
         df_testdata["charge/discharge_bid[kWh]"] = [-999 for i in range(len(df_testdata))]
+        print("df_testdata: ", df_testdata)
         return df_testdata
     
     def get_test_df_realtime(self):
@@ -65,7 +66,7 @@ class Dataframe_Manager():
 
 
     ## 強化学習の結果を入れるテーブル(df_result)を作成
-    def get_resultform_df(self):
+    def initialize_resultform_df(self):
         # 列名をリストとして定義
         # year: 2020, 2021
         # month: 
@@ -126,6 +127,7 @@ class Dataframe_Manager():
             'energyprofit_bid[Yen]', 'energyprofit_realtime[Yen]', 
             'imbalancepenalty_realtime[Yen]', 'imbalancepenalty_actual_bid[Yen]', 'imbalancepenalty_actual_realtime[Yen]', 
             'totalprofit_bid[Yen]', 'totalprofit_realtime[Yen]', 'totalprofit_actual_bid[Yen]', 'totalprofit_actual_realtime[Yen]',
+            ''
             # 動作モード：operateの条件分岐を見るためのもの。デバッグ用
             'mode_bid', 'mode_realtime'
         ]
