@@ -147,11 +147,20 @@ class TestModel():
         self.model = PPO.load(model_name)
         # testデータの読込み
         df_test = self.dfmanager.get_test_df_realtime()
+        # テストデータの各ステップについてループ
+        for idx_state in range(len(self.df_test)):
+            # 現在のタイムステップを取得
+            time_of_day = idx_state % self.env.day_steps
+            theta = 2 * math.pi * time_of_day / self.env.day_steps
+            sin_time = math.sin(theta)
+            cos_time = math.cos(theta)
         # observationの項目を定義
         col = ["PV_predict_realtime[kW]", 
                "energyprice_predict_realtime[Yen/kWh]", 
                "imbalanceprice_predict_realtime[Yen/kWh]", 
-               "SoC_realtime[%]"] 
+               "SoC_realtime[%]",
+                sin_time,
+                cos_time] 
         # df_testのcolの列の最初の行をリストに変換してobs_listに格納
         obs_list = [df_test[col].iloc[0].tolist()]
         # testデータのコマ数分(len(df_test))だけ、学習済みのモデルによるactionを得る
