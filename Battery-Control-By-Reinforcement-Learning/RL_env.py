@@ -15,13 +15,16 @@ from RL_dataframe_manager import Dataframe_Manager
 warnings.simplefilter('ignore')
 
 class ESS_ModelEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, mode):
         # データ読込みクラスのインスタンス化
         self.dfmanager = Dataframe_Manager()
         # 学習用のデータ,testデータ、結果格納テーブルを取得
         self.df_train = self.dfmanager.get_train_df()
-        self.df_test = self.dfmanager.get_test_df()
-        self.df_resultform = self.dfmanager.get_resultform_df()
+        if mode == "bid":
+            self.df_test = self.dfmanager.get_test_df_bid()
+        elif mode == "realtime":
+            self.df_test = self.dfmanager.get_test_df_realtime()
+        # self.df_resultform = self.dfmanager.get_resultform_df()
 
         # データフレームが正しく読み込まれているか確認
         print(f"Training Data: {self.df_train.head()}")

@@ -1,10 +1,34 @@
 # csvからのデータの読み込みを行うクラス
-
 from email import header
 import pandas as pd
 import os
 
 class Dataframe_Manager(): 
+    def __init__(self):
+        self.date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+        # date_infoは {'year': year, 'month': month, 'day': day} の形式
+        self.date_info['date'] = pd.to_datetime(self.date_info[['year', 'month', 'day']])
+        self.latest_date = self.date_info['date'].max()
+        self.year = self.latest_date.year
+        self.month = self.latest_date.month
+        self.day = self.latest_date.day
+
+        # - 前提：PV発電予測と価格予測の結果のcsvがあること
+        # - CSVファイルから予測結果のデータを読み込む
+        # 電力価格データからyear, month, day, hour, price, imbalanceを読み込む
+        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
+                                    usecols=["year","month","day","hour","price","imbalance"])
+        # PV予測結果データからyear, month, day, hour, PVoutを読み込む
+        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
+                                    usecols=["year","month","day","hour","PVout"])
+        # 日付でフィルタリング
+        self.price_predict = price_predict[(price_predict['year'] == self.year) & 
+                                      (price_predict['month'] == self.month) & 
+                                      (price_predict['day'] == self.day) ]
+        self.pv_predict = pv_predict[(pv_predict['year'] == self.year) & 
+                                (pv_predict['month'] == self.month) & 
+                                (pv_predict['day'] == self.day) ]
+
     ## 強化学習の学習に使うテーブル(df_train)を作成
     def get_train_df(self):
         # CSVファイル(input_data2022.csv)から学習データを読み込む
@@ -13,56 +37,30 @@ class Dataframe_Manager():
         #                               usecols=["year","month","day","hour","PVout","price","imbalance"])        
         df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
                                       usecols=["year","month","day","hour","PVout","price","imbalance"])        
-        
         return df_traindata
 
-    def get_test_df(self):
-
-        date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
-        # date_infoは {'year': year, 'month': month, 'day': day} の形式
-        date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
-        latest_date = date_info['date'].max()
-
-        year = latest_date.year
-        month = latest_date.month
-        day = latest_date.day
-
-        # - 前提：PV発電予測と価格予測の結果のcsvがあること
-        # - CSVファイルから予測結果のデータを読み込む
-        # 電力価格データからyear, month, day,hour,price, imbalanceを読み込む
-        # price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
-        #                             usecols=["year","month","day","hour","price","imbalance"])
-        price_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", 
-                                    usecols=["year","month","day","hour","price","imbalance"])
-        
-        # 日付でフィルタリング
-        price_predict = price_predict[(price_predict['year'] == year) & 
-                                      (price_predict['month'] == month) & 
-                                      (price_predict['day'] == day) ]
-
-
+    def get_test_df_bid(self):
         # 列名を変更する
-        price_predict = price_predict.rename(columns={'price': 'energyprice_predict_bid[Yen/kWh]', 'imbalance': 'imbalanceprice_predict_bid[Yen/kWh]'})
-        # # PV予測結果データからyear, month, day,hour, PVoutを読み込む
-        # pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
-        #                             usecols=["year","month","day","hour","PVout"])
-        # PV予測結果データからyear, month, day,hour, PVoutを読み込む
-        pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
-                                    usecols=["year","month","day","hour","PVout"])
-        
-# 日付でフィルタリング
-        pv_predict = pv_predict[(pv_predict['year'] == year) & 
-                                (pv_predict['month'] == month) & 
-                                (pv_predict['day'] == day) ]
-
-        # 列名を変更する
-        pv_predict = pv_predict.rename(columns={'PVout': 'PV_predict_bid[kW]'})
+        price_predict = self.price_predict.rename(columns={'price': 'energyprice_predict_bid[Yen/kWh]', 'imbalance': 'imbalanceprice_predict_bid[Yen/kWh]'})
+        pv_predict = self.pv_predict.rename(columns={'PVout': 'PV_predict_bid[kW]'})
         # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
         df_testdata = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
         # "SoC_bid", "charge/discharge_bid"を列名として追加。行数はdf_testdataの行数と同じで、全て-999を入れる
         # -999は、欠損値を表す（NaNと同じ）
         df_testdata["SoC_bid[%]"] = [-999 for i in range(len(df_testdata))]
         df_testdata["charge/discharge_bid[kWh]"] = [-999 for i in range(len(df_testdata))]
+        return df_testdata
+    
+    def get_test_df_realtime(self):
+        # 列名を変更する
+        price_predict = self.price_predict.rename(columns={'price': 'energyprice_predict_realtime[Yen/kWh]', 'imbalance': 'imbalanceprice_predict_realtime[Yen/kWh]'})
+        pv_predict = self.pv_predict.rename(columns={'PVout': 'PV_predict_realtime[kW]'})
+        # price_predictとpv_predictを結合（キーはyear,month,day,hourが全て一致） 
+        df_testdata = pd.merge(price_predict, pv_predict, how='outer', on=['year','month','day','hour'])
+        # "SoC_realtime", "charge/discharge_realtime"を列名として追加。行数はdf_testdataの行数と同じで、全て-999を入れる
+        # -999は、欠損値を表す（NaNと同じ）
+        df_testdata["SoC_realtime[%]"] = [-999 for i in range(len(df_testdata))]
+        df_testdata["charge/discharge_realtime[kWh]"] = [-999 for i in range(len(df_testdata))]
         return df_testdata
 
 
@@ -133,11 +131,12 @@ class Dataframe_Manager():
         ]
 
         # 空のDataframeを作成
-        dataframe = pd.DataFrame(columns=col)
+        dataframe = pd.DataFrame(columns = col)
+        dataframe.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", header = True, index=False)
         # 空のDataframeにget_test_df()の結果を追加
-        dfmanager = Dataframe_Manager()
-        dataframe = dataframe.append(dfmanager.get_test_df(), ignore_index=True)
+        # if mode == "bid":
+        #     dataframe = dataframe.append(self.get_test_df_bid(), ignore_index=True)
+        # elif mode == "realtime":
+        #     dataframe = dataframe.append(self.get_test_df_realtime(), ignore_index=True)
 
-        return dataframe
-
-        
+        # return dataframe

@@ -14,7 +14,7 @@ def main():
     # 現在の日時取得########################################################
 
     # コマンドライン引数からデータを取得
-    data_received = eval(sys.argv[1])
+    # data_received = eval(sys.argv[1])
 
     # 指定された日時取得(東京)########################################################
     ########### 外部から呼び出されるとき
@@ -29,10 +29,21 @@ def main():
     ###### subprocess.run(['python', '***.py', str(data_to_send)])
     ################################
 
-    year = data_received['year']   #YYYY
-    month = data_received['month']    #M
-    day = data_received['day']    #D
-    current_time = data_received['hour'] #0.5刻み 
+    # year = data_received['year']   #YYYY
+    # month = data_received['month']    #M
+    # day = data_received['day']    #D
+    # current_time = data_received['hour'] #0.5刻み 
+
+    #日付の取得
+    date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
+        # date_infoは {'year': year, 'month': month, 'day': day} の形式
+    date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day', 'hour']])
+    # year, month, day, hourがSeriesオブジェクトとして取得されている
+    year = date_info['year'].iloc[0]
+    month = date_info['month'].iloc[0]
+    day = date_info['day'].iloc[0]
+    current_time= date_info['hour'].iloc[0]  # hourも同様に修正が必要な場合
+    hour = current_time
 
     ########### ここで指定するとき
     #year = 2022   #YYYY
@@ -41,7 +52,7 @@ def main():
     #current_time = 13.5    #数値は時間(0.5刻み)を入力
 
     #datetime オブジェクト化
-    date = datetime.date(year, month, day)
+    date = datetime.datetime(year, month, day, int(hour), int((hour - int(hour)) * 60))
 
     #時差
     time_diff = datetime.timedelta(hours=9) #pygribに使用
@@ -195,7 +206,7 @@ def main():
         df_validdata['year'] = df_validdata_['validDate'].dt.year
         df_validdata['month'] = df_validdata_['validDate'].dt.month
         df_validdata['day'] = df_validdata_['validDate'].dt.day
-        df_validdata['hour'] = df_validdata_['validDate'].dt.hour
+        df_validdata['hour'] = df_validdata_['validDate'].dt.hour + df_validdata_['validDate'].dt.minute / 60
 
         #各データフレームへデータ格納
         #気圧([hPa]へ変換)
@@ -305,7 +316,6 @@ def main():
 
     # 線形補間後の数値調整
     # 年・日付・月をまたぐときに数値がおかしくならないための調整
-
     for i in range(5,67):   #ファイルの開始時間は3の倍数時からなので、確認するのは5番目のデータからでいい
         #年またぎ
         if df.at[i, 'year'] != df.at[i+1, 'year']:
@@ -319,6 +329,7 @@ def main():
         #日付またぎ
         if df.at[i-1, 'hour'] == 23.0:
             df.at[i, 'hour'] = 23.5
+            # df.at[i, 'day'] = df.at[i,'day'] + 1
     
 
     ##転置の時に年月日がdouble型になっているため、int化
@@ -336,10 +347,11 @@ def main():
     #24時間後以降を消去(先に消さないと行がずれる)
     df.drop(df.index[j[1] + 1:],inplace=True)
     #現在時刻以前を消去
-    df.drop(df.index[:j[0] + 1], inplace=True)
+    df.drop(df.index[:j[0]], inplace=True)
 
     #index整理(1から振りなおす)
     df = df.reset_index(drop=True)
+    df.drop(48,inplace=True)   
 
 
     # ファイル出力###################################################################
