@@ -124,12 +124,12 @@ class Dataframe_Manager():
             # 売電利益関連
             # - imbalancepenalty_bidは存在しない。bidの段階ではimbalanceは発生しないので。
             # - imbalancepenalty_realtimeは存在しえる。realtimeでのスケジュール策定時にimbalanceが避けられない場合が想定されるので。
-            'energyprofit_bid[Yen]', 'energyprofit_realtime[Yen]', 
+            'energyprofit_bid[Yen]', 'energyprofit_realtime[Yen]', 'energyprofit_actual_bid[Yen]', 'energyprofit_actual_realtime[Yen]',
             'imbalancepenalty_realtime[Yen]', 'imbalancepenalty_actual_bid[Yen]', 'imbalancepenalty_actual_realtime[Yen]', 
-            'totalprofit_bid[Yen]', 'totalprofit_realtime[Yen]', 'totalprofit_actual_bid[Yen]', 'totalprofit_actual_realtime[Yen]',
-            ''
+            'totalprofit_base[Yen]', 'totalprofit_bid[Yen]', 'totalprofit_realtime[Yen]', 'totalprofit_actual_bid[Yen]', 'totalprofit_actual_realtime[Yen]',
             # 動作モード：operateの条件分岐を見るためのもの。デバッグ用
-            'mode_bid', 'mode_realtime'
+            'mode_bid', 'mode_realtime',
+            'mode', 'operation_case'
         ]
 
         # 空のDataframeを作成
