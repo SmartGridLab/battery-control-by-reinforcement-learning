@@ -20,6 +20,7 @@ import tensorflow as tf
 import properscoring as prscore
 # Locally developed modules
 from parameters import Parameters as p
+from result_inputdata_reference import ResultInputDataReference as RIRD
 
 class PV_Predict:
     def __init__(self):
@@ -29,14 +30,20 @@ class PV_Predict:
         date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
         date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
         latest_date = date_info['date'].max()
-        self.year = latest_date.year
-        self.month = latest_date.month
-        self.day = latest_date.day
+        self.latest_year = latest_date.year
+        self.latest_month = latest_date.month
+        self.latest_day = latest_date.day
         # Specify the target
         self.target = ["PVout"]
         # Soecify the predictors
         self.features = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind', 'radiation flux', 'pressure', 'relative humidity', 
                         'yearSin', 'yearCos','monthSin', 'monthCos', 'hourSin', 'hourCos']
+
+        # 現在の日付を取得
+        self.RIRD = RIRD()
+        self.year, self.month, self.day = self.RIRD.get_current_date()
+        self.df_original = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+
 
     # Set the randam variables
     def seed_everything(self,seed):
@@ -71,9 +78,9 @@ class PV_Predict:
             df_w_all = pd.read_csv("Battery-Control-By-Reinforcement-Learning/weather_data_realtime.csv")
 
         # 該当する日付部分を抽出
-        df_w = df_w_all[(df_w_all['year'] == self.year) &
-                        (df_w_all['month'] == self.month) &
-                        (df_w_all['day'] == self.day)]
+        df_w = df_w_all[(df_w_all['year'] == self.latest_year) &
+                        (df_w_all['month'] == self.latest_month) &
+                        (df_w_all['day'] == self.latest_day)]
         # インデックスをリセット
         df_w = df_w.reset_index(drop=True)
         #時系列のsin, cosを追加
@@ -212,8 +219,16 @@ class PV_Predict:
 
                     #lower, upper中央値算出
                     pv_predict_["PVout"] = (pv_predict_["upper"] + pv_predict_["lower"]) / 2
-                    #--------------------------test--------------------------#
-                    pv_predict_["PVout"] = 0
+                    #--------------------------テストデータの作成--------------------------#
+                    # if mode == "realtime":
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 0.0) & (pv_predict_['hour'] <= 7.5), 'PVout'] = 0.0
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 8.0) & (pv_predict_['hour'] <= 15.5), 'PVout'] = 1.5
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 16.0) & (pv_predict_['hour'] <= 23.5), 'PVout'] = 0.0
+                    # elif mode == "bid":
+                    #     pv_predict_["PVout"] = 0
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 0.0) & (pv_predict_['hour'] <= 7.5), 'PVout'] = 1.5
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 8.0) & (pv_predict_['hour'] <= 15.5), 'PVout'] = 0.0
+                    #     pv_predict_.loc[(pv_predict_['hour'] >= 16.0) & (pv_predict_['hour'] <= 23.5), 'PVout'] = 1.5
                     #--------------------------test--------------------------#
                     #print(pv_predict_["PVout"])
 
@@ -222,5 +237,12 @@ class PV_Predict:
                     #pv_predict = pd.concat([pv_predict,pv_predict_],axis=0)
             
             print(str(i+1)+"/"+str(p.N_VERIFICATION)+"完了")
+        ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
+        # # テストデータを作成
+        # if mode == "bid":
+        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual + 2.0
+        # elif mode == "realtime":
+        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual # realtimeは実測値に一致させる
+        ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
         pv_predict_.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv', index=False)
         print("\n---PV出力予測プログラム終了---\n")
