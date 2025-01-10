@@ -8,6 +8,9 @@ from RL_operate import Battery_operate
 from RL_main import ChargeDischargePlan
 from result_evaluation import ResultEvaluation
 from pv_predict import PV_Predict
+from price_predict import PricePredict
+from result_inputdata_reference import ResultInputDataReference
+from parameters import Parameters
 import RL_visualize
 import pandas as pd
 
@@ -52,7 +55,7 @@ def perform_daily_operations(current_date, end_date, mode):
         if next_date.month != current_date.month or next_date > end_date:
             # 収益を棒グラフで可視化して比較
             subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
-            print("RL_visualize_bargraph success'")
+            print("\n---RL_visualize_bargraph success---")
 
         # 日付を次の日に進める
         current_date = next_date
@@ -64,30 +67,34 @@ def process_operations(mode):
     # - PV発電量の実績値、電力価格の実績値、不平衡電力価格の実績値を取得する
     # - 実績値ベースでの売電による収益の計算を行う
     #　それぞれのファイルでcurrent_date.csvの日付データに基づいてデータを取得
+
+    # 充放電計画の性能評価のためのデータを集める
+    ResultInputDataReference().make_actual_dataframe()
+    print("\n---result_inputdata_reference success---")
+
     #　気象データを取得
     if mode == "bid":
        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid.py'])
+       print("\n---weather_data_bid success---")
     elif mode == "realtime":
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
-        print("weather_data_bid success")
+        print("\n---weather_data_realtime success---")
 
     # 電力価格を予測
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
-    print("price_predict success")
+    PricePredict().predict_values(mode)
+    print("\n---price_predict success---")
     # PV出力を予測
     PV_Predict().mode_dependent_pv_predict(mode)
-    print("pv_predict success'")
+    print("\n---pv_predict success---")
     # 強化学習による充放電スケジュールを作成
     ChargeDischargePlan(mode).mode_dependent_plan(mode)
-    print("RL_main success'")
-    # 充放電計画の性能評価のためのデータを集める
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/result_inputdata_reference.py'])
-    print("result_inputdata_reference success'")
-    Battery_operate().mode_dependent_operate(mode) # RL_operateのインスタンス化
-    print("RL_operate success'")
+    print("\n---RL_main success---")
+    # 計画値を実際に実行したデータを取得
+    Battery_operate().mode_dependent_operate(mode)
+    print("\n---RL_operate success---")
     # 充放電計画の性能評価を行う
     ResultEvaluation().evaluation_result_save(mode)
-    print("result_evaluation success'")
+    print("\n---result_evaluation success---")
 
 
     # 機器動作を策定する
@@ -98,8 +105,9 @@ def process_operations(mode):
   
 # メインプログラム
 def main():
-    print("\n---プログラム起動---\n")
-    # result_dataframe.csv1の初期化
+    initial_soc = Parameters().INITIAL_SOC
+    print("\n---プログラム起動---")
+    # result_dataframe.csvの初期化
     Dataframe_Manager().initialize_resultform_df()
 
     # # #天気予報データ取得(GPVデータ取得)
@@ -116,34 +124,31 @@ def main():
 
     ##-------------------------------------------------------------------------------------------------------------------------##
     simDuration = "MultipleDays_FullMode" # "MultipleDays_SingleMode" = 単一実行モード、"MultipleDays_FullMode" = 連続実行モード
+    # 動作開始日と動作終了日の指定
+    # JST
+    start_date = datetime.datetime(2022, 9, 1, 0, 30)
+    end_date = datetime.datetime(2022, 9, 1, 23, 30)
     ##-------------------------------------------------------------------------------------------------------------------------##
 
     if simDuration == "MultipleDays_SingleMode":
-        print("\n---Single Mode プログラム開始---\n")
-        # 動作開始日と動作終了日の指定
-        # JST
-        start_date = datetime.datetime(2022, 9, 1, 0, 30)
-        end_date = datetime.datetime(2022, 9, 2, 23, 30)
+        print("\n---Single Mode プログラム開始---")
+
         # 期間分の動作を実行
         # modeを指定して実行
         mode = "bid"
         # mode = "realtime"
         perform_daily_operations(start_date, end_date, mode)
-        print(f"\n---{mode} プログラム終了---\n")
-        print("\n---Single Mode プログラム終了---\n")
+        print(f"\n---{mode} プログラム終了---")
+        print("\n---Single Mode プログラム終了---")
 
     if simDuration == "MultipleDays_FullMode":
-        print("\n---Full Mode プログラム開始---\n")
-        # 動作開始日と動作終了日の指定
-        # JST
-        start_date = datetime.datetime(2022, 9, 1, 0, 30)
-        end_date = datetime.datetime(2022, 9, 2, 23, 30)
+        print("\n---Full Mode プログラム開始---")
         # 期間分の動作を実行
         perform_daily_operations(start_date, end_date, "bid")
-        print("\n---Bid プログラム終了---\n")
+        print("\n---Bid プログラム終了---")
         perform_daily_operations(start_date, end_date, "realtime")
-        print("\n---Realtime プログラム終了---\n")
-        print("\n---Full Mode プログラム終了---\n")
+        print("\n---Realtime プログラム終了---")
+        print("\n---Full Mode プログラム終了---")
 
     # OneTimeStepモード
     if simDuration == "OneTimeStep":
@@ -184,8 +189,9 @@ def main():
         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
         #終了
-        print("\n---プログラム終了---\n")
+        print("\n---プログラム終了---")
 
 if __name__ == "__main__":
     main()
-    fig = RL_visualize.RL_visualize.descr_price()
+    # fig = RL_visualize.RL_visualize.descr_price()
+    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/debug_plot.py'])
