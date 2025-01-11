@@ -5,94 +5,89 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow import keras
+from result_inputdata_reference import ResultInputDataReference as RIRD
 
-#スタート
-print("\n\n---電力価格予測プログラム開始---\n\n")
+class PricePredict:
+    def __init__(self):
+        self.RIRD = RIRD()
+        self.input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
+        self.year, self.month, self.day = self.RIRD.get_current_date()
+        self.price_predict = self.input_data[(self.input_data['year'] == self.year) &
+                                            (self.input_data['month'] == self.month) &
+                                            (self.input_data['day'] == self.day)]
+        
+        # 使用するパラメータ
+        # parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
+                    #'radiation flux', 'pressure', 'relative humidity', 'hourSin', 'hourCos', 'PVout']
+        self.parameters = ['radiation flux', 'PVout', 'temperature', 'hourCos']           
+        self.predict_parameters = ['price', 'imbalance']
 
-# データの読み込み
-# 学習データ
-input_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv")
+    def predict_values(self, mode): 
+        print("\n---電力価格予測プログラム開始---\n")
 
+        # データの前処理
+        scaler = MinMaxScaler()
+        self.input_data[self.parameters] = scaler.fit_transform(self.input_data[self.parameters])
+        self.price_predict[self.parameters] = scaler.transform(self.price_predict[self.parameters])
 
-date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
-        # date_infoは {'year': year, 'month': month, 'day': day} の形式
-date_info['date'] = pd.to_datetime(date_info[['year', 'month', 'day']])
-latest_date = date_info['date'].max()
+        # 学習データとターゲットデータの作成
+        X = self.input_data[self.parameters].values
+        y = self.input_data[self.predict_parameters].values
 
-year = latest_date.year
-month = latest_date.month
-day = latest_date.day
+        # モデルの定義
+        hidden_units = [64, 64, 64]  # 隠れ層のユニット数
+        epochs = 100  # エポック数
 
-# 日付でフィルタリング
-price_predict = input_data[(input_data['year'] == year) & 
-                            (input_data['month'] == month) & 
-                            (input_data['day'] == day) ]
+        model = keras.Sequential()
+        model.add(keras.layers.Dense(hidden_units[0], activation='relu', input_shape=(len(self.parameters),)))
+        for units in hidden_units[1:]:
+            model.add(keras.layers.Dense(units, activation='relu'))
+        model.add(keras.layers.Dense(len(self.predict_parameters)))
 
-# 使用するパラメータ
-#parameters = ['temperature', 'total precipitation', 'u-component of wind', 'v-component of wind',
-              #'radiation flux', 'pressure', 'relative humidity', 'hourSin', 'hourCos', 'PVout']
-parameters = ['radiation flux', 'PVout', 'temperature', 'hourCos']           
-predict_parameters = ['price', 'imbalance']
+        # モデルのコンパイル
+        model.compile(optimizer='adam', loss='mse')
 
+        # モデルの学習
+        model.fit(X, y, epochs=epochs, verbose=0)
 
-# データの前処理
-scaler = MinMaxScaler()
-input_data[parameters] = scaler.fit_transform(input_data[parameters])
-price_predict[parameters] = scaler.transform(price_predict[parameters])
+        # 予測の実行
+        predictions = model.predict(self.price_predict[self.parameters].values)
 
-# 学習データとターゲットデータの作成
-X = input_data[parameters].values
-y = input_data[predict_parameters].values
+        # 予測結果の保存
+        pred_df = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","PVout","price","imbalance"])
 
-# モデルの定義
-hidden_units = [64, 64, 64]  # 隠れ層のユニット数
-epochs = 100  # エポック数
+        pred_df["price"] = predictions[:, 0]  # "price" の予測値を代入
+        pred_df["imbalance"] = predictions[:, 1]  # "imbalance" の予測値を代入
+        pred_df["year"] = self.price_predict["year"].values
+        pred_df["month"] = self.price_predict["month"].values
+        pred_df["day"] = self.price_predict["day"].values
+        pred_df["hour"] = self.price_predict["hour"].values
+        pred_df["hourSin"] = self.price_predict["hourSin"].values
+        pred_df["hourCos"] = self.price_predict["hourCos"].values
+        #pred_df["upper"] = self.price_predict["upper"].values
+        #pred_df["lower"] = self.price_predict["lower"].values
+        # pv_predict.pyのPV予測よりもprice_predict.csvの予測の方が正確そう
+        pred_df["PVout"] = self.price_predict["PVout"].values
 
-model = keras.Sequential()
-model.add(keras.layers.Dense(hidden_units[0], activation='relu', input_shape=(len(parameters),)))
-for units in hidden_units[1:]:
-    model.add(keras.layers.Dense(units, activation='relu'))
-model.add(keras.layers.Dense(len(predict_parameters)))
+        #---------------------- 人工テストデータの作成 ----------------------#
+        # if mode == "bid":
+        #     pred_df["price"] = (self.RIRD.energyprice_actual) * 2.0
+        #     pred_df["imbalance"] = (self.RIRD.imbalanceprice_actual) * 2.0
+        # elif mode == "realtime":
+        #     pred_df["price"] = self.RIRD.energyprice_actual
+        #     pred_df["imbalance"] = self.RIRD.imbalanceprice_actual
+        #---------------------- 人工テストデータの作成 ----------------------#
+        pred_df.to_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", index=False)
 
-# モデルのコンパイル
-model.compile(optimizer='adam', loss='mse')
+        # グラフの描画
+        #plt.figure(figsize=(10, 5))
+        #plt.plot(price_predict['hour'], predictions[:, 0], label='price')
+        #plt.plot(price_predict['hour'], predictions[:, 1], label='imbalance')
+        #plt.xlabel('hour')
+        #plt.ylabel('value')
+        #plt.title('Price and Imbalance Prediction')
+        #plt.legend()
+        #plt.show()
 
-# モデルの学習
-model.fit(X, y, epochs=epochs, verbose=0)
-
-# 予測の実行
-predictions = model.predict(price_predict[parameters].values)
-
-# 予測結果の保存
-pred_df = pd.DataFrame(columns=["year","month","day","hour","hourSin","hourCos","PVout","price","imbalance"])
-
-pred_df["price"] = predictions[:, 0]  # "price" の予測値を代入
-pred_df["imbalance"] = predictions[:, 1]  # "imbalance" の予測値を代入
-pred_df["year"] = price_predict["year"].values
-pred_df["month"] = price_predict["month"].values
-pred_df["day"] = price_predict["day"].values
-pred_df["hour"] = price_predict["hour"].values
-pred_df["hourSin"] = price_predict["hourSin"].values
-pred_df["hourCos"] = price_predict["hourCos"].values
-#pred_df["upper"] = price_predict["upper"].values
-#pred_df["lower"] = price_predict["lower"].values
-pred_df["PVout"] = price_predict["PVout"].values
-#----------------------test----------------------#
-pred_df["PVout"] = 0
-pred_df["price"] = 0
-pred_df["imbalance"] = 0
-#----------------------test----------------------#
-pred_df.to_csv("Battery-Control-By-Reinforcement-Learning/price_predict.csv", index=False)
-
-# グラフの描画
-#plt.figure(figsize=(10, 5))
-#plt.plot(price_predict['hour'], predictions[:, 0], label='price')
-#plt.plot(price_predict['hour'], predictions[:, 1], label='imbalance')
-#plt.xlabel('hour')
-#plt.ylabel('value')
-#plt.title('Price and Imbalance Prediction')
-#plt.legend()
-#plt.show()
-
-#終了
-print("\n\n---電力価格予測プログラム終了---")
+        #終了
+        print("\n---電力価格予測プログラム終了---")

@@ -21,6 +21,7 @@ class Dataframe_Manager():
         # PV予測結果データからyear, month, day, hour, PVoutを読み込む
         pv_predict = pd.read_csv("Battery-Control-By-Reinforcement-Learning/pv_predict.csv",
                                     usecols=["year","month","day","hour","PVout"])
+        result_dataframe = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
         # 日付でフィルタリング
         self.price_predict = price_predict[(price_predict['year'] == self.year) & 
                                       (price_predict['month'] == self.month) & 
@@ -28,15 +29,19 @@ class Dataframe_Manager():
         self.pv_predict = pv_predict[(pv_predict['year'] == self.year) & 
                                 (pv_predict['month'] == self.month) & 
                                 (pv_predict['day'] == self.day) ]
+        self.result_dataframe = result_dataframe[(result_dataframe['year'] == self.year) &
+                                                (result_dataframe['month'] == self.month) &
+                                                (result_dataframe['day'] == self.day)]
 
     ## 強化学習の学習に使うテーブル(df_train)を作成
     def get_train_df(self):
         # CSVファイル(input_data2022.csv)から学習データを読み込む
-        # 読み込む行を列名で指定：year,month,day,hour, PVout, price, imbalance
+        # 読み込む行を列名で指定：year,month,day,hour, PVout, price, imbalance  
+     
         # df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
-        #                               usecols=["year","month","day","hour","PVout","price","imbalance"])        
-        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/input_data2022.csv",
-                                      usecols=["year","month","day","hour","PVout","price","imbalance"])        
+        #                            usecols=["year","month","day","hour","PVout","price","imbalance"])  
+        df_traindata = pd.read_csv("Battery-Control-By-Reinforcement-Learning/train_data/input_data2022_edited.csv",
+                                   usecols=["year","month","day","hour","PVout","price","imbalance"])      
         return df_traindata
 
     def get_test_df_bid(self):
@@ -49,7 +54,6 @@ class Dataframe_Manager():
         # -999は、欠損値を表す（NaNと同じ）
         df_testdata["SoC_bid[%]"] = [-999 for i in range(len(df_testdata))]
         df_testdata["charge/discharge_bid[kWh]"] = [-999 for i in range(len(df_testdata))]
-        print("df_testdata: ", df_testdata)
         return df_testdata
     
     def get_test_df_realtime(self):
@@ -62,6 +66,7 @@ class Dataframe_Manager():
         # -999は、欠損値を表す（NaNと同じ）
         df_testdata["SoC_realtime[%]"] = [-999 for i in range(len(df_testdata))]
         df_testdata["charge/discharge_realtime[kWh]"] = [-999 for i in range(len(df_testdata))]
+        df_testdata["energytransfer_bid[kWh]"] = self.result_dataframe["energytransfer_bid[kWh]"]
         return df_testdata
 
 
@@ -129,7 +134,9 @@ class Dataframe_Manager():
             'totalprofit_base[Yen]', 'totalprofit_bid[Yen]', 'totalprofit_realtime[Yen]', 'totalprofit_actual_bid[Yen]', 'totalprofit_actual_realtime[Yen]',
             # 動作モード：operateの条件分岐を見るためのもの。デバッグ用
             'mode_bid', 'mode_realtime',
-            'mode', 'operation_case'
+            'mode', 'operation_case',
+            # RLモデルの行動を監視
+            'natural_action_bid[kWh]', 'natural_action_realtime[kWh]'
         ]
 
         # 空のDataframeを作成

@@ -1,3 +1,4 @@
+from calendar import month
 import pandas as pd
 import parameters
 
@@ -21,6 +22,9 @@ class Battery_operate():
         # パラメータの読み込み
         self.BATTERY_CAPACITY = param.BATTERY_CAPACITY
         self.INITIAL_SOC = param.INITIAL_SOC
+        self.df_test = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+
+        self.soc_list = [self.INITIAL_SOC]
     
     def get_current_date(self):
         date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
@@ -40,7 +44,7 @@ class Battery_operate():
         df_result = df_original[(df_original['year'] == year) & 
                                 (df_original['month'] == month) & 
                                 (df_original['day'] == day)].reset_index(drop = True)
-        # PVの予測値('PV_actual[kW]')と実測値('PV_predict_bid[kW]')の差を計算(0.5をかけて[kWh]に変換)
+        # PVの実測値('PV_actual[kW]')と予測値('PV_predict_bid[kW]')の差を計算(0.5をかけて[kWh]に変換)
         delta_PV_bid = df_result["PV_actual[kW]"]*0.5 - df_result["PV_predict_bid[kW]"]*0.5
         for j in range(len(df_result)):
             # PVが計画よりも多い場合
@@ -236,28 +240,127 @@ class Battery_operate():
             df_result.at[j, 'SoC_actual_realtime[%]'] = soc
         return df_result, df_original
 
+    def operate_plan(self, PV_predict, action_fromRL, current_soc):
+        '''
+        引数
+        - PV_predict: PV発電量の予測値[kW], RL_env.pyではPV実測値を使っている
+        - action_fromRL: RLからのアクション, -2.0 ~ 2.0[kW](RL_env.pyで設定)
+        - current_soc: 現在のSoC, 0.0 ~ 1.0[割合]
+        出力
+        - edited_action: RLからのアクションを実際に動作させるために編集した値 = -2.0 ~ 2.0[kWh]
+        - next_soc: 次のSoC, 0.0 ~ 1.0[割合]
+        - energytransfer: 電力取引量[kWh]
+        '''
+
+        current_soc = current_soc * self.BATTERY_CAPACITY # [割合]を[kWh]に変換
+        # 充電時
+        if action_fromRL < 0:
+            if PV_predict + action_fromRL < 0: # PV発電よりも充電計画値が多い
+                edited_action = - PV_predict
+                _next_soc = current_soc - edited_action
+                # 過剰充電
+                if _next_soc > 4.0:
+                    next_soc = 4.0
+                    edited_action = current_soc - next_soc
+                # 正常充電
+                else:
+                    next_soc = _next_soc
+            else: # PV予測値内で充電
+                edited_action = action_fromRL
+                _next_soc = current_soc - edited_action
+                # 過剰充電
+                if _next_soc > 4.0:
+                    next_soc = 4.0
+                    edited_action = current_soc - next_soc
+                # 正常充電
+                else:
+                    next_soc = _next_soc
+        # 放電時
+        else: # action_fromRL >= 0
+            # PV発電量予測値は閾値として考慮しない
+            edited_action = action_fromRL
+            _next_soc = current_soc - edited_action
+            # 過剰放電
+            if _next_soc < 0.0:
+                next_soc = 0.0
+                edited_action = current_soc - next_soc
+            # 正常放電
+            else:
+                next_soc = _next_soc
+        
+        energytransfer = PV_predict + edited_action
+        next_soc = next_soc / self.BATTERY_CAPACITY # [kW] -> [割合]
+
+        return edited_action, next_soc, energytransfer
+    
+    def operate_actual(self, mode):
+        year, month, day = self.get_current_date()
+        df_original = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
+        df_result = df_original[(df_original['year'] == year) & 
+                                (df_original['month'] == month) & 
+                                (df_original['day'] == day)].reset_index(drop = True)
+        # 実績値を計算する
+        for j in range(len(df_result)):
+            edited_action = df_result.at[j, f"charge/discharge_{mode}[kWh]"]
+            PV_actual = df_result.at[j, "PV_actual[kW]"]
+            current_soc = self.soc_list[-1] * self.BATTERY_CAPACITY # 0.0 ~ 1.0[割合]を0.0 ~ 4.0 [kW]
+            # 充電時
+            if edited_action < 0:
+                # PV発電実測値よりも充電計画値が大きい
+                if PV_actual + edited_action < 0:
+                    edited_action_actual = - PV_actual
+                    _next_soc = current_soc - edited_action_actual
+                    # 過剰充電
+                    if _next_soc > 4.0:
+                        next_soc = 4.0
+                        edited_action_actual = current_soc - next_soc
+                    # 正常充電
+                    else:
+                        next_soc = _next_soc
+                # PV実測値内で充電
+                else:
+                    edited_action_actual = edited_action
+                    _next_soc = current_soc - edited_action_actual
+                    # 過剰充電
+                    if _next_soc > 4.0:
+                        next_soc = 4.0
+                        edited_action_actual = current_soc - next_soc
+                    # 正常充電
+                    else:
+                        next_soc = _next_soc
+            # 放電時
+            else: # edited_action >= 0
+                # PV発電量実測値は閾値として考慮しない
+                edited_action_actual = edited_action
+                _next_soc = current_soc - edited_action_actual
+                # 過剰放電
+                if _next_soc < 0.0:
+                    next_soc = 0.0
+                    edited_action_actual = current_soc - next_soc
+                # 正常放電
+                else:
+                    next_soc = _next_soc
+
+            # 電力取引実績値の計算
+            energytransfer_actual = PV_actual + edited_action_actual
+            next_soc = next_soc / self.BATTERY_CAPACITY # [kW] -> [割合]
+
+            self.soc_list.append(next_soc)
+            df_result.at[j, f"SoC_actual_{mode}[%]"] = next_soc * 100 # [割合]->[%]
+            df_result.at[j, f"charge/discharge_actual_{mode}[kWh]"] = edited_action_actual
+            df_result.at[j, f"energytransfer_actual_{mode}[kWh]"] = energytransfer_actual
+        
+        return df_result, df_original
+    
     def mode_dependent_operate(self, mode):
-        if mode == "bid":
-            df_result, df_original = self.operate_bid()
-        elif mode == "realtime":
-            df_result, df_original = self.operate_realtime()
-            # df_resultを新しいcsvファイルに保存
-        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc1.csv", header = True, index = True)
-        # df_originalを新しいcsvファイルに保存
-        df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc2.csv", header = True, index = True)
+        # 実績値を計算
+        df_result, df_original = self.operate_actual(mode)
         # year, month, day, hourをindexとして設定
         df_result.set_index(['year', 'month', 'day', 'hour'], inplace = True)
         df_original.set_index(['year', 'month', 'day', 'hour'], inplace = True)
-        # df_resultを新しいcsvファイルに保存(追記)
-        df_result.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc1.csv", header = True, index = True, mode = 'a')
-        # df_originalを新しいcsvファイルに保存
-        df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_debuc2.csv", header = True, index = True, mode = 'a')
         # 該当日付を更新
         df_original.update(df_result)
         # indexを振り直す
         df_original.reset_index(inplace = True)
         # df_resultをdf_result.csvへ上書き保存
         df_original.to_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv", header = True, index=False)
-
-if __name__ == "__main__":
-    Battery_operate().mode_dependent_operate("bid")
