@@ -81,10 +81,10 @@ class TrainModel:
         plt.grid(True)
         # 3. 取引収益のグラフ
         plt.subplot(subplot_a, 1, 3)
-        plt.plot(self.env.episode_action_summary, color = color_DealProfit, linestyle = linestyle_DealProfit, label = label_DealProfit)
-        plt.title("Episode Action Summary")
+        plt.plot(self.env.deal_profit_summary, color = color_DealProfit, linestyle = linestyle_DealProfit, label = label_DealProfit)
+        plt.title("Deal profit")
         plt.xlabel("Episode")
-        plt.ylabel("Action Summary [kWh]")
+        plt.ylabel("Deal Profit [kWh]")
         plt.legend(loc = "upper right")
         plt.grid(True)
         # 4. Action Differenceのグラフ
@@ -99,7 +99,7 @@ class TrainModel:
         # グラフの表示と保存
         plt.tight_layout()  # レイアウトの自動調整
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        plt.savefig(f"Battery-Control-By-Reinforcement-Learning/for_debug/RLTrain/{mode}/RL_info_{current_time}.png")
+        plt.savefig(f"Battery-Control-By-Reinforcement-Learning/for_debug/RL_Train/{mode}/RL_info_{current_time}.png")
         plt.show()
 
     def plot_action_difference(self, mode):
@@ -112,7 +112,7 @@ class TrainModel:
         # グラフの表示と保存
         plt.tight_layout()  # レイアウトの自動調整
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        plt.savefig(f"Battery-Control-By-Reinforcement-Learning/for_debug/RLTrain/{mode}/RL_info_{current_time}_action_difference.png")
+        plt.savefig(f"Battery-Control-By-Reinforcement-Learning/for_debug/RL_Train/{mode}/RL_info_{current_time}_action_difference.png")
         plt.show()
 
     def dispatch_train(self, mode):
@@ -123,7 +123,7 @@ class TrainModel:
             self.env = Env_realtime(mode)
 
         N_STEPS = 48  # 1日のコマ数（=1エピソード内のステップ数）
-        N_EPISODES = 30000  # 学習する日数（エピソード数
+        N_EPISODES = 10000  # 学習する日数（エピソード数
         total_timesteps = N_STEPS * N_EPISODES  # エピソード数に基づいた総ステップ数
         # n_steps: 1episode(1日)の中のコマ数。1コマ30分間なので、全部で48コマ。
         # total_timesteps: 学習全体での合計step数。n_steps * episode = total_timesteps
@@ -150,13 +150,13 @@ class TrainModel:
 
         # エピソードごとのリワードをグラフで表示(追加)
         self.plot_episode_info(mode)
-        self.plot_action_difference(mode)
+        # self.plot_action_difference(mode)
 
 
 # メイン関数
 if __name__ == "__main__":
-    mode = "bid"
-    # mode = "realtime"
+    # mode = "bid"
+    mode = "realtime"
     trainer = TrainModel()
     trainer.dispatch_train(mode)
 

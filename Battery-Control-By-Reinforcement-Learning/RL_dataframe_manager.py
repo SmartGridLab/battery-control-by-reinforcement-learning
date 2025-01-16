@@ -66,7 +66,7 @@ class Dataframe_Manager():
         # -999は、欠損値を表す（NaNと同じ）
         df_testdata["SoC_realtime[%]"] = [-999 for i in range(len(df_testdata))]
         df_testdata["charge/discharge_realtime[kWh]"] = [-999 for i in range(len(df_testdata))]
-        df_testdata["energytransfer_bid[kWh]"] = self.result_dataframe["energytransfer_bid[kWh]"]
+        df_testdata["energytransfer_bid[kWh]"] = self.result_dataframe["energytransfer_bid[kWh]"].reset_index(drop=True)
         return df_testdata
 
 
