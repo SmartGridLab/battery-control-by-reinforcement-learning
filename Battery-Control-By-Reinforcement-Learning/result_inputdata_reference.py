@@ -7,7 +7,7 @@ from RL_test import TestModel
 
 class ResultInputDataReference:
     def __init__(self):
-        self.actual_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/train_data/input_data2022_0.csv")
+        self.actual_data = pd.read_csv("Battery-Control-By-Reinforcement-Learning/train_data/input_data2022_edited.csv")
         # 現在の日付を取得
         self.year, self.month, self.day = self.get_current_date()
         # 実績データの取得

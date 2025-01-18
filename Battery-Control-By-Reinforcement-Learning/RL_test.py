@@ -161,7 +161,6 @@ class TestModel():
             # 現在のSoCを取得
             current_soc = self.soc_list[-1] # 0.0 ~ 1.0[割合]
             PV_predict = self.df_test.at[idx_state, f"PV_predict_{mode}[kW]"]
-            # 前日の入札値を取得
 
             # 観測値の構築
             obs = [
@@ -214,7 +213,6 @@ class TestModel():
         df_testresult[f"charge/discharge_{mode}[kWh]"] = self.edited_action_list
         df_testresult[f"natural_action_{mode}[kWh]"] = self.natural_action_list
         df_testresult[f"energytransfer_{mode}[kWh]"] = self.energytransfer_list
-
         return df_testresult
     
     def dispatch_testresult_update(self, df_test):

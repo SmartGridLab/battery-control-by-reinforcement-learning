@@ -11,6 +11,7 @@ from pv_predict import PV_Predict
 from price_predict import PricePredict
 from result_inputdata_reference import ResultInputDataReference
 from parameters import Parameters
+from debug_plot import DEBUG_PLOT
 import RL_visualize
 import pandas as pd
 
@@ -52,10 +53,10 @@ def perform_daily_operations(current_date, end_date, mode):
         next_date = current_date + datetime.timedelta(days=1)
 
         # 「月の終わり」か、シミュレーションの「最終日」かどうかを判定
-        if next_date.month != current_date.month or next_date > end_date:
-            # 収益を棒グラフで可視化して比較
-            subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
-            print("\n---RL_visualize_bargraph success---")
+        # if next_date.month != current_date.month or next_date > end_date:
+        #     # 収益を棒グラフで可視化して比較
+        #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_visualize_bargraph.py'])
+        #     print("\n---RL_visualize_bargraph success---")
 
         # 日付を次の日に進める
         current_date = next_date
@@ -127,7 +128,7 @@ def main():
     # 動作開始日と動作終了日の指定
     # JST
     start_date = datetime.datetime(2022, 9, 1, 0, 30)
-    end_date = datetime.datetime(2022, 9, 1, 23, 30)
+    end_date = datetime.datetime(2022, 9, 2, 23, 30)
     ##-------------------------------------------------------------------------------------------------------------------------##
 
     if simDuration == "MultipleDays_SingleMode":
@@ -149,47 +150,49 @@ def main():
         perform_daily_operations(start_date, end_date, "realtime")
         print("\n---Realtime プログラム終了---")
         print("\n---Full Mode プログラム終了---")
+    
+    DEBUG_PLOT().plot_infos()
+    print("\n---プログラム終了---")
 
-    # OneTimeStepモード
-    if simDuration == "OneTimeStep":
+    # # OneTimeStepモード
+    # if simDuration == "OneTimeStep":
 
-        ## 手動で時刻を設定 ###
-        year = 2023
-        month = 1
-        day = 1
-        current_time = 23.5   #hour(0.5刻み) #bidの場合は0に設定
-        mode = "realtime"   #reaitime　or bid
-        #######################
+    #     ## 手動で時刻を設定 ###
+    #     year = 2023
+    #     month = 1
+    #     day = 1
+    #     current_time = 23.5   #hour(0.5刻み) #bidの場合は0に設定
+    #     mode = "realtime"   #reaitime　or bid
+    #     #######################
 
-        current_date = datetime.date(year, month, day)
-        data_time = current_time - 0.5
-        if data_time == -0.5:
-            data_time = 23.5
+    #     current_date = datetime.date(year, month, day)
+    #     data_time = current_time - 0.5
+    #     if data_time == -0.5:
+    #         data_time = 23.5
 
-        data_to_send = {'year': year,'month': month,'day': day,'hour':data_time}
-        main()
+    #     data_to_send = {'year': year,'month': month,'day': day,'hour':data_time}
+    #     main()
 
-        #時刻表示
-        print("時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")
-        print("mode:" + mode)
+    #     #時刻表示
+    #     print("時刻：" + current_date.strftime("%Y/%m/%d") + " " + str(current_time) + "時")
+    #     print("mode:" + mode)
 
-        #天気予報データ取得
-        if mode == "bid":
-            subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid_test.py'])
-        elif mode == "realtime":
-            subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
+    #     #天気予報データ取得
+    #     if mode == "bid":
+    #         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_bid_test.py'])
+    #     elif mode == "realtime":
+    #         subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/weather_data_realtime.py'])
 
-        # PV出力予測：
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
+    #     # PV出力予測：
+    #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/pv_predict.py'])
 
-        # 電力価格予測：price_forecast.pyを実行する
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
+    #     # 電力価格予測：price_forecast.pyを実行する
+    #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/price_predict.py'])
 
-        # 強化学習による充放電スケジュール：RL_main.pyを実行する
-        subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
+    #     # 強化学習による充放電スケジュール：RL_main.pyを実行する
+    #     subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/RL_main.py'])
 
         #終了
-        print("\n---プログラム終了---")
 
 if __name__ == "__main__":
     main()
