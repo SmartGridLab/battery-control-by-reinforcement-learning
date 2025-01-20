@@ -23,8 +23,7 @@ class Battery_operate():
         self.BATTERY_CAPACITY = param.BATTERY_CAPACITY
         self.INITIAL_SOC = param.INITIAL_SOC
         self.df_test = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
-
-        self.soc_list = [self.INITIAL_SOC]
+        self.boundary_soc_df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/for_debug/boundary_soc.csv")
     
     def get_current_date(self):
         date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
@@ -294,6 +293,7 @@ class Battery_operate():
         return edited_action, next_soc, energytransfer
     
     def operate_actual(self, mode):
+        soc_list = [self.boundary_soc_df[f"Initial_SoC_actual_{mode}"][0]]
         year, month, day = self.get_current_date()
         df_original = pd.read_csv("Battery-Control-By-Reinforcement-Learning/result_dataframe.csv")
         df_result = df_original[(df_original['year'] == year) & 
@@ -303,7 +303,7 @@ class Battery_operate():
         for j in range(len(df_result)):
             edited_action = df_result.at[j, f"charge/discharge_{mode}[kWh]"]
             PV_actual = df_result.at[j, "PV_actual[kW]"]
-            current_soc = self.soc_list[-1] * self.BATTERY_CAPACITY # 0.0 ~ 1.0[割合]を0.0 ~ 4.0 [kW]
+            current_soc = soc_list[-1] * self.BATTERY_CAPACITY # 0.0 ~ 1.0[割合]を0.0 ~ 4.0 [kW]
             # 充電時
             if edited_action < 0:
                 # PV発電実測値よりも充電計画値が大きい
@@ -345,11 +345,16 @@ class Battery_operate():
             energytransfer_actual = PV_actual + edited_action_actual
             next_soc = next_soc / self.BATTERY_CAPACITY # [kW] -> [割合]
 
-            self.soc_list.append(next_soc)
+            soc_list.append(next_soc)
             df_result.at[j, f"SoC_actual_{mode}[%]"] = next_soc * 100 # [割合]->[%]
             df_result.at[j, f"charge/discharge_actual_{mode}[kWh]"] = edited_action_actual
             df_result.at[j, f"energytransfer_actual_{mode}[kWh]"] = energytransfer_actual
         
+        # 次の日の初期SoC = 前日のSoC終値
+        self.boundary_soc_df[f"Initial_SoC_actual_{mode}"][0] = soc_list[-1]
+        # 更新
+        self.boundary_soc_df.to_csv("Battery-Control-By-Reinforcement-Learning/for_debug/boundary_soc.csv", index = False)
+
         return df_result, df_original
     
     def mode_dependent_operate(self, mode):

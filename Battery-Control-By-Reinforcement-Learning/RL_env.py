@@ -56,7 +56,7 @@ class ESS_ModelEnv(gym.Env):
         self.current_imbalance = 0 # エピソードの合計インバランス
         self.action_difference_ = 0 # RLからのアクションと実際のアクションの差分
         self.current_deal_profit = 0 # エピソードの合計取引利益
-
+        self.current_revenue = 0 # エピソードの合計収益
         # debug
         self.current_action_sum = 0
         ## ------------------------------------------------------------------------
@@ -64,6 +64,7 @@ class ESS_ModelEnv(gym.Env):
         self.imbalance_summary = [] # エピソード毎のインバランスを格納するリスト
         self.action_difference_summary = [] # エピソード毎のアクションの差分のリスト
         self.deal_profit_summary = [] # エピソード毎の取引利益を格納するリスト
+        self.episode_revenue_summary = [] # エピソード毎の収益を格納するリスト
         self.episode_action_summary = []
 
 
@@ -220,6 +221,7 @@ class ESS_ModelEnv(gym.Env):
         self.action_difference_ = 0
         self.current_imbalance = 0
         self.current_deal_profit = 0
+        self.current_revenue = 0
 
         self.current_action_sum = 0
         # -------------------------------------------------
@@ -308,6 +310,7 @@ class ESS_ModelEnv(gym.Env):
             self.imbalance_summary.append(self.current_imbalance)
             self.action_difference_summary.append(self.action_difference_)
             self.deal_profit_summary.append(self.current_deal_profit)
+            self.episode_revenue_summary.append(self.current_revenue)
 
             # debug
             self.episode_action_summary.append(self.current_action_sum)
@@ -439,5 +442,7 @@ class ESS_ModelEnv(gym.Env):
         penalty = action_difference_abs * imbalance_price # imbalancepriceの方が良い？
         # **インバランスコストを考慮した最終報酬**
         self.current_imbalance -= imbalance_cost
-        reward = - penalty
+        self.current_revenue += deal_profit - imbalance_cost
+        # 報酬
+        reward = deal_profit - imbalance_cost - penalty
         return reward
