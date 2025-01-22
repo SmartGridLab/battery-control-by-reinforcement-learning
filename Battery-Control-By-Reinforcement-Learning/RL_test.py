@@ -22,6 +22,13 @@ class TestModel():
         self.df_test_original = getattr(self.dfmanager, f"get_test_df_{mode}")()
         self.df_test = self.df_test_original.copy()
         print(f"self.df_test: {self.df_test}")
+        self.boundary_soc_df = pd.read_csv("Battery-Control-By-Reinforcement-Learning/for_debug/boundary_soc.csv")
+
+        # edited_action_listを初期化
+        self.edited_action_list = []
+        self.natural_action_list = []
+        self.energytransfer_list = []
+        self.action_debug_list = []
 
         # クラスのインスタンス化
         if mode == "bid":
@@ -33,6 +40,7 @@ class TestModel():
             self.price_min = self.env_bid.price_min
             self.imbalance_max = self.env_bid.imbalance_max
             self.imbalance_min = self.env_bid.imbalance_min
+            self.soc_list = [self.boundary_soc_df["Initial_SoC_actual_bid"][0]] # その日のSoCの初期値 = 前日のSoC終値
         elif mode == "realtime":
             self.env_realtime = Env_realtime(mode)
             # 正規化パラメータの取得
@@ -42,6 +50,7 @@ class TestModel():
             self.price_min = self.env_realtime.price_min
             self.imbalance_max = self.env_realtime.imbalance_max
             self.imbalance_min = self.env_realtime.imbalance_min
+            self.soc_list = [self.boundary_soc_df["Initial_SoC_actual_realtime"][0]] # その日のSoCの初期値 = 前日のSoC終値
 
         # テストデータの正規化
         if mode == "bid":
@@ -56,12 +65,6 @@ class TestModel():
             # 前日入札値の正規化
             self.df_test[f"energytransfer_bid_normalized"] = self.env_realtime.normalize(self.df_test["energytransfer_bid[kWh]"], (self.pvout_max * (1 + self.env_realtime.upper_times) + (self.env_realtime.upper_times * 0.5)), 0)
 
-        # soc_list,edited_action_listを初期化
-        self.soc_list = [0.5] # SoCの初期値, これも日をまたいで計測するなら、SoCも日をまたいで設定しないといけない、現在は毎回0.5設定なので不適切
-        self.edited_action_list = []
-        self.natural_action_list = []
-        self.energytransfer_list = []
-        self.action_debug_list = []
 
     # 現在の日付を取得
     def get_current_date(self):

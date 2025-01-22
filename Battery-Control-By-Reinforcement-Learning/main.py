@@ -106,8 +106,13 @@ def process_operations(mode):
   
 # メインプログラム
 def main():
-    initial_soc = Parameters().INITIAL_SOC
     print("\n---プログラム起動---")
+
+    # SoCの初期値を設定
+    boundary_soc = pd.DataFrame({"Initial_SoC_actual_realtime":[Parameters.INITIAL_SOC],
+                                 "Initial_SoC_actual_bid":[Parameters.INITIAL_SOC]})
+    boundary_soc.to_csv("Battery-Control-By-Reinforcement-Learning/for_debug/boundary_soc.csv", index = False)
+
     # result_dataframe.csvの初期化
     Dataframe_Manager().initialize_resultform_df()
 

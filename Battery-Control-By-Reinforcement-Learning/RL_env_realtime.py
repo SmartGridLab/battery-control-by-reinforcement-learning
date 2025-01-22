@@ -63,6 +63,7 @@ class ESS_ModelEnv(gym.Env):
         self.current_imbalance = 0 # エピソードの合計インバランス
         self.action_difference = 0 # RLからのアクションと実際のアクションの差分
         self.current_deal_profit = 0 # エピソードの合計取引利益
+        self.current_revenue = 0 # エピソードの合計収入
         self.bid_deal_normalized = 0 # 仮想のbid計画での入札値 [正規化]
         self.pv_realtime_predict = 0 # PV発電量の予測値
         self.price_realtime_predict = 0 # 電力価格の予測値
@@ -72,6 +73,7 @@ class ESS_ModelEnv(gym.Env):
         self.imbalance_summary = [] # エピソード毎のインバランスを格納するリストト
         self.action_difference_summary = [] # エピソード毎のアクションの差分のリスト
         self.deal_profit_summary = [] # エピソード毎の取引利益を格納するリスト
+        self.episode_revenue_summary = [] # エピソード毎の収入を格納するリスト 
 
         ## PPOで使うパラメーターの設定
         # action spaceの定義(上下限値を設定。actionは連続値。)
@@ -233,16 +235,19 @@ class ESS_ModelEnv(gym.Env):
         # PV発電量実績値の取得
         pv_actual = self.df_train.at[self.state_idx, "PVout"]  # [kWh]
         # PV実測値にノイズを足して(bid)PV予測値を作成
-        pv_bid_predict = pv_actual + np.random.uniform(-self.pvout_min, (self.upper_times * self.pvout_max)) # 0 ~ pvout_max(1+upper_times)[kWh]
+        # pv_bid_predict = pv_actual + np.random.uniform(-self.pvout_min, (self.upper_times * self.pvout_max)) # 0 ~ pvout_max(1+upper_times)[kWh]
         # PV予測値の正規化
-        pv_bid_predict_normalized = self.normalize(pv_bid_predict, self.pvout_max * (1 + self.upper_times), 0) # 0.0~1.0[正規化]
+        # pv_bid_predict_normalized = self.normalize(pv_bid_predict, self.pvout_max * (1 + self.upper_times), 0) # 0.0~1.0[正規化]
         # bid充放電計画量
         bid_action = np.random.uniform(-self.battery_max_cap * 0.5, self.battery_max_cap * 0.5)  # -2.0 ~ 2.0[kWh]
         # 充放電が適切か判定し編集
-        edited_bid_action, next_soc_bid = self.operate_action(pv_bid_predict, bid_action, self.soc_list_bid[-1])
+        # edited_bid_action, next_soc_bid = self.operate_action(pv_bid_predict, bid_action, self.soc_list_bid[-1])
+        edited_bid_action, next_soc_bid = self.operate_action(pv_actual, bid_action, self.soc_list_bid[-1])
         # bid入札量
-        bid_deal = pv_bid_predict + edited_bid_action # [kWh]
-        bid_deal_normalized = self.normalize(bid_deal, self.pvout_max*(1 + self.upper_times) + (self.battery_max_cap * 0.5), 0) # [正規化]
+        # bid_deal = pv_bid_predict + edited_bid_action # [kWh]
+        bid_deal = pv_actual + edited_bid_action # [kWh]
+        # bid_deal_normalized = self.normalize(bid_deal, self.pvout_max*(1 + self.upper_times) + (self.battery_max_cap * 0.5), 0) # [正規化]
+        bid_deal_normalized = self.normalize(bid_deal, self.pvout_max + (self.battery_max_cap * 0.5), 0) # [正規化]
         # bid入札量を記録
         self.bid_deal_list.append(bid_deal)
         # bid計画での次の時間のSoCを記録 -> 疑似的に1日を通したbid計画を再現できそう
@@ -271,9 +276,13 @@ class ESS_ModelEnv(gym.Env):
         self.action_difference = 0
         self.current_imbalance = 0
         self.current_deal_profit = 0
-        self.pv_realtime_predict = 0
-        self.price_realtime_predict = 0
-        self.imbalance_realtime_predict = 0
+        self.current_revenue = 0
+        # self.pv_realtime_predict = 0
+        # self.price_realtime_predict = 0
+        # self.imbalance_realtime_predict = 0
+        self.pv_realtime_actual = 0
+        self.price_realtime_actual = 0
+        self.imbalance_realtime_actual = 0
         self.bid_deal_normalized = 0
         # -------------------------------------------------
 
@@ -294,9 +303,14 @@ class ESS_ModelEnv(gym.Env):
         self.bid_deal_normalized = self.get_bid_deal()
 
         ## リアルタイム予測値の取得[kWh] & [正規化]
-        self.pv_realtime_predict, self.pv_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "PVout", self.pvout_max, self.pvout_min)
-        self.price_realtime_predict, self.price_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "price", self.price_max, self.price_min)
-        self.imbalance_realtime_predict, self.imbalance_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "imbalance", self.imbalance_max, self.imbalance_min)
+        # self.pv_realtime_predict, self.pv_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "PVout", self.pvout_max, self.pvout_min)
+        # self.price_realtime_predict, self.price_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "price", self.price_max, self.price_min)
+        # self.imbalance_realtime_predict, self.imbalance_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "imbalance", self.imbalance_max, self.imbalance_min)
+
+        ## リアルタイム実績値の取得[kWh]
+        self.pv_realtime_actual = self.df_train.at[self.state_idx, "PVout_normalized"]
+        self.price_realtime_actual = self.df_train.at[self.state_idx, "price_normalized"]
+        self.imbalance_realtime_actual = self.df_train.at[self.state_idx, "imbalance_normalized"]
         ## ------------------------------ ↑要検討↑ ------------------------------ ##
 
         # 時間情報の計算
@@ -306,9 +320,12 @@ class ESS_ModelEnv(gym.Env):
         # リアルタイム予測値(PVout, price, imbalance)、前日入札値、初期SoC、時間情報(sin, cos) -> 7個の観測値
         observation = [
             # 全て正規化されている
-            self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
-            self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
-            self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+            # self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
+            # self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
+            # self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+            self.pv_realtime_actual, # PV発電量の実測値[正規化]
+            self.price_realtime_actual, # 電力価格の実測値[正規化]
+            self.imbalance_realtime_actual, # インバランス価格の実測値[正規化]
             self.bid_deal_normalized, # bid入札値[正規化]
             initial_soc, # 初期SoC[正規化]
             sin_time, # 時間情報[正規化]
@@ -335,17 +352,6 @@ class ESS_ModelEnv(gym.Env):
         '''
         action: 充放電量, -2.0 ~ 2.0 [kW]
         '''
-        # debug用
-        # pvout_debug = self.df_train["PVout"][self.state_idx]
-        # if self.episode_count >= 30000:
-        #     if pvout_debug == 0:
-        #         with open("Battery-Control-By-Reinforcement-Learning/RL_action.csv", "a") as f:
-        #             f.write(f"{pvout_debug},{str(action[0])}\n")
-
-        ## 「action > 0 -> 放電、action < 0 -> 充電」
-        # time_of_day、今の時間が1日の終端状態(hour = 23.5)かどうかを判定する
-        # terminated = self.check_termination_time(self.state_idx)
-
         # current SoCを取得
         current_soc = self.soc_list_realtime_actual[-1] # 0.0~1.0[正規化]
 
@@ -354,17 +360,19 @@ class ESS_ModelEnv(gym.Env):
         edited_action: RL行動->編集後の行動 [kWh]
         next_soc: 編集後の行動をした場合の、次のSoC [正規化]
         '''
-        edited_action, next_soc = self.operate_action(self.pv_realtime_predict, action, current_soc)
+        ## realtime予測値を使う場合コメント解除
+        # edited_action, next_soc = self.operate_action(self.pv_realtime_predict, action, current_soc)
 
         # 予測値に対して編集した行動が実測値に対して適切かどうか、actionを編集
         '''
         edited_action_actual: 編集後の行動->真の行動[kWh]
         next_soc_actual: 真の行動をした場合の、次状態[正規化]
         '''
-        edited_action_actual, next_soc_actual = self.operate_action(self.df_train.at[self.state_idx, "PVout"], edited_action, current_soc)
+        ## realtime予測値を使う場合はactual -> edited_actionに変更
+        edited_action_actual, next_soc_actual = self.operate_action(self.df_train.at[self.state_idx, "PVout"], action, current_soc)
 
         # 報酬を取得＆報酬をリストに追加＆現在のエピソードの合計報酬を計算
-        reward = self._get_reward(next_soc, action, edited_action_actual)
+        reward = self._get_reward(action, edited_action_actual)
 
         # 終端状態(hour = 23.5)
         if self.df_train.at[self.state_idx, "hour"] == 23.5:
@@ -373,15 +381,19 @@ class ESS_ModelEnv(gym.Env):
             self.imbalance_summary.append(self.current_imbalance)
             self.action_difference_summary.append(self.action_difference)
             self.deal_profit_summary.append(self.current_deal_profit)
+            self.episode_revenue_summary.append(self.current_revenue)
             # 時間情報の計算
             sin_time, cos_time = self.get_time_data(self.state_idx)
             # 終端状態の情報を登録
             observation = [
-                self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
-                self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
-                self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+                # self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
+                # self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
+                # self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+                self.pv_realtime_actual, # PV発電量の実測値[正規化]
+                self.price_realtime_actual, # 電力価格の実測値[正規化]
+                self.imbalance_realtime_actual, # インバランス価格の実測値[正規化]
                 self.bid_deal_normalized, # bid入札値[正規化]
-                next_soc, # 次のSoC[正規化]
+                next_soc_actual, # 次の実際のSoC[正規化]
                 sin_time, # 時間情報[正規化]
                 cos_time # 時間情報[正規化]
             ]
@@ -398,19 +410,27 @@ class ESS_ModelEnv(gym.Env):
             # 次の時間のbid入札値を取得
             self.bid_deal_normalized = self.get_bid_deal()
             # 次の時間のrealtime予測値を取得
-            self.pv_realtime_predict, self.pv_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "PVout", self.pvout_max, self.pvout_min)
-            self.price_realtime_predict, self.price_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "price", self.price_max, self.price_min)
-            self.imbalance_realtime_predict, self.imbalance_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "imbalance", self.imbalance_max, self.imbalance_min)
+            # self.pv_realtime_predict, self.pv_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "PVout", self.pvout_max, self.pvout_min)
+            # self.price_realtime_predict, self.price_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "price", self.price_max, self.price_min)
+            # self.imbalance_realtime_predict, self.imbalance_realtime_predict_normalized = self.truncated_normal_predict(self.sigma_realtime, "imbalance", self.imbalance_max, self.imbalance_min)
+
+            # 次の時間のrealtime実績値を取得
+            self.pv_realtime_actual = self.df_train.at[self.state_idx, "PVout_normalized"]
+            self.price_realtime_actual = self.df_train.at[self.state_idx, "price_normalized"]
+            self.imbalance_realtime_actual = self.df_train.at[self.state_idx, "imbalance_normalized"]
             # next時間情報の計算＆next観測値の取得
             sin_time, cos_time = self.get_time_data(self.state_idx)
             
             # 次の時間の情報
             observation = [
-                self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
-                self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
-                self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+                # self.pv_realtime_predict_normalized, # PV発電量の予測値[正規化]
+                # self.price_realtime_predict_normalized, # 電力価格の予測値[正規化]
+                # self.imbalance_realtime_predict_normalized, # インバランス価格の予測値[正規化]
+                self.pv_realtime_actual, # PV発電量の実測値[正規化]
+                self.price_realtime_actual, # 電力価格の実測値[正規化]
+                self.imbalance_realtime_actual, # インバランス価格の実測値[正規化]
                 self.bid_deal_normalized, # bid入札値[正規化]
-                next_soc, # 次のSoC[正規化]
+                next_soc_actual, # 次の実際のSoC[正規化]
                 sin_time, # 時間情報[正規化]
                 cos_time # 時間情報[正規化]
             ]
@@ -427,7 +447,7 @@ class ESS_ModelEnv(gym.Env):
     # - rewardは1日(1 episode)ごとに合計される
     # - rewardは学習(train)の場合でしか使わない（testでは使わない）
     # - actionの単位は電力量[kWh or MWh], [-2.0~2.0]
-    def _get_reward(self, next_SoC, action, edited_action_actual):
+    def _get_reward(self, action, edited_action_actual):
         '''
         入力
         next_soc: 次のSoC, 0.0 ~ 1.0[正規化], 現状使わない
@@ -455,6 +475,9 @@ class ESS_ModelEnv(gym.Env):
         # 取引損失
         deal_loss = deal_error * imbalance_price_actual # [Yen]
         self.current_imbalance -= deal_loss
+        # 収益
+        revenue = deal_profit - deal_loss
+        self.current_revenue += revenue
         # RL行動と真の行動の差分
         _action_difference = abs(action - edited_action_actual) # [kWh]
         self.action_difference += _action_difference

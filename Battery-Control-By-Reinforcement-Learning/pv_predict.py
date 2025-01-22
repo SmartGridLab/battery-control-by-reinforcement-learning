@@ -238,9 +238,9 @@ class PV_Predict:
             
             print(str(i+1)+"/"+str(p.N_VERIFICATION)+"完了")
         ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
-        # # テストデータを作成
+        # テストデータを作成
         # if mode == "bid":
-        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual + 2.0
+        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual + 1.5
         # elif mode == "realtime":
         #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual # realtimeは実測値に一致させる
         ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
