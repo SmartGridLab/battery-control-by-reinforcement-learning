@@ -11,12 +11,16 @@ from RL_env import ESS_ModelEnv as Env_bid
 from RL_env_realtime import ESS_ModelEnv as Env_realtime
 from RL_dataframe_manager import Dataframe_Manager as Dfmanager
 from RL_operate import Battery_operate as Operate
+import parameters
 
 warnings.simplefilter('ignore')
 # 学習済みの強化学習モデルのテスト（評価）を行うクラス
 class TestModel():
     def __init__(self, mode):
 
+        param = parameters.Parameters() 
+        self.battery_max_cap = param.BATTERY_CAPACITY
+        self.pvout_max_param = param.PVOUT_MAX
         self.dfmanager = Dfmanager() # データ読込みクラスのインスタンス化
         # 正規化前の元データを保持
         self.df_test_original = getattr(self.dfmanager, f"get_test_df_{mode}")()
@@ -59,11 +63,12 @@ class TestModel():
             self.df_test[f'imbalanceprice_predict_{mode}_normalized'] = self.env_bid.normalize(self.df_test[f'imbalanceprice_predict_{mode}[Yen/kWh]'], self.imbalance_max, self.imbalance_min)
 
         elif mode == "realtime":
-            self.df_test[f"PV_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"PV_predict_{mode}[kW]"], (self.env_realtime.upper_times * self.pvout_max), (self.env_realtime.lower_times * self.pvout_min))
-            self.df_test[f"energyprice_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"energyprice_predict_{mode}[Yen/kWh]"], (self.env_realtime.upper_times * self.price_max), (self.env_realtime.lower_times * self.price_min))
-            self.df_test[f"imbalanceprice_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"imbalanceprice_predict_{mode}[Yen/kWh]"], (self.env_realtime.upper_times * self.imbalance_max), (self.env_realtime.lower_times * self.imbalance_min))
+            # 学習時の正規かパラメータに合わせるように設計
+            self.df_test[f"PV_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"PV_predict_{mode}[kW]"], self.env_realtime.pvout_max, self.env_realtime.pvout_min)
+            self.df_test[f"energyprice_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"energyprice_predict_{mode}[Yen/kWh]"], self.env_realtime.price_max, self.env_realtime.price_min)
+            self.df_test[f"imbalanceprice_predict_{mode}_normalized"] = self.env_realtime.normalize(self.df_test[f"imbalanceprice_predict_{mode}[Yen/kWh]"], self.env_realtime.imbalance_max, self.env_realtime.imbalance_min)
             # 前日入札値の正規化
-            self.df_test[f"energytransfer_bid_normalized"] = self.env_realtime.normalize(self.df_test["energytransfer_bid[kWh]"], (self.pvout_max * (1 + self.env_realtime.upper_times) + (self.env_realtime.upper_times * 0.5)), 0)
+            self.df_test[f"energytransfer_bid_normalized"] = self.env_realtime.normalize(self.df_test["energytransfer_bid[kWh]"], self.pvout_max + (self.battery_max_cap * 0.5), 0)
 
 
     # 現在の日付を取得

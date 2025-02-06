@@ -43,7 +43,7 @@ class TrainModel:
 
     def plot_episode_info(self, mode):
         # subplot設定
-        subplot_a = 5
+        subplot_a = 6
 
         ## グラフのスタイル設定
         # color
@@ -52,58 +52,69 @@ class TrainModel:
         color_DealProfit  = "red"
         color_revenue = "purple"
         color_ActionDifference = "green"
+        color_deal_error = "black"
         # linestyle
         linestyle_rewards = "-"
         linestyle_imbalance = "-"
         linestyle_DealProfit = "-"
         linestyle_revenue = "-"
         linestyle_ActionDifference = "-"
+        linestyle_deal_error = "-"
         # label
         label_rewards = "Episode rewards"
         label_imbalance = "Imbalance Cost"
         label_DealProfit = "Deal Profit"
         label_revenue = "Revenue"
         label_ActionDifference = "Action_Difference"
+        label_deal_error = "Deal Error"
 
         plt.figure(figsize = (60, 50))
         # 1. RLの報酬のグラフ
         plt.subplot(subplot_a, 1, 1)
         plt.plot(self.env.episode_rewards_summary, color = color_rewards, linestyle = linestyle_rewards, label = label_rewards)
-        plt.title("Episode rewards")
-        plt.xlabel("Episode")
-        plt.ylabel("Rewards")
+        plt.title("Episode rewards", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Rewards", fontsize = 20)
         plt.legend(loc = "upper right")
         plt.grid(True)
         # 2. インバランスコストのグラフ
         plt.subplot(subplot_a, 1, 2)
         plt.plot(self.env.imbalance_summary, color = color_imbalance, linestyle = linestyle_imbalance, label = label_imbalance)
-        plt.title("Imbalance Cost")
-        plt.xlabel("Episode")
-        plt.ylabel("Imbalance Cost [Yen]")
+        plt.title("Imbalance Cost", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Imbalance Cost [Yen]", fontsize = 20)
         plt.legend(loc = "upper right")
         plt.grid(True)
         # 3. 取引収入のグラフ
         plt.subplot(subplot_a, 1, 3)
         plt.plot(self.env.deal_profit_summary, color = color_DealProfit, linestyle = linestyle_DealProfit, label = label_DealProfit)
-        plt.title("Deal profit")
-        plt.xlabel("Episode")
-        plt.ylabel("Deal Profit [kWh]")
+        plt.title("Deal profit", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Deal Profit [kWh]", fontsize = 20)
         plt.legend(loc = "upper right")
         plt.grid(True)
         # 4. 取引収益のグラフ
         plt.subplot(subplot_a, 1, 4)
         plt.plot(self.env.episode_revenue_summary, color = color_revenue, linestyle = linestyle_revenue, label = label_revenue)
-        plt.title("Revenue")
-        plt.xlabel("Episode")
-        plt.ylabel("Revenue [Yen]")
+        plt.title("Revenue", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Revenue [Yen]", fontsize = 20)
         plt.legend(loc = "upper right")
         plt.grid(True)
         # 5. Action Differenceのグラフ
         plt.subplot(subplot_a, 1, 5)
         plt.plot(self.env.action_difference_summary, color = color_ActionDifference, linestyle = linestyle_ActionDifference, label = label_ActionDifference)
-        plt.title("Action difference")
-        plt.xlabel("Episode")
-        plt.ylabel("Action difference [kWh]")
+        plt.title("Action difference", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Action difference [kWh]", fontsize = 20)
+        plt.legend(loc = "upper right")
+        plt.grid(True)
+        # 6. Deal Errorのグラフ
+        plt.subplot(subplot_a, 1, 6)
+        plt.plot(self.env.deal_error_between_actual_summary, color = color_deal_error, linestyle = linestyle_deal_error, label = label_deal_error)
+        plt.title("Deal Error", fontsize = 30)
+        plt.xlabel("Episode", fontsize = 20)
+        plt.ylabel("Deal Error [kWh]", fontsize = 20)
         plt.legend(loc = "upper right")
         plt.grid(True)
 
@@ -134,7 +145,7 @@ class TrainModel:
             self.env = Env_realtime(mode)
 
         N_STEPS = 48  # 1日のコマ数（=1エピソード内のステップ数）
-        N_EPISODES = 30000  # 学習する日数（エピソード数
+        N_EPISODES = 60000  # 学習する日数（エピソード数
         total_timesteps = N_STEPS * N_EPISODES  # エピソード数に基づいた総ステップ数
         # n_steps: 1episode(1日)の中のコマ数。1コマ30分間なので、全部で48コマ。
         # total_timesteps: 学習全体での合計step数。n_steps * episode = total_timesteps
@@ -166,8 +177,8 @@ class TrainModel:
 
 # メイン関数
 if __name__ == "__main__":
-    mode = "bid"
-    # mode = "realtime"
+    # mode = "bid"
+    mode = "realtime"
     trainer = TrainModel()
     trainer.dispatch_train(mode)
 

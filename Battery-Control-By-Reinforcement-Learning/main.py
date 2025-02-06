@@ -133,7 +133,7 @@ def main():
     # 動作開始日と動作終了日の指定
     # JST
     start_date = datetime.datetime(2022, 9, 1, 0, 30)
-    end_date = datetime.datetime(2022, 9, 2, 23, 30)
+    end_date = datetime.datetime(2022, 9, 5, 23, 30)
     ##-------------------------------------------------------------------------------------------------------------------------##
 
     if simDuration == "MultipleDays_SingleMode":
@@ -201,5 +201,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # fig = RL_visualize.RL_visualize.descr_price()
-    subprocess.run(['python', 'Battery-Control-By-Reinforcement-Learning/debug_plot.py'])

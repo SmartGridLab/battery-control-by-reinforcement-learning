@@ -25,6 +25,9 @@ from result_inputdata_reference import ResultInputDataReference as RIRD
 class PV_Predict:
     def __init__(self):
         warnings.simplefilter('ignore')
+        param = p()
+        self.pvout_max_param = param.PVOUT_MAX 
+
         print("\n---PV出力予測プログラム開始---\n")
         # current_data.csvの日付データを読み込む
         date_info = pd.read_csv("Battery-Control-By-Reinforcement-Learning/current_date.csv")
@@ -218,7 +221,8 @@ class PV_Predict:
                     pv_predict_.loc[pv_predict_['hour'] > 19.5, 'lower'] = 0
 
                     #lower, upper中央値算出
-                    pv_predict_["PVout"] = (pv_predict_["upper"] + pv_predict_["lower"]) / 2
+                    pv_predict_["PVout"] = np.clip(((pv_predict_["upper"] + pv_predict_["lower"]) / 2), 0, self.pvout_max_param)
+
                     #--------------------------テストデータの作成--------------------------#
                     # if mode == "realtime":
                     #     pv_predict_.loc[(pv_predict_['hour'] >= 0.0) & (pv_predict_['hour'] <= 7.5), 'PVout'] = 0.0
@@ -239,10 +243,10 @@ class PV_Predict:
             print(str(i+1)+"/"+str(p.N_VERIFICATION)+"完了")
         ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
         # テストデータを作成
-        # if mode == "bid":
-        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual + 1.5
-        # elif mode == "realtime":
-        #     pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = self.RIRD.PV_actual # realtimeは実測値に一致させる
+        if mode == "bid":
+            pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = np.clip((self.RIRD.PV_actual * 1.2), 0, self.pvout_max_param) # 人工的なテストデータ
+        elif mode == "realtime":
+            pv_predict_.loc[pv_predict_.index[:48], 'PVout'] = np.clip(self.RIRD.PV_actual, 0, self.pvout_max_param) # realtimeは実測値に一致させる
         ## -------------------------- 人工的なテストデータの作成  -------------------------- ##
         pv_predict_.to_csv('Battery-Control-By-Reinforcement-Learning/pv_predict.csv', index=False)
         print("\n---PV出力予測プログラム終了---\n")
