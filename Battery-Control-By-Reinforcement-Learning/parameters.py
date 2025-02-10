@@ -52,8 +52,9 @@ class Parameters():
 
 
     ## Battery specification
-    BATTERY_CAPACITY = 4 # [kWh]
-    INITIAL_SOC = 0.5 # [0,1]で設定。[0,100]に対応
+    BATTERY_CAPACITY = 4.0 # [kWh]
+    PVOUT_MAX = 2.0 # [kW]
+    INITIAL_SOC = 0.0 # [0,1]で設定。[0,100]に対応
 
     
 

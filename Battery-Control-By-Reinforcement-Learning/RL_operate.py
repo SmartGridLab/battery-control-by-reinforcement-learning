@@ -258,8 +258,8 @@ class Battery_operate():
                 edited_action = - PV_predict
                 _next_soc = current_soc - edited_action
                 # 過剰充電
-                if _next_soc > 4.0:
-                    next_soc = 4.0
+                if _next_soc > self.BATTERY_CAPACITY:
+                    next_soc = self.BATTERY_CAPACITY
                     edited_action = current_soc - next_soc
                 # 正常充電
                 else:
@@ -268,8 +268,8 @@ class Battery_operate():
                 edited_action = action_fromRL
                 _next_soc = current_soc - edited_action
                 # 過剰充電
-                if _next_soc > 4.0:
-                    next_soc = 4.0
+                if _next_soc > self.BATTERY_CAPACITY:
+                    next_soc = self.BATTERY_CAPACITY
                     edited_action = current_soc - next_soc
                 # 正常充電
                 else:
@@ -311,8 +311,8 @@ class Battery_operate():
                     edited_action_actual = - PV_actual
                     _next_soc = current_soc - edited_action_actual
                     # 過剰充電
-                    if _next_soc > 4.0:
-                        next_soc = 4.0
+                    if _next_soc > self.BATTERY_CAPACITY:
+                        next_soc = self.BATTERY_CAPACITY
                         edited_action_actual = current_soc - next_soc
                     # 正常充電
                     else:
@@ -322,8 +322,8 @@ class Battery_operate():
                     edited_action_actual = edited_action
                     _next_soc = current_soc - edited_action_actual
                     # 過剰充電
-                    if _next_soc > 4.0:
-                        next_soc = 4.0
+                    if _next_soc > self.BATTERY_CAPACITY:
+                        next_soc = self.BATTERY_CAPACITY
                         edited_action_actual = current_soc - next_soc
                     # 正常充電
                     else:
